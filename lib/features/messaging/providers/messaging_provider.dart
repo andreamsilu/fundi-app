@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/chat_model.dart';
+import '../models/chat_model.dart' hide MessageModel;
 import '../models/message_model.dart';
 import '../services/messaging_service.dart';
 import '../../../core/utils/logger.dart';

@@ -10,7 +10,7 @@ import '../../auth/providers/auth_provider.dart';
 /// Portfolio gallery screen showing all portfolio items
 /// Allows viewing, filtering, and managing portfolio items
 class PortfolioGalleryScreen extends StatefulWidget {
-  const PortfolioGalleryScreen({super.key});
+  const PortfolioGalleryScreen({super.key, required String portfolioId});
 
   @override
   State<PortfolioGalleryScreen> createState() => _PortfolioGalleryScreenState();

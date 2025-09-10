@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/chat_model.dart';
+import '../models/chat_model.dart' hide MessageModel;
 import '../models/message_model.dart';
 import '../providers/messaging_provider.dart';
 import '../../../shared/widgets/loading_widget.dart';
@@ -156,7 +156,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             radius: 16,
             backgroundColor: context.primaryColor.withValues(alpha: 0.1),
             child: Text(
-              widget.chat.participantName.substring(0, 1).toUpperCase(),
+              widget.chat.otherUser.name.substring(0, 1).toUpperCase(),
               style: TextStyle(
                 color: context.primaryColor,
                 fontWeight: FontWeight.bold,
@@ -177,7 +177,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 Text(
-                  widget.chat.lastMessageTimeDisplay,
+                  widget.chat.lastMessage?.timeAgo ?? '',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppTheme.mediumGray,

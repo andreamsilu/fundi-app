@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/job_model.dart';
 import '../services/job_service.dart';
+import '../../dashboard/services/dashboard_service.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
@@ -324,17 +325,8 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
   String? _location;
   final TextEditingController _locationController = TextEditingController();
 
-  final List<String> _categories = [
-    'Plumbing',
-    'Electrical',
-    'Carpentry',
-    'Painting',
-    'Cleaning',
-    'Gardening',
-    'Repair',
-    'Installation',
-    'Other',
-  ];
+  List<JobCategory> _categories = [];
+  bool _isLoadingCategories = true;
 
   @override
   void initState() {
@@ -342,6 +334,52 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     _category = widget.selectedCategory;
     _location = widget.selectedLocation;
     _locationController.text = _location ?? '';
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final result = await DashboardService().getJobCategories();
+      if (mounted) {
+        setState(() {
+          if (result.success && result.categories != null) {
+            _categories = result.categories!;
+          } else {
+            // Fallback to hardcoded categories if API fails
+            _categories = [
+              const JobCategory(id: 'plumbing', name: 'Plumbing'),
+              const JobCategory(id: 'electrical', name: 'Electrical'),
+              const JobCategory(id: 'carpentry', name: 'Carpentry'),
+              const JobCategory(id: 'painting', name: 'Painting'),
+              const JobCategory(id: 'cleaning', name: 'Cleaning'),
+              const JobCategory(id: 'gardening', name: 'Gardening'),
+              const JobCategory(id: 'repair', name: 'Repair'),
+              const JobCategory(id: 'installation', name: 'Installation'),
+              const JobCategory(id: 'other', name: 'Other'),
+            ];
+          }
+          _isLoadingCategories = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          // Fallback to hardcoded categories
+          _categories = [
+            const JobCategory(id: 'plumbing', name: 'Plumbing'),
+            const JobCategory(id: 'electrical', name: 'Electrical'),
+            const JobCategory(id: 'carpentry', name: 'Carpentry'),
+            const JobCategory(id: 'painting', name: 'Painting'),
+            const JobCategory(id: 'cleaning', name: 'Cleaning'),
+            const JobCategory(id: 'gardening', name: 'Gardening'),
+            const JobCategory(id: 'repair', name: 'Repair'),
+            const JobCategory(id: 'installation', name: 'Installation'),
+            const JobCategory(id: 'other', name: 'Other'),
+          ];
+          _isLoadingCategories = false;
+        });
+      }
+    }
   }
 
   @override
@@ -408,22 +446,29 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _categories.map((category) {
-                    final isSelected = _category == category;
-                    return FilterChip(
-                      label: Text(category),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _category = selected ? category : null;
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
+                _isLoadingCategories
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: LoadingWidget(size: 24),
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _categories.map((category) {
+                          final isSelected = _category == category.id;
+                          return FilterChip(
+                            label: Text(category.name),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                _category = selected ? category.id : null;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
               ],
             ),
           ),

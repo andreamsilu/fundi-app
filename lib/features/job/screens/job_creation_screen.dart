@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../models/job_urgency.dart';
 import '../services/job_service.dart';
+import '../../dashboard/services/dashboard_service.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
@@ -32,28 +32,19 @@ class _JobCreationScreenState extends State<JobCreationScreen>
   late Animation<Offset> _slideAnimation;
 
   bool _isLoading = false;
+  bool _isLoadingCategories = true;
   String? _errorMessage;
   String? _successMessage;
-  String _selectedCategory = 'Other';
+  String _selectedCategory = '';
   List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
-
-  final List<String> _categories = [
-    'Plumbing',
-    'Electrical',
-    'Carpentry',
-    'Painting',
-    'Cleaning',
-    'Gardening',
-    'Repair',
-    'Installation',
-    'Other',
-  ];
+  List<JobCategory> _categories = [];
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
+    _loadCategories();
   }
 
   void _setupAnimations() {
@@ -77,6 +68,56 @@ class _JobCreationScreenState extends State<JobCreationScreen>
 
     _fadeController.forward();
     _slideController.forward();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final result = await DashboardService().getJobCategories();
+      if (mounted) {
+        setState(() {
+          if (result.success && result.categories != null) {
+            _categories = result.categories!;
+            if (_categories.isNotEmpty) {
+              _selectedCategory = _categories.first.id;
+            }
+          } else {
+            // Fallback to hardcoded categories if API fails
+            _categories = [
+              const JobCategory(id: 'plumbing', name: 'Plumbing'),
+              const JobCategory(id: 'electrical', name: 'Electrical'),
+              const JobCategory(id: 'carpentry', name: 'Carpentry'),
+              const JobCategory(id: 'painting', name: 'Painting'),
+              const JobCategory(id: 'cleaning', name: 'Cleaning'),
+              const JobCategory(id: 'gardening', name: 'Gardening'),
+              const JobCategory(id: 'repair', name: 'Repair'),
+              const JobCategory(id: 'installation', name: 'Installation'),
+              const JobCategory(id: 'other', name: 'Other'),
+            ];
+            _selectedCategory = _categories.first.id;
+          }
+          _isLoadingCategories = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          // Fallback to hardcoded categories
+          _categories = [
+            const JobCategory(id: 'plumbing', name: 'Plumbing'),
+            const JobCategory(id: 'electrical', name: 'Electrical'),
+            const JobCategory(id: 'carpentry', name: 'Carpentry'),
+            const JobCategory(id: 'painting', name: 'Painting'),
+            const JobCategory(id: 'cleaning', name: 'Cleaning'),
+            const JobCategory(id: 'gardening', name: 'Gardening'),
+            const JobCategory(id: 'repair', name: 'Repair'),
+            const JobCategory(id: 'installation', name: 'Installation'),
+            const JobCategory(id: 'other', name: 'Other'),
+          ];
+          _selectedCategory = _categories.first.id;
+          _isLoadingCategories = false;
+        });
+      }
+    }
   }
 
   @override
@@ -341,7 +382,6 @@ class _JobCreationScreenState extends State<JobCreationScreen>
 
                   // Urgency Selection
                   // _buildUrgencySelector(),
-
                   const SizedBox(height: 24),
 
                   // Images Section
@@ -387,90 +427,43 @@ class _JobCreationScreenState extends State<JobCreationScreen>
             border: Border.all(color: AppTheme.mediumGray),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedCategory,
-              isExpanded: true,
-              items: _categories.map((category) {
-                return DropdownMenuItem(value: category, child: Text(category));
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                }
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUrgencySelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Urgency',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.darkGray,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: JobUrgency.values.map((urgency) {
-            final isSelected = false;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    false;
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? context.primaryColor.withValues(alpha: 0.1)
-                        : AppTheme.lightGray,
-                    border: Border.all(
-                      color: isSelected
-                          ? context.primaryColor
-                          : AppTheme.mediumGray,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
+          child: _isLoadingCategories
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
                     children: [
-                      Icon(
-                        Icons.timer,
-                        color: isSelected
-                            ? context.primaryColor
-                            : AppTheme.mediumGray,
-                        size: 20,
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '2 days',
-                        style: TextStyle(
-                          color: isSelected
-                              ? context.primaryColor
-                              : AppTheme.mediumGray,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                      SizedBox(width: 8),
+                      Text('Loading categories...'),
                     ],
                   ),
+                )
+              : DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedCategory.isNotEmpty
+                        ? _selectedCategory
+                        : null,
+                    isExpanded: true,
+                    hint: const Text('Select a category'),
+                    items: _categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category.id,
+                        child: Text(category.name),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedCategory = value;
+                        });
+                      }
+                    },
+                  ),
                 ),
-              ),
-            );
-          }).toList(),
         ),
       ],
     );

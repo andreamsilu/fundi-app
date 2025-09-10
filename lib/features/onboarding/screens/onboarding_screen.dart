@@ -222,14 +222,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             gradient: LinearGradient(
                               colors: [
                                 _pages[_currentPage].color,
-                                _pages[_currentPage].color.withValues(alpha: 0.8),
+                                _pages[_currentPage].color.withValues(
+                                  alpha: 0.8,
+                                ),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(2),
                             boxShadow: [
                               BoxShadow(
-                                color: _pages[_currentPage].color.withValues(alpha:
-                                  0.3,
+                                color: _pages[_currentPage].color.withValues(
+                                  alpha: 0.3,
                                 ),
                                 blurRadius: 4,
                                 offset: const Offset(0, 1),
@@ -368,8 +370,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 8,
-                            shadowColor: _pages[_currentPage].color.withValues(alpha:
-                              0.3,
+                            shadowColor: _pages[_currentPage].color.withValues(
+                              alpha: 0.3,
                             ),
                           ),
                           child: Row(
@@ -455,10 +457,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     height: 200,
                     decoration: BoxDecoration(
                       gradient: RadialGradient(
-                      colors: [
-                        page.color.withValues(alpha: 0.2),
-                        page.color.withValues(alpha: 0.1),
-                      ],
+                        colors: [
+                          page.color.withValues(alpha: 0.2),
+                          page.color.withValues(alpha: 0.1),
+                        ],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
@@ -526,7 +528,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   decoration: BoxDecoration(
                     color: page.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: page.color.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: page.color.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     page.demoText,
@@ -659,8 +663,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               boxShadow: _currentPage == index
                   ? [
                       BoxShadow(
-                        color: _pages[_currentPage].color.withValues(alpha:
-                          0.3 + (value * 0.2),
+                        color: _pages[_currentPage].color.withValues(
+                          alpha: 0.3 + (value * 0.2),
                         ),
                         blurRadius: 8 + (value * 4),
                         offset: const Offset(0, 2),
