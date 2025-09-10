@@ -1,11 +1,17 @@
+import '../config/env_config.dart';
+
 /// Application-wide constants and configuration
 /// This file contains all the static values used throughout the app
 class AppConstants {
   // API Configuration
-  static const String baseUrl = 'https://api.fundi.app/v1';
-  static const String apiVersion = 'v1';
-  static const int connectionTimeout = 30000; // 30 seconds
-  static const int receiveTimeout = 30000; // 30 seconds
+  static String get baseUrl =>
+      EnvConfig.get('API_BASE_URL', defaultValue: 'https://api.fundi.app/v1');
+  static String get apiVersion =>
+      EnvConfig.get('API_VERSION', defaultValue: 'v1');
+  static int get connectionTimeout =>
+      EnvConfig.getInt('API_TIMEOUT', defaultValue: 30000);
+  static int get receiveTimeout =>
+      EnvConfig.getInt('API_TIMEOUT', defaultValue: 30000);
 
   // Storage Keys
   static const String tokenKey = 'auth_token';
@@ -25,18 +31,30 @@ class AppConstants {
   static const double borderRadius = 12.0;
   static const double cardElevation = 2.0;
 
+  // Asset Paths
+  static const String logoPath = 'assets/images/logo.png';
+
   // Validation
-  static const int minPasswordLength = 6;
-  static const int maxNameLength = 50;
-  static const int maxDescriptionLength = 500;
+  static int get minPasswordLength =>
+      EnvConfig.getInt('MIN_PASSWORD_LENGTH', defaultValue: 6);
+  static int get maxNameLength =>
+      EnvConfig.getInt('MAX_NAME_LENGTH', defaultValue: 50);
+  static int get maxDescriptionLength =>
+      EnvConfig.getInt('MAX_DESCRIPTION_LENGTH', defaultValue: 500);
 
   // Pagination
-  static const int defaultPageSize = 20;
-  static const int maxPageSize = 100;
+  static int get defaultPageSize =>
+      EnvConfig.getInt('DEFAULT_PAGE_SIZE', defaultValue: 20);
+  static int get maxPageSize =>
+      EnvConfig.getInt('MAX_PAGE_SIZE', defaultValue: 100);
 
   // File Upload
-  static const int maxImageSize = 5 * 1024 * 1024; // 5MB
-  static const List<String> allowedImageTypes = ['jpg', 'jpeg', 'png', 'gif'];
+  static int get maxImageSize =>
+      EnvConfig.getInt('MAX_FILE_SIZE', defaultValue: 5 * 1024 * 1024);
+  static List<String> get allowedImageTypes => EnvConfig.get(
+    'ALLOWED_FILE_TYPES',
+    defaultValue: 'jpg,jpeg,png,gif',
+  ).split(',');
 
   // Error Messages
   static const String networkErrorMessage =

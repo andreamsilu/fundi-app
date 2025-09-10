@@ -1,5 +1,6 @@
 import '../models/user_model.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/session_manager.dart';
 import '../../../core/utils/logger.dart';
 
 /// OTP Verification Types
@@ -13,13 +14,13 @@ class AuthService {
   AuthService._internal();
 
   final ApiClient _apiClient = ApiClient();
-  UserModel? _currentUser;
+  final SessionManager _sessionManager = SessionManager();
 
   /// Get current authenticated user
-  UserModel? get currentUser => _currentUser;
+  UserModel? get currentUser => _sessionManager.currentUser;
 
   /// Check if user is authenticated
-  bool get isAuthenticated => _currentUser != null;
+  bool get isAuthenticated => _sessionManager.isAuthenticated;
 
   /// User login with phone and password
   Future<AuthResult> login({
@@ -38,20 +39,14 @@ class AuthService {
       if (response.success && response.data != null) {
         final token = response.data!['token'] as String;
         final userData = response.data!['user'] as Map<String, dynamic>;
+        final user = UserModel.fromJson(userData);
 
-        // Save token and user data
-        await _apiClient.saveToken(token);
-        _currentUser = UserModel.fromJson(userData);
+        // Save session with token and user data
+        await _sessionManager.saveSession(token: token, user: user);
 
-        Logger.userAction(
-          'Login successful',
-          data: {'userId': _currentUser!.id},
-        );
+        Logger.userAction('Login successful', data: {'userId': user.id});
 
-        return AuthResult.success(
-          user: _currentUser!,
-          message: response.message,
-        );
+        return AuthResult.success(user: user, message: response.message);
       } else {
         Logger.warning('Login failed: ${response.message}');
         return AuthResult.failure(message: response.message);
@@ -90,20 +85,14 @@ class AuthService {
       if (response.success && response.data != null) {
         final token = response.data!['token'] as String;
         final userData = response.data!['user'] as Map<String, dynamic>;
+        final user = UserModel.fromJson(userData);
 
-        // Save token and user data
-        await _apiClient.saveToken(token);
-        _currentUser = UserModel.fromJson(userData);
+        // Save session with token and user data
+        await _sessionManager.saveSession(token: token, user: user);
 
-        Logger.userAction(
-          'Registration successful',
-          data: {'userId': _currentUser!.id},
-        );
+        Logger.userAction('Registration successful', data: {'userId': user.id});
 
-        return AuthResult.success(
-          user: _currentUser!,
-          message: response.message,
-        );
+        return AuthResult.success(user: user, message: response.message);
       } else {
         Logger.warning('Registration failed: ${response.message}');
         return AuthResult.failure(message: response.message);
@@ -123,7 +112,7 @@ class AuthService {
       Logger.userAction('Logout');
 
       // Call logout endpoint if user is authenticated
-      if (_currentUser != null) {
+      if (_sessionManager.isAuthenticated) {
         try {
           await _apiClient.post('/auth/logout');
         } catch (e) {
@@ -132,16 +121,14 @@ class AuthService {
         }
       }
 
-      // Clear local data
-      await _apiClient.clearToken();
-      _currentUser = null;
+      // Clear session
+      await _sessionManager.clearSession();
 
       Logger.info('User logged out successfully');
     } catch (e) {
       Logger.error('Logout error', error: e);
-      // Force clear local data even if there's an error
-      await _apiClient.clearToken();
-      _currentUser = null;
+      // Force clear session even if there's an error
+      await _sessionManager.clearSession();
     }
   }
 
@@ -155,7 +142,7 @@ class AuthService {
 
       if (response.success && response.data != null) {
         final token = response.data!['token'] as String;
-        await _apiClient.saveToken(token);
+        await _sessionManager.refreshToken(token);
 
         Logger.info('Token refreshed successfully');
         return true;
@@ -178,8 +165,9 @@ class AuthService {
       );
 
       if (response.success && response.data != null) {
-        _currentUser = UserModel.fromJson(response.data!);
-        return _currentUser;
+        final user = UserModel.fromJson(response.data!);
+        await _sessionManager.updateUser(user);
+        return user;
       }
 
       return null;
@@ -228,14 +216,12 @@ class AuthService {
       );
 
       if (response.success && response.data != null) {
-        _currentUser = UserModel.fromJson(response.data!);
+        final user = UserModel.fromJson(response.data!);
+        await _sessionManager.updateUser(user);
 
         Logger.userAction('Profile updated successfully');
 
-        return AuthResult.success(
-          user: _currentUser!,
-          message: response.message,
-        );
+        return AuthResult.success(user: user, message: response.message);
       } else {
         Logger.warning('Profile update failed: ${response.message}');
         return AuthResult.failure(message: response.message);
@@ -375,17 +361,17 @@ class AuthService {
       );
 
       if (response.success && response.data != null) {
-        // For registration, update current user
+        // For registration, save session
         if (type == OtpVerificationType.registration) {
           final token = response.data!['token'] as String;
           final userData = response.data!['user'] as Map<String, dynamic>;
-          await _apiClient.saveToken(token);
-          _currentUser = UserModel.fromJson(userData);
+          final user = UserModel.fromJson(userData);
+          await _sessionManager.saveSession(token: token, user: user);
         }
 
         Logger.userAction('OTP verified successfully');
         return AuthResult.success(
-          user: _currentUser,
+          user: _sessionManager.currentUser,
           message: response.message,
         );
       } else {
@@ -451,16 +437,13 @@ class AuthService {
   /// Initialize authentication state
   Future<void> initialize() async {
     try {
-      // Try to get current user profile if token exists
-      final user = await getCurrentUserProfile();
-      if (user != null) {
-        _currentUser = user;
-        Logger.info('User authentication restored');
-      }
+      // Session manager handles initialization and session restoration
+      await _sessionManager.initialize();
+      Logger.info('User authentication restored');
     } catch (e) {
       Logger.error('Auth initialization error', error: e);
-      // Clear invalid token
-      await _apiClient.clearToken();
+      // Clear invalid session
+      await _sessionManager.clearSession();
     }
   }
 }

@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/auth/models/user_model.dart';
 import '../constants/app_constants.dart';
 import '../utils/logger.dart';
+import '../services/session_manager.dart';
 
 /// Centralized API client for all network communications
 /// Handles authentication, error handling, and request/response logging
@@ -13,17 +13,17 @@ class ApiClient {
   ApiClient._internal();
 
   late Dio _dio;
-  String? _authToken;
+  final SessionManager _sessionManager = SessionManager();
 
   /// Initialize the API client with base configuration
   Future<void> initialize() async {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
-        connectTimeout: const Duration(
+        connectTimeout: Duration(
           milliseconds: AppConstants.connectionTimeout,
         ),
-        receiveTimeout: const Duration(
+        receiveTimeout: Duration(
           milliseconds: AppConstants.receiveTimeout,
         ),
         headers: {
@@ -38,16 +38,17 @@ class ApiClient {
     _dio.interceptors.add(_createLoggingInterceptor());
     _dio.interceptors.add(_createErrorInterceptor());
 
-    // Load stored token
-    await _loadStoredToken();
+    // Initialize session manager
+    await _sessionManager.initialize();
   }
 
   /// Create authentication interceptor
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) {
-        if (_authToken != null) {
-          options.headers['Authorization'] = 'Bearer $_authToken';
+        final token = _sessionManager.authToken;
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
         }
         handler.next(options);
       },
@@ -170,22 +171,10 @@ class ApiClient {
     }
   }
 
-  /// Load stored authentication token
-  Future<void> _loadStoredToken() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      _authToken = prefs.getString(AppConstants.tokenKey);
-    } catch (e) {
-      Logger.error('Failed to load stored token', error: e);
-    }
-  }
-
   /// Save authentication token
   Future<void> saveToken(String token) async {
     try {
-      _authToken = token;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(AppConstants.tokenKey, token);
+      await _sessionManager.refreshToken(token);
       Logger.info('Authentication token saved', data: {'token': 'saved'});
     } catch (e) {
       Logger.error('Failed to save token', error: e);
@@ -195,9 +184,7 @@ class ApiClient {
   /// Clear authentication token
   Future<void> clearToken() async {
     try {
-      _authToken = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(AppConstants.tokenKey);
+      await _sessionManager.clearSession();
       Logger.info('Authentication token cleared', data: {'token': 'cleared'});
     } catch (e) {
       Logger.error('Failed to clear token', error: e);
@@ -206,10 +193,15 @@ class ApiClient {
 
   /// Handle unauthorized access
   void _handleUnauthorized() {
-    clearToken();
-    // TODO: Navigate to login screen or show login dialog
+    _sessionManager.forceLogout();
     Logger.warning('User session expired, redirecting to login');
   }
+
+  /// Get current user from session
+  UserModel? get currentUser => _sessionManager.currentUser;
+
+  /// Check if user is authenticated
+  bool get isAuthenticated => _sessionManager.isAuthenticated;
 
   /// GET request
   Future<ApiResponse<T>> get<T>(
@@ -348,7 +340,9 @@ class ApiClient {
 
     return ApiResponse<T>(
       data: data as T?,
-      message: (data is Map<String, dynamic>) ? data['message'] ?? 'Success' : 'Success',
+      message: (data is Map<String, dynamic>)
+          ? data['message'] ?? 'Success'
+          : 'Success',
       success: true,
       statusCode: response.statusCode ?? 200,
     );
