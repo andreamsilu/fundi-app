@@ -145,7 +145,7 @@ class _AppButtonState extends State<AppButton>
           border: null,
           boxShadow: [
             BoxShadow(
-              color: context.accentColor.withOpacity(0.3),
+              color: context.accentColor.withValues(alpha: 0.3),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -158,7 +158,7 @@ class _AppButtonState extends State<AppButton>
           border: Border.all(color: context.primaryColor, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -178,7 +178,7 @@ class _AppButtonState extends State<AppButton>
           border: null,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.errorColor.withOpacity(0.3),
+              color: AppTheme.errorColor.withValues(alpha: 0.3),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),

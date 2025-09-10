@@ -38,7 +38,7 @@ class _AppInitializerState extends State<AppInitializer> {
 
   @override
   Widget build(BuildContext context) {
-    print('AppInitializer build called');
+    // AppInitializer build called
 
     // Show loading screen while checking onboarding status
     if (_isCheckingOnboarding) {
@@ -49,25 +49,25 @@ class _AppInitializerState extends State<AppInitializer> {
 
     // Show onboarding if not completed
     if (!_hasCompletedOnboarding) {
-      print('User has not completed onboarding, showing OnboardingScreen');
+      // User has not completed onboarding, showing OnboardingScreen
       return const OnboardingScreen();
     }
 
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        print('Consumer<AuthProvider> builder called');
+        // Consumer<AuthProvider> builder called
 
         // Initialize auth provider on first build
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (mounted) {
-            print('Initializing AuthProvider');
+            // Initializing AuthProvider
             await authProvider.initialize();
           }
         });
 
         // Show loading screen while initializing
         if (authProvider.isLoading) {
-          print('Showing loading screen');
+          // Showing loading screen
           return const Scaffold(
             body: LoadingWidget(message: 'Initializing Fundi App...', size: 50),
           );
@@ -75,10 +75,10 @@ class _AppInitializerState extends State<AppInitializer> {
 
         // Route to appropriate screen based on authentication status
         if (authProvider.isAuthenticated) {
-          print('User is authenticated, showing MainDashboard');
+          // User is authenticated, showing MainDashboard
           return const MainDashboard();
         } else {
-          print('User is not authenticated, showing LoginScreen');
+          // User is not authenticated, showing LoginScreen
           return const LoginScreen();
         }
       },

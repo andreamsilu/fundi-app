@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/job_model.dart';
 import '../services/job_service.dart';
 import '../../../shared/widgets/loading_widget.dart';
@@ -84,8 +83,9 @@ class _JobListScreenState extends State<JobListScreen>
         page: _currentPage,
         category: _selectedCategory,
         location: _selectedLocation,
-        search:
-            _searchController.text.isNotEmpty ? _searchController.text : null,
+        search: _searchController.text.isNotEmpty
+            ? _searchController.text
+            : null,
       );
 
       if (result.success) {
@@ -127,8 +127,9 @@ class _JobListScreenState extends State<JobListScreen>
         page: _currentPage,
         category: _selectedCategory,
         location: _selectedLocation,
-        search:
-            _searchController.text.isNotEmpty ? _searchController.text : null,
+        search: _searchController.text.isNotEmpty
+            ? _searchController.text
+            : null,
       );
 
       if (result.success) {
@@ -159,18 +160,17 @@ class _JobListScreenState extends State<JobListScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => _FilterBottomSheet(
-            selectedCategory: _selectedCategory,
-            selectedLocation: _selectedLocation,
-            onApply: (category, location) {
-              setState(() {
-                _selectedCategory = category;
-                _selectedLocation = location;
-              });
-              _loadJobs(refresh: true);
-            },
-          ),
+      builder: (context) => _FilterBottomSheet(
+        selectedCategory: _selectedCategory,
+        selectedLocation: _selectedLocation,
+        onApply: (category, location) {
+          setState(() {
+            _selectedCategory = category;
+            _selectedLocation = location;
+          });
+          _loadJobs(refresh: true);
+        },
+      ),
     );
   }
 
@@ -411,19 +411,18 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children:
-                      _categories.map((category) {
-                        final isSelected = _category == category;
-                        return FilterChip(
-                          label: Text(category),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              _category = selected ? category : null;
-                            });
-                          },
-                        );
-                      }).toList(),
+                  children: _categories.map((category) {
+                    final isSelected = _category == category;
+                    return FilterChip(
+                      label: Text(category),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _category = selected ? category : null;
+                        });
+                      },
+                    );
+                  }).toList(),
                 ),
               ],
             ),
@@ -462,6 +461,3 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     );
   }
 }
-
-
-

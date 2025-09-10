@@ -42,7 +42,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   String? _errorMessage;
   String? _successMessage;
   int _resendCountdown = 0;
-  int _maxAttempts = 3;
+  final int _maxAttempts = 3;
   int _attempts = 0;
 
   @override
@@ -303,10 +303,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.green.withOpacity(0.3),
+                          color: Colors.green.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -391,7 +391,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: context.primaryColor.withOpacity(0.1),
+                  color: context.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.sms, size: 50, color: context.primaryColor),
@@ -528,7 +528,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.lightGray.withOpacity(0.3),
+        color: AppTheme.lightGray.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

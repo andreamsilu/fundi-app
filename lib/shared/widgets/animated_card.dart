@@ -69,7 +69,7 @@ class _AnimatedCardState extends State<AnimatedCard>
     _colorAnimation =
         ColorTween(
           begin: widget.backgroundColor ?? AppTheme.white,
-          end: AppTheme.lightGreen.withOpacity(0.1),
+          end: AppTheme.lightGreen.withValues(alpha: 0.1),
         ).animate(
           CurvedAnimation(
             parent: _animationController,
@@ -147,7 +147,7 @@ class _AnimatedCardState extends State<AnimatedCard>
                       widget.borderRadius ?? BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: _elevationAnimation.value * 2,
                       offset: Offset(0, _elevationAnimation.value),
                     ),
@@ -296,7 +296,7 @@ class JobCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightGreen.withOpacity(0.2),
+                  color: AppTheme.lightGreen.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -337,23 +337,23 @@ class JobCard extends StatelessWidget {
 
     switch (status.toLowerCase()) {
       case 'pending':
-        backgroundColor = AppTheme.warningColor.withOpacity(0.2);
+        backgroundColor = AppTheme.warningColor.withValues(alpha: 0.2);
         textColor = AppTheme.warningColor;
         break;
       case 'in progress':
-        backgroundColor = AppTheme.infoColor.withOpacity(0.2);
+        backgroundColor = AppTheme.infoColor.withValues(alpha: 0.2);
         textColor = AppTheme.infoColor;
         break;
       case 'completed':
-        backgroundColor = AppTheme.successColor.withOpacity(0.2);
+        backgroundColor = AppTheme.successColor.withValues(alpha: 0.2);
         textColor = AppTheme.successColor;
         break;
       case 'rejected':
-        backgroundColor = AppTheme.errorColor.withOpacity(0.2);
+        backgroundColor = AppTheme.errorColor.withValues(alpha: 0.2);
         textColor = AppTheme.errorColor;
         break;
       default:
-        backgroundColor = AppTheme.mediumGray.withOpacity(0.2);
+        backgroundColor = AppTheme.mediumGray.withValues(alpha: 0.2);
         textColor = AppTheme.mediumGray;
     }
 

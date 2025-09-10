@@ -3,12 +3,14 @@
 class PortfolioModel {
   final String id;
   final String fundiId;
+  final String fundiName;
   final String title;
   final String description;
   final List<String> imageUrls;
   final List<String> videoUrls;
   final List<String> skills;
   final String category;
+  final String? location;
   final double? budget;
   final String? budgetType;
   final int? durationDays;
@@ -20,12 +22,14 @@ class PortfolioModel {
   const PortfolioModel({
     required this.id,
     required this.fundiId,
+    required this.fundiName,
     required this.title,
     required this.description,
     required this.imageUrls,
     required this.videoUrls,
     required this.skills,
     required this.category,
+    this.location,
     this.budget,
     this.budgetType,
     this.durationDays,
@@ -73,17 +77,22 @@ class PortfolioModel {
   /// Check if portfolio has media
   bool get hasMedia => hasImages || hasVideos;
 
+  /// Get images (alias for imageUrls)
+  List<String> get images => imageUrls;
+
   /// Create PortfolioModel from JSON
   factory PortfolioModel.fromJson(Map<String, dynamic> json) {
     return PortfolioModel(
       id: json['id'] as String,
       fundiId: json['fundi_id'] as String,
+      fundiName: json['fundi_name'] as String? ?? 'Unknown Fundi',
       title: json['title'] as String,
       description: json['description'] as String,
       imageUrls: List<String>.from(json['image_urls'] ?? []),
       videoUrls: List<String>.from(json['video_urls'] ?? []),
       skills: List<String>.from(json['skills'] ?? []),
       category: json['category'] as String,
+      location: json['location'] as String?,
       budget: json['budget'] as double?,
       budgetType: json['budget_type'] as String?,
       durationDays: json['duration_days'] as int?,
@@ -99,12 +108,14 @@ class PortfolioModel {
     return {
       'id': id,
       'fundi_id': fundiId,
+      'fundi_name': fundiName,
       'title': title,
       'description': description,
       'image_urls': imageUrls,
       'video_urls': videoUrls,
       'skills': skills,
       'category': category,
+      'location': location,
       'budget': budget,
       'budget_type': budgetType,
       'duration_days': durationDays,
@@ -119,12 +130,14 @@ class PortfolioModel {
   PortfolioModel copyWith({
     String? id,
     String? fundiId,
+    String? fundiName,
     String? title,
     String? description,
     List<String>? imageUrls,
     List<String>? videoUrls,
     List<String>? skills,
     String? category,
+    String? location,
     double? budget,
     String? budgetType,
     int? durationDays,
@@ -136,12 +149,14 @@ class PortfolioModel {
     return PortfolioModel(
       id: id ?? this.id,
       fundiId: fundiId ?? this.fundiId,
+      fundiName: fundiName ?? this.fundiName,
       title: title ?? this.title,
       description: description ?? this.description,
       imageUrls: imageUrls ?? this.imageUrls,
       videoUrls: videoUrls ?? this.videoUrls,
       skills: skills ?? this.skills,
       category: category ?? this.category,
+      location: location ?? this.location,
       budget: budget ?? this.budget,
       budgetType: budgetType ?? this.budgetType,
       durationDays: durationDays ?? this.durationDays,
@@ -193,4 +208,3 @@ enum PortfolioCategory {
     return PortfolioCategory.general;
   }
 }
-

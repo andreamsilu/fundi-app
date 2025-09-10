@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../services/messaging_service.dart';
 import '../../../core/utils/logger.dart';
@@ -189,8 +190,9 @@ class MessagingProvider extends ChangeNotifier {
 
   /// Load more messages (pagination)
   Future<void> loadMoreMessages() async {
-    if (_isLoadingMore || _currentPage >= _totalPages || _currentChatId == null)
+    if (_isLoadingMore || _currentPage >= _totalPages || _currentChatId == null) {
       return;
+    }
 
     _setLoadingMore(true);
 

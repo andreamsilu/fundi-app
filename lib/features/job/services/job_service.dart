@@ -259,7 +259,7 @@ class JobService {
   }
 
   /// Apply for a job
-  Future<ApplicationResult> applyForJob({
+  Future<ApplicationResult> applyForJob(String id, {
     required String jobId,
     required String message,
     required double proposedBudget,

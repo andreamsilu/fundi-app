@@ -1,3 +1,5 @@
+import '../../../core/theme/app_theme.dart';
+
 /// Settings model representing user preferences and app configuration
 /// Manages all user-customizable settings
 class SettingsModel {
@@ -11,6 +13,17 @@ class SettingsModel {
   final Map<String, dynamic>? customSettings;
   final DateTime updatedAt;
 
+  // Additional properties for compatibility with screens
+  final bool pushNotifications;
+  final bool emailNotifications;
+  final bool jobAlerts;
+  final bool messageNotifications;
+  final String profileVisibility;
+  final bool showOnlineStatus;
+  final bool locationSharing;
+  final String languageString;
+  final AppTheme theme;
+
   const SettingsModel({
     required this.userId,
     required this.notifications,
@@ -21,32 +34,52 @@ class SettingsModel {
     required this.payment,
     this.customSettings,
     required this.updatedAt,
+    this.pushNotifications = true,
+    this.emailNotifications = true,
+    this.jobAlerts = true,
+    this.messageNotifications = true,
+    this.profileVisibility = 'public',
+    this.showOnlineStatus = true,
+    this.locationSharing = false,
+    this.languageString = 'English',
+    this.theme = AppTheme.light,
   });
 
   /// Create SettingsModel from JSON
   factory SettingsModel.fromJson(Map<String, dynamic> json) {
     return SettingsModel(
-      userId: json['user_id'] as String,
+      userId: json['user_id'] as String? ?? '',
       notifications: NotificationSettings.fromJson(
-        json['notifications'] as Map<String, dynamic>,
+        json['notifications'] as Map<String, dynamic>? ?? {},
       ),
       privacy: PrivacySettings.fromJson(
-        json['privacy'] as Map<String, dynamic>,
+        json['privacy'] as Map<String, dynamic>? ?? {},
       ),
       display: DisplaySettings.fromJson(
-        json['display'] as Map<String, dynamic>,
+        json['display'] as Map<String, dynamic>? ?? {},
       ),
       language: LanguageSettings.fromJson(
-        json['language'] as Map<String, dynamic>,
+        json['language'] as Map<String, dynamic>? ?? {},
       ),
       location: LocationSettings.fromJson(
-        json['location'] as Map<String, dynamic>,
+        json['location'] as Map<String, dynamic>? ?? {},
       ),
       payment: PaymentSettings.fromJson(
-        json['payment'] as Map<String, dynamic>,
+        json['payment'] as Map<String, dynamic>? ?? {},
       ),
       customSettings: json['custom_settings'] as Map<String, dynamic>?,
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : DateTime.now(),
+      pushNotifications: json['push_notifications'] as bool? ?? true,
+      emailNotifications: json['email_notifications'] as bool? ?? true,
+      jobAlerts: json['job_alerts'] as bool? ?? true,
+      messageNotifications: json['message_notifications'] as bool? ?? true,
+      profileVisibility: json['profile_visibility'] as String? ?? 'public',
+      showOnlineStatus: json['show_online_status'] as bool? ?? true,
+      locationSharing: json['location_sharing'] as bool? ?? false,
+      languageString: json['language_string'] as String? ?? 'English',
+      theme: json['theme'] == 'dark' ? AppTheme.dark : AppTheme.light,
     );
   }
 
@@ -76,6 +109,15 @@ class SettingsModel {
     PaymentSettings? payment,
     Map<String, dynamic>? customSettings,
     DateTime? updatedAt,
+    bool? pushNotifications,
+    bool? emailNotifications,
+    bool? jobAlerts,
+    bool? messageNotifications,
+    String? profileVisibility,
+    bool? showOnlineStatus,
+    bool? locationSharing,
+    String? languageString,
+    AppTheme? theme,
   }) {
     return SettingsModel(
       userId: userId ?? this.userId,
@@ -87,6 +129,15 @@ class SettingsModel {
       payment: payment ?? this.payment,
       customSettings: customSettings ?? this.customSettings,
       updatedAt: updatedAt ?? this.updatedAt,
+      pushNotifications: pushNotifications ?? this.pushNotifications,
+      emailNotifications: emailNotifications ?? this.emailNotifications,
+      jobAlerts: jobAlerts ?? this.jobAlerts,
+      messageNotifications: messageNotifications ?? this.messageNotifications,
+      profileVisibility: profileVisibility ?? this.profileVisibility,
+      showOnlineStatus: showOnlineStatus ?? this.showOnlineStatus,
+      locationSharing: locationSharing ?? this.locationSharing,
+      languageString: languageString ?? this.languageString,
+      theme: theme ?? this.theme,
     );
   }
 
@@ -102,6 +153,20 @@ class SettingsModel {
   @override
   String toString() {
     return 'SettingsModel(userId: $userId, updatedAt: $updatedAt)';
+  }
+
+  /// Create default settings
+  static SettingsModel defaultSettings() {
+    return SettingsModel(
+      userId: '',
+      notifications: const NotificationSettings(),
+      privacy: const PrivacySettings(),
+      display: const DisplaySettings(),
+      language: const LanguageSettings(),
+      location: const LocationSettings(),
+      payment: const PaymentSettings(),
+      updatedAt: DateTime.now(),
+    );
   }
 }
 
@@ -370,4 +435,3 @@ class PaymentSettings {
     };
   }
 }
-

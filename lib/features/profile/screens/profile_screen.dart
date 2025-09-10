@@ -217,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       .map(
                         (skill) => Chip(
                           label: Text(skill),
-                          backgroundColor: context.primaryColor.withOpacity(
+                          backgroundColor: context.primaryColor.withValues(alpha:
                             0.1,
                           ),
                           labelStyle: TextStyle(color: context.primaryColor),
@@ -274,14 +274,14 @@ class _ProfileScreenState extends State<ProfileScreen>
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [context.primaryColor, context.primaryColor.withOpacity(0.8)],
+          colors: [context.primaryColor, context.primaryColor.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: context.primaryColor.withOpacity(0.3),
+            color: context.primaryColor.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -331,7 +331,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -350,8 +350,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 decoration: BoxDecoration(
                   color: _profile!.isVerified
-                      ? Colors.green.withOpacity(0.2)
-                      : Colors.orange.withOpacity(0.2),
+                      ? Colors.green.withValues(alpha: 0.2)
+                      : Colors.orange.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

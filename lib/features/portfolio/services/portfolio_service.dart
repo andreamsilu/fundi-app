@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
 import '../models/portfolio_model.dart';
@@ -127,7 +129,7 @@ class PortfolioService {
     String? budgetType,
     int? durationDays,
     DateTime? completedAt,
-    Map<String, dynamic>? metadata,
+    Map<String, dynamic>? metadata, required List<String> images, required String clientName, required String address, required List<File> videos,
   }) async {
     try {
       Logger.apiRequest('POST', '/portfolios');

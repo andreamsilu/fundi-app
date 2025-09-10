@@ -349,7 +349,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: context.primaryColor.withOpacity(0.3),
+                color: context.primaryColor.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -462,7 +462,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           ),
           borderRadius: BorderRadius.circular(12),
           color: isSelected
-              ? context.primaryColor.withOpacity(0.1)
+              ? context.primaryColor.withValues(alpha: 0.1)
               : Colors.transparent,
         ),
         child: Column(

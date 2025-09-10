@@ -124,7 +124,7 @@ class _AnimatedLoaderState extends State<AnimatedLoader>
         width: widget.size,
         height: widget.size,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           shape: BoxShape.circle,
         ),
         child: Center(

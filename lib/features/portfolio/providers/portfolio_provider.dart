@@ -160,6 +160,10 @@ class PortfolioProvider extends ChangeNotifier {
         durationDays: durationDays,
         completedAt: completedAt,
         metadata: metadata,
+        images: imageUrls ?? [],
+        clientName: 'Client Name', // TODO: Get from user context
+        address: 'Address', // TODO: Get from user context
+        videos: [], // TODO: Convert videoUrls to File objects
       );
 
       if (result.success && result.portfolio != null) {

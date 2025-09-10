@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fundi/features/auth/services/auth_service.dart';
+import 'package:fundi/features/job/models/job_model.dart';
+import 'package:fundi/features/messaging/models/chat_model.dart';
+import 'package:fundi/features/portfolio/models/portfolio_model.dart';
 import 'package:provider/provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
@@ -9,6 +12,15 @@ import '../../features/auth/screens/otp_verification_screen.dart';
 import '../../features/auth/screens/new_password_screen.dart';
 import '../../features/dashboard/screens/main_dashboard.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/job/screens/job_creation_screen.dart';
+import '../../features/job/screens/job_details_screen.dart';
+import '../../features/portfolio/screens/portfolio_creation_screen.dart';
+import '../../features/portfolio/screens/portfolio_gallery_screen.dart';
+import '../../features/portfolio/screens/portfolio_details_screen.dart';
+import '../../features/messaging/screens/chat_screen.dart';
+import '../../features/search/screens/search_screen.dart';
+import '../../features/notifications/screens/notifications_screen.dart';
+import '../../features/settings/screens/settings_screen.dart';
 
 /// Centralized routing configuration for the Fundi App
 /// Handles route definitions, navigation, and route guards
@@ -21,21 +33,38 @@ class AppRouter {
   static const String newPassword = '/new-password';
   static const String dashboard = '/dashboard';
   static const String profile = '/profile';
+  static const String createJob = '/create-job';
+  static const String jobDetails = '/job-details';
+  static const String createPortfolio = '/create-portfolio';
+  static const String portfolioGallery = '/portfolio-gallery';
+  static const String portfolioDetails = '/portfolio-details';
+  static const String chat = '/chat';
+  static const String search = '/search';
+  static const String notifications = '/notifications';
+  static const String settings = '/settings';
   static const String home = '/';
 
   /// Route generation function for named routes
   static Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case login:
+    final routeName = settings.name;
+    if (routeName == null) {
+      return _buildRoute(
+        const Scaffold(body: Center(child: Text('Route not found'))),
+        settings,
+      );
+    }
+
+    switch (routeName) {
+      case '/login':
         return _buildRoute(const LoginScreen(), settings);
 
-      case register:
+      case '/register':
         return _buildRoute(const RegisterScreen(), settings);
 
-      case forgotPassword:
+      case '/forgot-password':
         return _buildRoute(const ForgotPasswordScreen(), settings);
 
-      case otpVerification:
+      case '/otp-verification':
         final args = settings.arguments as Map<String, dynamic>?;
         return _buildRoute(
           OtpVerificationScreen(
@@ -46,7 +75,7 @@ class AppRouter {
           settings,
         );
 
-      case newPassword:
+      case '/new-password':
         final args = settings.arguments as Map<String, dynamic>?;
         return _buildRoute(
           NewPasswordScreen(
@@ -56,14 +85,62 @@ class AppRouter {
           settings,
         );
 
-      case dashboard:
+      case '/dashboard':
         return _buildRoute(const MainDashboard(), settings);
 
-      case profile:
+      case '/profile':
         return _buildRoute(
           ProfileScreen(userId: _getCurrentUserId(settings)),
           settings,
         );
+
+      case '/create-job':
+        return _buildRoute(const JobCreationScreen(), settings);
+
+      case '/job-details':
+        final args = settings.arguments as JobModel?;
+        if (args == null) {
+          return _buildRoute(
+            const Scaffold(body: Center(child: Text('Job not found'))),
+            settings,
+          );
+        }
+        return _buildRoute(JobDetailsScreen(job: args), settings);
+
+      case '/create-portfolio':
+        return _buildRoute(const PortfolioCreationScreen(), settings);
+
+      case '/portfolio-gallery':
+        return _buildRoute(const PortfolioGalleryScreen(), settings);
+
+      case '/portfolio-details':
+        final args = settings.arguments as PortfolioModel?;
+        if (args == null) {
+          return _buildRoute(
+            const Scaffold(body: Center(child: Text('Portfolio not found'))),
+            settings,
+          );
+        }
+        return _buildRoute(PortfolioDetailsScreen(portfolio: args), settings);
+
+      case '/chat':
+        final args = settings.arguments as ChatModel?;
+        if (args == null) {
+          return _buildRoute(
+            const Scaffold(body: Center(child: Text('Chat not found'))),
+            settings,
+          );
+        }
+        return _buildRoute(ChatScreen(chat: args), settings);
+
+      case '/search':
+        return _buildRoute(const SearchScreen(), settings);
+
+      case '/notifications':
+        return _buildRoute(const NotificationsScreen(), settings);
+
+      case '/settings':
+        return _buildRoute(const SettingsScreen(), settings);
 
       default:
         return _buildRoute(

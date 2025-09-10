@@ -4,6 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 /// Application theme configuration based on the green color palette
 /// Implements the design system defined in colors.md
 class AppTheme {
+  // Theme enum for settings
+  static const AppTheme light = AppTheme._('light');
+  static const AppTheme dark = AppTheme._('dark');
+
+  const AppTheme._(this.name);
+  final String name;
   // Color Palette - Based on colors.md specifications
   static const Color primaryGreen = Color(0xFF2E7D32); // Deep Green
   static const Color accentGreen = Color(0xFF4CAF50); // Vibrant Green
@@ -31,12 +37,10 @@ class AppTheme {
         primary: primaryGreen,
         secondary: accentGreen,
         surface: white,
-        background: lightGray,
         error: errorColor,
         onPrimary: white,
         onSecondary: white,
         onSurface: darkGray,
-        onBackground: darkGray,
         onError: white,
       ),
 
@@ -259,7 +263,6 @@ class AppTheme {
         primary: accentGreen,
         secondary: lightGreen,
         surface: Color(0xFF1E1E1E),
-        background: Color(0xFF121212),
         error: errorColor,
       ),
     );
@@ -270,7 +273,7 @@ class AppTheme {
 extension AppColors on BuildContext {
   Color get primaryColor => Theme.of(this).colorScheme.primary;
   Color get accentColor => Theme.of(this).colorScheme.secondary;
-  Color get backgroundColor => Theme.of(this).colorScheme.background;
+  Color get backgroundColor => Theme.of(this).colorScheme.surface;
   Color get surfaceColor => Theme.of(this).colorScheme.surface;
   Color get errorColor => Theme.of(this).colorScheme.error;
   Color get successColor => AppTheme.successColor;

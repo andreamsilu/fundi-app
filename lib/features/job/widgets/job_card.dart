@@ -167,7 +167,7 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.lightGreen.withOpacity(0.2),
+                                    color: AppTheme.lightGreen.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: AppTheme.lightGreen,
@@ -275,19 +275,19 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
 
     switch (widget.job.status) {
       case JobStatus.open:
-        backgroundColor = AppTheme.successColor.withOpacity(0.1);
+        backgroundColor = AppTheme.successColor.withValues(alpha: 0.1);
         textColor = AppTheme.successColor;
         break;
       case JobStatus.inProgress:
-        backgroundColor = AppTheme.infoColor.withOpacity(0.1);
+        backgroundColor = AppTheme.infoColor.withValues(alpha: 0.1);
         textColor = AppTheme.infoColor;
         break;
       case JobStatus.completed:
-        backgroundColor = AppTheme.mediumGray.withOpacity(0.1);
+        backgroundColor = AppTheme.mediumGray.withValues(alpha: 0.1);
         textColor = AppTheme.mediumGray;
         break;
       case JobStatus.cancelled:
-        backgroundColor = AppTheme.errorColor.withOpacity(0.1);
+        backgroundColor = AppTheme.errorColor.withValues(alpha: 0.1);
         textColor = AppTheme.errorColor;
         break;
     }

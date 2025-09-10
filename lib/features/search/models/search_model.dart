@@ -171,6 +171,11 @@ class SearchFilters {
     return const SearchFilters();
   }
 
+  /// Create empty SearchFilters
+  static SearchFilters empty() {
+    return const SearchFilters();
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -223,6 +228,8 @@ class SearchFilters {
 
 /// Search result model
 class SearchResult<T> {
+  final bool success;
+  final String? message;
   final List<T> items;
   final int totalCount;
   final int totalPages;
@@ -232,6 +239,8 @@ class SearchResult<T> {
   final Map<String, dynamic>? metadata;
 
   const SearchResult({
+    required this.success,
+    this.message,
     required this.items,
     required this.totalCount,
     required this.totalPages,
@@ -256,12 +265,16 @@ class SearchResult<T> {
     T Function(Map<String, dynamic>) fromJsonT,
   ) {
     return SearchResult<T>(
-      items: (json['items'] as List)
-          .map((item) => fromJsonT(item as Map<String, dynamic>))
-          .toList(),
-      totalCount: json['total_count'] as int,
-      totalPages: json['total_pages'] as int,
-      currentPage: json['current_page'] as int,
+      success: json['success'] as bool? ?? true,
+      message: json['message'] as String?,
+      items:
+          (json['items'] as List?)
+              ?.map((item) => fromJsonT(item as Map<String, dynamic>))
+              .toList() ??
+          [],
+      totalCount: json['total_count'] as int? ?? 0,
+      totalPages: json['total_pages'] as int? ?? 1,
+      currentPage: json['current_page'] as int? ?? 1,
       hasMore: json['has_more'] as bool? ?? false,
       nextCursor: json['next_cursor'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
@@ -271,6 +284,8 @@ class SearchResult<T> {
   /// Convert SearchResult to JSON
   Map<String, dynamic> toJson(Map<String, dynamic> Function(T) toJsonT) {
     return {
+      'success': success,
+      'message': message,
       'items': items.map((item) => toJsonT(item)).toList(),
       'total_count': totalCount,
       'total_pages': totalPages,
@@ -280,6 +295,29 @@ class SearchResult<T> {
       'metadata': metadata,
     };
   }
+}
+
+/// Specific search result for jobs and portfolios
+class JobPortfolioSearchResult {
+  final bool success;
+  final String? message;
+  final List<dynamic> jobs;
+  final List<dynamic> portfolios;
+  final int totalJobs;
+  final int totalPortfolios;
+  final int currentPage;
+  final int totalPages;
+
+  const JobPortfolioSearchResult({
+    required this.success,
+    this.message,
+    this.jobs = const [],
+    this.portfolios = const [],
+    this.totalJobs = 0,
+    this.totalPortfolios = 0,
+    this.currentPage = 1,
+    this.totalPages = 1,
+  });
 }
 
 /// Search suggestion model
@@ -402,4 +440,3 @@ enum SortOption {
     }
   }
 }
-

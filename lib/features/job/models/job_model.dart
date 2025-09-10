@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Job model representing job postings and applications
 class JobModel {
   final String id;
@@ -254,6 +256,19 @@ enum JobStatus {
         return 'Cancelled';
     }
   }
+
+  Color toColor() {
+    switch (this) {
+      case JobStatus.open:
+        return Colors.green;
+      case JobStatus.inProgress:
+        return Colors.orange;
+      case JobStatus.completed:
+        return Colors.blue;
+      case JobStatus.cancelled:
+        return Colors.red;
+    }
+  }
 }
 
 /// Job application model
@@ -370,6 +385,3 @@ enum ApplicationStatus {
     }
   }
 }
-
-
-

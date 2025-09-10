@@ -58,6 +58,28 @@ class MessageModel {
     return 'Sent';
   }
 
+  /// Get sender name (placeholder - should be resolved from user data)
+  String get senderName => 'User $senderId';
+
+  /// Get formatted creation time
+  String get createdAtDisplay {
+    final now = DateTime.now();
+    final difference = now.difference(sentAt);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  /// Alias for sentAt to match expected property name
+  DateTime get createdAt => sentAt;
+
   /// Create MessageModel from JSON
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     return MessageModel(
@@ -154,114 +176,6 @@ class MessageModel {
   }
 }
 
-/// Chat model representing a conversation between users
-class ChatModel {
-  final String id;
-  final String participant1Id;
-  final String participant2Id;
-  final String? lastMessageId;
-  final String? lastMessageContent;
-  final MessageType? lastMessageType;
-  final DateTime? lastMessageAt;
-  final int unreadCount;
-  final bool isActive;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final Map<String, dynamic>? metadata;
-
-  const ChatModel({
-    required this.id,
-    required this.participant1Id,
-    required this.participant2Id,
-    this.lastMessageId,
-    this.lastMessageContent,
-    this.lastMessageType,
-    this.lastMessageAt,
-    this.unreadCount = 0,
-    this.isActive = true,
-    required this.createdAt,
-    required this.updatedAt,
-    this.metadata,
-  });
-
-  /// Get the other participant's ID
-  String getOtherParticipantId(String currentUserId) {
-    return participant1Id == currentUserId ? participant2Id : participant1Id;
-  }
-
-  /// Check if chat has unread messages
-  bool get hasUnreadMessages => unreadCount > 0;
-
-  /// Get last message preview
-  String get lastMessagePreview {
-    if (lastMessageContent == null) return 'No messages yet';
-
-    switch (lastMessageType) {
-      case MessageType.image:
-        return '📷 Image';
-      case MessageType.file:
-        return '📎 File';
-      case MessageType.text:
-      default:
-        return lastMessageContent!;
-    }
-  }
-
-  /// Create ChatModel from JSON
-  factory ChatModel.fromJson(Map<String, dynamic> json) {
-    return ChatModel(
-      id: json['id'] as String,
-      participant1Id: json['participant1_id'] as String,
-      participant2Id: json['participant2_id'] as String,
-      lastMessageId: json['last_message_id'] as String?,
-      lastMessageContent: json['last_message_content'] as String?,
-      lastMessageType: json['last_message_type'] != null
-          ? MessageType.fromString(json['last_message_type'] as String)
-          : null,
-      lastMessageAt: json['last_message_at'] != null
-          ? DateTime.parse(json['last_message_at'] as String)
-          : null,
-      unreadCount: json['unread_count'] as int? ?? 0,
-      isActive: json['is_active'] as bool? ?? true,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      metadata: json['metadata'] as Map<String, dynamic>?,
-    );
-  }
-
-  /// Convert ChatModel to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'participant1_id': participant1Id,
-      'participant2_id': participant2Id,
-      'last_message_id': lastMessageId,
-      'last_message_content': lastMessageContent,
-      'last_message_type': lastMessageType?.value,
-      'last_message_at': lastMessageAt?.toIso8601String(),
-      'unread_count': unreadCount,
-      'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-      'metadata': metadata,
-    };
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is ChatModel && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
-
-  @override
-  String toString() {
-    return 'ChatModel(id: $id, participants: $participant1Id, $participant2Id)';
-  }
-}
-
 /// Message types
 enum MessageType {
   text('text'),
@@ -284,4 +198,3 @@ enum MessageType {
     }
   }
 }
-

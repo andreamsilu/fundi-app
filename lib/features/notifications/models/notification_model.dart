@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Notification model representing app notifications
 /// Supports different notification types and actions
 class NotificationModel {
@@ -253,5 +255,50 @@ enum NotificationType {
         return 'Promotion';
     }
   }
-}
 
+  Color get color {
+    switch (this) {
+      case NotificationType.jobApplication:
+        return Colors.blue;
+      case NotificationType.jobAccepted:
+        return Colors.green;
+      case NotificationType.jobRejected:
+        return Colors.red;
+      case NotificationType.jobCompleted:
+        return Colors.green;
+      case NotificationType.message:
+        return Colors.blue;
+      case NotificationType.payment:
+        return Colors.green;
+      case NotificationType.verification:
+        return Colors.orange;
+      case NotificationType.system:
+        return Colors.grey;
+      case NotificationType.promotion:
+        return Colors.purple;
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case NotificationType.jobApplication:
+        return Icons.work_outline;
+      case NotificationType.jobAccepted:
+        return Icons.check_circle_outline;
+      case NotificationType.jobRejected:
+        return Icons.cancel_outlined;
+      case NotificationType.jobCompleted:
+        return Icons.celebration_outlined;
+      case NotificationType.message:
+        return Icons.message_outlined;
+      case NotificationType.payment:
+        return Icons.payment_outlined;
+      case NotificationType.verification:
+        return Icons.verified_outlined;
+      case NotificationType.system:
+        return Icons.notifications_outlined;
+      case NotificationType.promotion:
+        return Icons.local_offer_outlined;
+    }
+  }
+}

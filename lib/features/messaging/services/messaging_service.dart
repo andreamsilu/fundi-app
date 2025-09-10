@@ -1,6 +1,7 @@
 import 'dart:io';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
+import '../models/chat_model.dart';
 import '../models/message_model.dart';
 
 /// Messaging service for handling chat and message operations

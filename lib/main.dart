@@ -8,6 +8,9 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/job/providers/job_provider.dart';
 import 'features/portfolio/providers/portfolio_provider.dart';
 import 'features/messaging/providers/messaging_provider.dart';
+import 'features/search/providers/search_provider.dart';
+import 'features/notifications/providers/notification_provider.dart';
+import 'features/settings/providers/settings_provider.dart';
 
 /// Main entry point of the Fundi App
 /// Initializes the app with proper theme, providers, and routing
@@ -28,34 +31,50 @@ class FundiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(
-      'Creating MultiProvider with ${AppConfig.providers.length} providers',
-    );
+    // Creating MultiProvider with providers
 
     // Create providers directly for debugging
     final providers = [
       ChangeNotifierProvider(
         create: (_) {
-          print('Creating AuthProvider instance');
+          // Creating AuthProvider instance
           return AuthProvider();
         },
       ),
       ChangeNotifierProvider(
         create: (_) {
-          print('Creating JobProvider instance');
+          // Creating JobProvider instance
           return JobProvider();
         },
       ),
       ChangeNotifierProvider(
         create: (_) {
-          print('Creating PortfolioProvider instance');
+          // Creating PortfolioProvider instance
           return PortfolioProvider();
         },
       ),
       ChangeNotifierProvider(
         create: (_) {
-          print('Creating MessagingProvider instance');
+          // Creating MessagingProvider instance
           return MessagingProvider();
+        },
+      ),
+      ChangeNotifierProvider(
+        create: (_) {
+          // Creating SearchProvider instance
+          return SearchProvider();
+        },
+      ),
+      ChangeNotifierProvider(
+        create: (_) {
+          // Creating NotificationProvider instance
+          return NotificationProvider();
+        },
+      ),
+      ChangeNotifierProvider(
+        create: (_) {
+          // Creating SettingsProvider instance
+          return SettingsProvider();
         },
       ),
     ];
@@ -250,11 +269,11 @@ class ProviderTestWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('ProviderTestWidget build called');
+    // ProviderTestWidget build called
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      print('SUCCESS: AuthProvider found: ${authProvider.runtimeType}');
+      // SUCCESS: AuthProvider found
 
       return Scaffold(
         body: Center(
@@ -277,7 +296,7 @@ class ProviderTestWidget extends StatelessWidget {
         ),
       );
     } catch (e) {
-      print('ERROR: AuthProvider not found: $e');
+      // ERROR: AuthProvider not found
       return Scaffold(
         body: Center(
           child: Column(

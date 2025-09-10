@@ -7,7 +7,9 @@ import '../../features/auth/providers/auth_provider.dart';
 import '../../features/job/providers/job_provider.dart';
 import '../../features/portfolio/providers/portfolio_provider.dart';
 import '../../features/messaging/providers/messaging_provider.dart';
-import 'app_initializer.dart';
+import '../../features/search/providers/search_provider.dart';
+import '../../features/notifications/providers/notification_provider.dart';
+import '../../features/settings/providers/settings_provider.dart';
 
 /// Application configuration and setup
 /// Centralizes app initialization, providers, and theme configuration
@@ -28,6 +30,9 @@ class AppConfig {
     ChangeNotifierProvider(create: (_) => JobProvider()),
     ChangeNotifierProvider(create: (_) => PortfolioProvider()),
     ChangeNotifierProvider(create: (_) => MessagingProvider()),
+    ChangeNotifierProvider(create: (_) => SearchProvider()),
+    ChangeNotifierProvider(create: (_) => NotificationProvider()),
+    ChangeNotifierProvider(create: (_) => SettingsProvider()),
   ];
 
   /// Get the app theme configuration

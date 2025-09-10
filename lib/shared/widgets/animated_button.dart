@@ -114,7 +114,7 @@ class _AnimatedButtonState extends State<AnimatedButton>
                   boxShadow: widget.type == ButtonType.primary && isEnabled
                       ? [
                           BoxShadow(
-                            color: AppTheme.primaryGreen.withOpacity(0.3),
+                            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -232,7 +232,7 @@ class _AnimatedButtonState extends State<AnimatedButton>
   Color _getBackgroundColor(BuildContext context, bool isEnabled) {
     if (widget.backgroundColor != null) return widget.backgroundColor!;
 
-    if (!isEnabled) return AppTheme.mediumGray.withOpacity(0.3);
+    if (!isEnabled) return AppTheme.mediumGray.withValues(alpha: 0.3);
 
     switch (widget.type) {
       case ButtonType.primary:

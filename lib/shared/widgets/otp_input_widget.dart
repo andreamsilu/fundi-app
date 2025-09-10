@@ -151,8 +151,8 @@ class _OtpInputWidgetState extends State<OtpInputWidget> {
     }
   }
 
-  void _onKeyEvent(RawKeyEvent event, int index) {
-    if (event is RawKeyDownEvent) {
+  void _onKeyEvent(KeyEvent event, int index) {
+    if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.backspace) {
         if (_controllers[index].text.isEmpty && index > 0) {
           _focusNodes[index - 1].requestFocus();
@@ -191,13 +191,13 @@ class _OtpInputWidgetState extends State<OtpInputWidget> {
         borderRadius: BorderRadius.circular(12),
         color: widget.enabled
             ? (_focusNodes[index].hasFocus
-                  ? context.primaryColor.withOpacity(0.05)
+                  ? context.primaryColor.withValues(alpha: 0.05)
                   : Colors.white)
-            : AppTheme.lightGray.withOpacity(0.3),
+            : AppTheme.lightGray.withValues(alpha: 0.3),
       ),
-      child: RawKeyboardListener(
+      child: KeyboardListener(
         focusNode: FocusNode(),
-        onKey: (event) => _onKeyEvent(event, index),
+        onKeyEvent: (event) => _onKeyEvent(event, index),
         child: TextFormField(
           controller: _controllers[index],
           focusNode: _focusNodes[index],

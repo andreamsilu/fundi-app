@@ -243,6 +243,7 @@ class JobProvider extends ChangeNotifier {
 
   /// Apply for a job
   Future<bool> applyForJob({
+    required String id,
     required String jobId,
     required String message,
     required double proposedBudget,
@@ -254,7 +255,8 @@ class JobProvider extends ChangeNotifier {
 
     try {
       final result = await _jobService.applyForJob(
-        jobId: jobId,
+        id,
+        jobId: id,
         message: message,
         proposedBudget: proposedBudget,
         proposedBudgetType: proposedBudgetType,
@@ -264,7 +266,7 @@ class JobProvider extends ChangeNotifier {
       if (result.success) {
         Logger.info(
           'Job application submitted successfully',
-          data: {'jobId': jobId},
+          data: {'jobId': id},
         );
         return true;
       } else {

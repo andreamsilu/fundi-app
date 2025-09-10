@@ -273,7 +273,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: context.primaryColor.withOpacity(0.1),
+            color: context.primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Icon(Icons.lock_reset, size: 40, color: context.primaryColor),
@@ -307,7 +307,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.lightGray.withOpacity(0.3),
+            color: AppTheme.lightGray.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -333,9 +333,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
+        color: Colors.green.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
