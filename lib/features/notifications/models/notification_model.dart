@@ -254,3 +254,4 @@ enum NotificationType {
     }
   }
 }
+

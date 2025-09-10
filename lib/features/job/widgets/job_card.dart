@@ -354,3 +354,5 @@ class CompactJobCard extends StatelessWidget {
   }
 }
 
+
+

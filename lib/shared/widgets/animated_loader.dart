@@ -362,3 +362,4 @@ enum LoaderType { circular, dots, pulse, bounce, wave }
 
 /// Skeleton types
 enum SkeletonType { text, circle, rectangle, card }
+

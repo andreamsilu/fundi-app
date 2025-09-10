@@ -19,3 +19,4 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 }
+

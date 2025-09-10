@@ -292,3 +292,5 @@ class SkeletonLoader extends StatelessWidget {
   }
 }
 
+
+

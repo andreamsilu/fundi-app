@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/dashboard/screens/main_dashboard.dart';
+import '../../features/onboarding/screens/onboarding_screen.dart';
+import '../../features/onboarding/services/onboarding_service.dart';
 import '../../shared/widgets/loading_widget.dart';
 
 /// App initializer that handles authentication state and routing
@@ -15,24 +17,57 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
+  bool _isCheckingOnboarding = true;
+  bool _hasCompletedOnboarding = false;
+
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    _checkOnboardingStatus();
   }
 
-  /// Initialize the app by checking authentication state
-  Future<void> _initializeApp() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.initialize();
+  Future<void> _checkOnboardingStatus() async {
+    final hasCompleted = await OnboardingService.hasCompletedOnboarding();
+    if (mounted) {
+      setState(() {
+        _hasCompletedOnboarding = hasCompleted;
+        _isCheckingOnboarding = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    print('AppInitializer build called');
+
+    // Show loading screen while checking onboarding status
+    if (_isCheckingOnboarding) {
+      return const Scaffold(
+        body: LoadingWidget(message: 'Initializing Fundi App...', size: 50),
+      );
+    }
+
+    // Show onboarding if not completed
+    if (!_hasCompletedOnboarding) {
+      print('User has not completed onboarding, showing OnboardingScreen');
+      return const OnboardingScreen();
+    }
+
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
+        print('Consumer<AuthProvider> builder called');
+
+        // Initialize auth provider on first build
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (mounted) {
+            print('Initializing AuthProvider');
+            await authProvider.initialize();
+          }
+        });
+
         // Show loading screen while initializing
         if (authProvider.isLoading) {
+          print('Showing loading screen');
           return const Scaffold(
             body: LoadingWidget(message: 'Initializing Fundi App...', size: 50),
           );
@@ -40,8 +75,10 @@ class _AppInitializerState extends State<AppInitializer> {
 
         // Route to appropriate screen based on authentication status
         if (authProvider.isAuthenticated) {
+          print('User is authenticated, showing MainDashboard');
           return const MainDashboard();
         } else {
+          print('User is not authenticated, showing LoginScreen');
           return const LoginScreen();
         }
       },

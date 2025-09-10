@@ -193,3 +193,4 @@ enum PortfolioCategory {
     return PortfolioCategory.general;
   }
 }
+

@@ -50,7 +50,7 @@ class AppConfig {
   static String get initialRoute => AppRouter.home;
 
   /// Get the home widget
-  static Widget get homeWidget => const AppInitializer();
+  static Widget get homeWidget => const SizedBox.shrink(); // Not used anymore
 
   /// Get the debug banner setting
   static bool get showDebugBanner => !isDebugMode;
