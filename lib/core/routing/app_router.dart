@@ -111,7 +111,8 @@ class AppRouter {
         return _buildRoute(const PortfolioCreationScreen(), settings);
 
       case '/portfolio-gallery':
-        return _buildRoute(const PortfolioGalleryScreen(), settings);
+        final args = settings.arguments as String?;
+        return _buildRoute(PortfolioGalleryScreen(portfolioId: args ?? ''), settings);
 
       case '/portfolio-details':
         final args = settings.arguments as PortfolioModel?;
