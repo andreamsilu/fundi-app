@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/providers/auth_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/animated_card.dart';
 import '../../job/screens/job_list_screen.dart';
@@ -64,7 +64,7 @@ class _MainDashboardState extends State<MainDashboard>
         const JobListScreen(), // My Jobs - Posted jobs
         const PortfolioScreen(), // Portfolio - View fundi portfolios
         const ChatListScreen(), // Messages
-        const ProfileScreen(userId: '',), // Profile
+        const ProfileScreen(userId: ''), // Profile
       ];
     } else if (authProvider.isFundi) {
       return [
@@ -72,7 +72,7 @@ class _MainDashboardState extends State<MainDashboard>
         const JobListScreen(), // Applied Jobs - Applied jobs
         const PortfolioScreen(), // Portfolio - Manage portfolio
         const ChatListScreen(), // Messages
-        const ProfileScreen(userId: '',), // Profile
+        const ProfileScreen(userId: ''), // Profile
       ];
     } else {
       // Admin
@@ -81,7 +81,7 @@ class _MainDashboardState extends State<MainDashboard>
         const JobListScreen(), // Jobs - Job management
         const PortfolioScreen(), // Portfolio - All portfolios
         const ChatListScreen(), // Messages
-        const ProfileScreen(userId: '',), // Profile
+        const ProfileScreen(userId: ''), // Profile
       ];
     }
   }

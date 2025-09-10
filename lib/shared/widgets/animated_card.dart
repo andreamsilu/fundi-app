@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Animated card widget with smooth hover and tap effects
@@ -40,7 +41,6 @@ class _AnimatedCardState extends State<AnimatedCard>
   late Animation<double> _elevationAnimation;
   late Animation<Color?> _colorAnimation;
 
-  bool _isHovered = false;
   bool _isPressed = false;
 
   @override
@@ -111,7 +111,6 @@ class _AnimatedCardState extends State<AnimatedCard>
   void _onHoverEnter(PointerEnterEvent event) {
     if (widget.enableHoverEffect) {
       setState(() {
-        _isHovered = true;
       });
       _animationController.forward();
     }
@@ -120,7 +119,6 @@ class _AnimatedCardState extends State<AnimatedCard>
   void _onHoverExit(PointerExitEvent event) {
     if (widget.enableHoverEffect) {
       setState(() {
-        _isHovered = false;
       });
       _animationController.reverse();
     }

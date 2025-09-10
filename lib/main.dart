@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:fundi_app/features/auth/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'core/network/api_client.dart';
-import 'core/providers/auth_provider.dart';
-import 'core/providers/job_provider.dart';
-import 'core/providers/portfolio_provider.dart';
-import 'core/providers/messaging_provider.dart';
+import 'features/auth/providers/auth_provider.dart';
+import 'features/job/providers/job_provider.dart';
+import 'features/portfolio/providers/portfolio_provider.dart';
+import 'features/messaging/providers/messaging_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';

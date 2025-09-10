@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../features/portfolio/models/portfolio_model.dart';
-import '../../features/portfolio/services/portfolio_service.dart';
-import '../utils/logger.dart';
+import '../models/portfolio_model.dart';
+import '../services/portfolio_service.dart';
+import '../../../core/utils/logger.dart';
 
 /// Portfolio provider for state management
 /// Handles portfolio-related state and operations

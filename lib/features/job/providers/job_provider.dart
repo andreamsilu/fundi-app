@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../features/job/models/job_model.dart';
-import '../../features/job/services/job_service.dart';
-import '../utils/logger.dart';
+import '../models/job_model.dart';
+import '../services/job_service.dart';
+import '../../../core/utils/logger.dart';
 
 /// Job provider for state management
 /// Handles job-related state and operations

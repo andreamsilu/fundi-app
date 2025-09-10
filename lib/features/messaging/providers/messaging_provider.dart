@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../features/messaging/models/message_model.dart';
-import '../../features/messaging/services/messaging_service.dart';
-import '../utils/logger.dart';
+import '../models/message_model.dart';
+import '../services/messaging_service.dart';
+import '../../../core/utils/logger.dart';
 
 /// Messaging provider for state management
 /// Handles chat and message-related state and operations

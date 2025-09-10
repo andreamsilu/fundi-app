@@ -49,11 +49,17 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Login user
-  Future<bool> login({required String phoneNumber, required String password}) async {
+  Future<bool> login({
+    required String phoneNumber,
+    required String password,
+  }) async {
     _setLoading(true);
     _clearError();
     try {
-      final result = await _authService.login(phoneNumber: phoneNumber, password: password);
+      final result = await _authService.login(
+        phoneNumber: phoneNumber,
+        password: password,
+      );
 
       if (result.success && result.user != null) {
         _user = result.user;
@@ -188,12 +194,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Request password reset
-    Future<bool> requestPasswordReset({required String phoneNumber}) async {
+  Future<bool> requestPasswordReset({required String phoneNumber}) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final result = await _authService.requestPasswordReset(phoneNumber: phoneNumber);
+      final result = await _authService.requestPasswordReset(
+        phoneNumber: phoneNumber,
+      );
 
       if (result.success) {
         Logger.info('Password reset email sent');

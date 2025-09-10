@@ -11,20 +11,31 @@ lib/
 ├── core/                    # Core functionality shared across features
 │   ├── constants/          # App-wide constants and configuration
 │   ├── network/            # API client and network handling
-│   ├── providers/          # State management providers
 │   ├── theme/              # App theme and styling
 │   └── utils/              # Utility functions and helpers
 ├── features/               # Feature-based modules
 │   ├── auth/              # Authentication feature
 │   │   ├── models/        # User and auth-related models
+│   │   ├── providers/     # Authentication state management
 │   │   ├── services/      # Authentication services
 │   │   ├── screens/       # Auth screens (login, register, etc.)
 │   │   └── widgets/       # Auth-specific widgets
-│   └── job/               # Job management feature
-│       ├── models/        # Job and application models
-│       ├── services/      # Job-related services
-│       ├── screens/       # Job screens (list, details, create)
-│       └── widgets/       # Job-specific widgets
+│   ├── job/               # Job management feature
+│   │   ├── models/        # Job and application models
+│   │   ├── providers/     # Job state management
+│   │   ├── services/      # Job-related services
+│   │   ├── screens/       # Job screens (list, details, create)
+│   │   └── widgets/       # Job-specific widgets
+│   ├── messaging/         # Messaging feature
+│   │   ├── models/        # Message and chat models
+│   │   ├── providers/     # Messaging state management
+│   │   ├── services/      # Messaging services
+│   │   └── screens/       # Chat screens
+│   └── portfolio/         # Portfolio feature
+│       ├── models/        # Portfolio models
+│       ├── providers/     # Portfolio state management
+│       ├── services/      # Portfolio services
+│       └── screens/       # Portfolio screens
 └── shared/                # Shared UI components
     └── widgets/           # Reusable widgets
 ```
@@ -76,11 +87,13 @@ lib/
 - Component-specific styling
 - Dark mode support (ready)
 
-### State Management (`core/providers/`)
-- **AuthProvider**: Manages user authentication state
-- **JobProvider**: Handles job-related state and operations
+### State Management (Feature-based Providers)
+- **AuthProvider** (`features/auth/providers/`): Manages user authentication state
+- **JobProvider** (`features/job/providers/`): Handles job-related state and operations
+- **MessagingProvider** (`features/messaging/providers/`): Manages chat and messaging state
+- **PortfolioProvider** (`features/portfolio/providers/`): Handles portfolio state and operations
 - Provider pattern for reactive UI updates
-- Centralized state management
+- Feature-based state management for better organization
 
 ### Reusable Widgets (`shared/widgets/`)
 - **AppButton**: Consistent button styling with animations
