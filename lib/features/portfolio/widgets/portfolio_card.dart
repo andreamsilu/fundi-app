@@ -29,13 +29,15 @@ class PortfolioCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Portfolio image
-            if (portfolio.media.isNotEmpty) ...[
+            if (portfolio.images.isNotEmpty) ...[
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: Image.network(
-                    portfolio.media.first.url,
+                    portfolio.images.first,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -55,18 +57,16 @@ class PortfolioCard extends StatelessWidget {
                 height: 200,
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
                 ),
                 child: const Center(
-                  child: Icon(
-                    Icons.image,
-                    size: 48,
-                    color: Colors.grey,
-                  ),
+                  child: Icon(Icons.image, size: 48, color: Colors.grey),
                 ),
               ),
             ],
-            
+
             // Portfolio content
             Padding(
               padding: const EdgeInsets.all(16),
@@ -79,9 +79,8 @@ class PortfolioCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           portfolio.title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -115,7 +114,10 @@ class PortfolioCard extends StatelessWidget {
                                 children: [
                                   Icon(Icons.delete, color: Colors.red),
                                   SizedBox(width: 8),
-                                  Text('Delete', style: TextStyle(color: Colors.red)),
+                                  Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
                                 ],
                               ),
                             ),
@@ -124,9 +126,9 @@ class PortfolioCard extends StatelessWidget {
                       ],
                     ],
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Description
                   Text(
                     portfolio.description,
@@ -134,17 +136,13 @@ class PortfolioCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Portfolio details
                   Row(
                     children: [
-                      Icon(
-                        Icons.category,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
+                      Icon(Icons.category, size: 16, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Text(
                         portfolio.category,
@@ -154,9 +152,9 @@ class PortfolioCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   Row(
                     children: [
                       Icon(
@@ -166,15 +164,15 @@ class PortfolioCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        portfolio.formattedCreatedAt,
+                        _formatTime(portfolio.createdAt ?? DateTime.now()),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[600],
                         ),
                       ),
                     ],
                   ),
-                  
-                  if (portfolio.media.length > 1) ...[
+
+                  if (portfolio.images.length > 1) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -185,10 +183,9 @@ class PortfolioCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${portfolio.media.length} images',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          '${portfolio.images.length} images',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -201,6 +198,21 @@ class PortfolioCard extends StatelessWidget {
       ),
     );
   }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
 }
 
 /// Portfolio grid widget
@@ -211,7 +223,7 @@ class PortfolioGridWidget extends StatelessWidget {
   final VoidCallback? onDelete;
   final bool showActions;
   final bool isLoading;
-  final VoidCallback? onRefresh;
+  final Future<void> Function()? onRefresh;
 
   const PortfolioGridWidget({
     super.key,
@@ -227,9 +239,7 @@ class PortfolioGridWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && portfolios.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (portfolios.isEmpty) {
@@ -250,9 +260,9 @@ class PortfolioGridWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Start building your portfolio to showcase your work',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             if (onRefresh != null) ...[
@@ -301,7 +311,7 @@ class PortfolioListWidget extends StatelessWidget {
   final VoidCallback? onDelete;
   final bool showActions;
   final bool isLoading;
-  final VoidCallback? onRefresh;
+  final Future<void> Function()? onRefresh;
 
   const PortfolioListWidget({
     super.key,
@@ -317,9 +327,7 @@ class PortfolioListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && portfolios.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (portfolios.isEmpty) {
@@ -340,9 +348,9 @@ class PortfolioListWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Start building your portfolio to showcase your work',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             if (onRefresh != null) ...[

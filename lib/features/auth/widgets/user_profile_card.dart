@@ -43,7 +43,9 @@ class UserProfileCard extends StatelessWidget {
                         : null,
                     child: user.profileImageUrl == null
                         ? Text(
-                            user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                            user.firstName?.isNotEmpty == true
+                                ? user.firstName![0].toUpperCase()
+                                : 'U',
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -51,95 +53,45 @@ class UserProfileCard extends StatelessWidget {
                           )
                         : null,
                   ),
-                  
+
                   const SizedBox(width: 16),
-                  
+
                   // User info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.name,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          user.displayName,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          user.email,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          user.email ?? 'No email',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
-                        if (user.phoneNumber != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            user.phoneNumber!,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
+                        const SizedBox(height: 2),
+                        Text(
+                          user.phone,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
                       ],
                     ),
                   ),
-                  
+
                   // User type badge
                   _buildUserTypeBadge(context),
                 ],
               ),
-              
-              if (user.bio != null && user.bio!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  user.bio!,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              
-              if (user.location != null && user.location!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      user.location!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              
-              if (showRating && user.averageRating != null) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.star,
-                      size: 16,
-                      color: Colors.orange[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${user.averageRating!.toStringAsFixed(1)} (${user.totalRatings ?? 0} reviews)',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              
+
+              // Bio section removed - not available in UserModel
+
+              // Location section removed - not available in UserModel
+
+              // Rating section removed - not available in UserModel
               if (showActions) ...[
                 const SizedBox(height: 16),
                 Row(
@@ -174,17 +126,17 @@ class UserProfileCard extends StatelessWidget {
   Widget _buildUserTypeBadge(BuildContext context) {
     Color backgroundColor;
     Color textColor;
-    
-    switch (user.userType) {
-      case UserType.fundi:
+
+    switch (user.role) {
+      case UserRole.fundi:
         backgroundColor = Colors.blue[100]!;
         textColor = Colors.blue[800]!;
         break;
-      case UserType.customer:
+      case UserRole.customer:
         backgroundColor = Colors.green[100]!;
         textColor = Colors.green[800]!;
         break;
-      case UserType.admin:
+      case UserRole.admin:
         backgroundColor = Colors.red[100]!;
         textColor = Colors.red[800]!;
         break;
@@ -197,7 +149,7 @@ class UserProfileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        user.userType.displayName,
+        user.role.displayName,
         style: TextStyle(
           color: textColor,
           fontSize: 12,
@@ -213,11 +165,7 @@ class UserProfileSummary extends StatelessWidget {
   final UserModel user;
   final VoidCallback? onTap;
 
-  const UserProfileSummary({
-    super.key,
-    required this.user,
-    this.onTap,
-  });
+  const UserProfileSummary({super.key, required this.user, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +185,9 @@ class UserProfileSummary extends StatelessWidget {
                     : null,
                 child: user.profileImageUrl == null
                     ? Text(
-                        user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                        user.shortDisplayName.isNotEmpty
+                            ? user.shortDisplayName[0].toUpperCase()
+                            : 'U',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -245,41 +195,41 @@ class UserProfileSummary extends StatelessWidget {
                       )
                     : null,
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // User info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.name,
+                      user.displayName,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      user.email,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      user.email ?? 'No email',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
-              
+
               // User type badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getUserTypeColor(user.userType).withOpacity(0.1),
+                  color: _getUserTypeColor(user.role).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  user.userType.displayName,
+                  user.role.displayName,
                   style: TextStyle(
-                    color: _getUserTypeColor(user.userType),
+                    color: _getUserTypeColor(user.role),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
@@ -292,13 +242,13 @@ class UserProfileSummary extends StatelessWidget {
     );
   }
 
-  Color _getUserTypeColor(UserType userType) {
-    switch (userType) {
-      case UserType.fundi:
+  Color _getUserTypeColor(UserRole userRole) {
+    switch (userRole) {
+      case UserRole.fundi:
         return Colors.blue[800]!;
-      case UserType.customer:
+      case UserRole.customer:
         return Colors.green[800]!;
-      case UserType.admin:
+      case UserRole.admin:
         return Colors.red[800]!;
     }
   }
@@ -309,11 +259,7 @@ class UserStatsWidget extends StatelessWidget {
   final UserModel user;
   final List<Map<String, dynamic>>? stats;
 
-  const UserStatsWidget({
-    super.key,
-    required this.user,
-    this.stats,
-  });
+  const UserStatsWidget({super.key, required this.user, this.stats});
 
   @override
   Widget build(BuildContext context) {
@@ -329,22 +275,24 @@ class UserStatsWidget extends StatelessWidget {
           children: [
             Text(
               'Statistics',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
-              children: stats!.map((stat) => 
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    stat['label'] as String,
-                    stat['value'] as String,
-                    stat['icon'] as IconData?,
-                  ),
-                ),
-              ).toList(),
+              children: stats!
+                  .map(
+                    (stat) => Expanded(
+                      child: _buildStatItem(
+                        context,
+                        stat['label'] as String,
+                        stat['value'] as String,
+                        stat['icon'] as IconData?,
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),
@@ -361,11 +309,7 @@ class UserStatsWidget extends StatelessWidget {
     return Column(
       children: [
         if (icon != null) ...[
-          Icon(
-            icon,
-            size: 24,
-            color: Theme.of(context).primaryColor,
-          ),
+          Icon(icon, size: 24, color: Theme.of(context).primaryColor),
           const SizedBox(height: 8),
         ],
         Text(
@@ -378,9 +322,9 @@ class UserStatsWidget extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
       ],

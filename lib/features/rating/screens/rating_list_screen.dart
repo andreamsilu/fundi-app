@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:fundi/features/rating/screens/rating_form_screen.dart';
+import 'package:fundi/features/rating/models/rating_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/rating_provider.dart';
-import '../models/rating_model.dart';
-import '../widgets/rating_card.dart';
 import '../widgets/star_rating_widget.dart';
-import '../widgets/rating_summary_widget.dart';
 
 /// Rating list screen showing fundi's ratings and reviews
 class RatingListScreen extends StatefulWidget {
@@ -137,7 +136,6 @@ class _RatingListScreenState extends State<RatingListScreen> {
                 RatingSummaryWidget(
                   averageRating: summary.averageRating,
                   totalRatings: summary.totalRatings,
-                  ratingDistribution: summary.ratingDistribution,
                 ),
                 
                 // Ratings list
@@ -154,11 +152,11 @@ class _RatingListScreenState extends State<RatingListScreen> {
                                 child: Padding(
                                   padding: EdgeInsets.all(16),
                                   child: CircularProgressIndicator(),
-                                ),
+                                  ),
                               );
                             }
 
-                            final rating = summary.recentRatings[index];
+                            final rating = summary.recentRatings[index].toJson() ?? {};
                             return RatingCard(
                               rating: rating,
                               showJobTitle: true,
@@ -327,7 +325,7 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
                   );
                 }
 
-                final rating = ratingProvider.myRatings[index];
+                final rating = ratingProvider.myRatings[index].toJson() ?? {};
                 return RatingCard(
                   rating: rating,
                   showJobTitle: true,
@@ -369,18 +367,18 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
     );
   }
 
-  void _editRating(BuildContext context, RatingModel rating) {
+  void _editRating(BuildContext context, Map<String, dynamic> rating) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => RatingFormScreen(
-          fundiId: rating.fundiId,
-          fundiName: rating.fundiName,
-          fundiImageUrl: rating.fundiImageUrl,
-          jobId: rating.jobId,
-          jobTitle: rating.jobTitle,
-          existingRating: rating,
-        ),
+            fundiId: rating['fundiId'] ?? '',
+          fundiName: rating['fundiName'] ?? '',
+          fundiImageUrl: rating['fundiImageUrl'] ?? '',
+          jobId: rating['jobId'] ?? '',
+          jobTitle: rating['jobTitle'] ?? '',
+          existingRating: RatingModel.fromJson(rating),
+          ),
       ),
     ).then((success) {
       if (success == true) {

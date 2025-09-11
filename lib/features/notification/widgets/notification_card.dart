@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/notification_model.dart';
+import 'package:fundi/features/notifications/models/notification_model.dart';
 
 /// Notification card widget for displaying notification information
 class NotificationCard extends StatelessWidget {
@@ -36,7 +36,9 @@ class NotificationCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _getNotificationColor(notification.type).withOpacity(0.1),
+                  color: _getNotificationColor(
+                    notification.type,
+                  ).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(
@@ -45,9 +47,9 @@ class NotificationCard extends StatelessWidget {
                   size: 20,
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Notification content
               Expanded(
                 child: Column(
@@ -59,24 +61,26 @@ class NotificationCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             notification.title,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  fontWeight: notification.isRead
+                                      ? FontWeight.normal
+                                      : FontWeight.bold,
+                                ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Text(
-                          notification.formattedCreatedAt,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          _formatTime(notification.createdAt ?? DateTime.now()),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 4),
-                    
+
                     // Message
                     Text(
                       notification.message,
@@ -84,8 +88,9 @@ class NotificationCard extends StatelessWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
-                    if (notification.data != null && notification.data!.isNotEmpty) ...[
+
+                    if (notification.data != null &&
+                        notification.data!.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.all(8),
@@ -95,16 +100,15 @@ class NotificationCard extends StatelessWidget {
                         ),
                         child: Text(
                           'Data: ${notification.data}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              
+
               // Actions
               if (showActions) ...[
                 PopupMenuButton<String>(
@@ -150,41 +154,60 @@ class NotificationCard extends StatelessWidget {
     );
   }
 
-  IconData _getNotificationIcon(NotificationType type) {
-    switch (type) {
-      case NotificationType.jobApplication:
-        return Icons.assignment;
-      case NotificationType.jobUpdate:
-        return Icons.work;
-      case NotificationType.payment:
-        return Icons.payment;
-      case NotificationType.rating:
-        return Icons.star;
-      case NotificationType.message:
-        return Icons.message;
-      case NotificationType.system:
-        return Icons.info;
-      case NotificationType.reminder:
-        return Icons.alarm;
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
     }
   }
 
-  Color _getNotificationColor(NotificationType type) {
-    switch (type) {
-      case NotificationType.jobApplication:
+  IconData _getNotificationIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'job_application':
+        return Icons.assignment;
+      case 'job_update':
+        return Icons.work;
+      case 'payment':
+        return Icons.payment;
+      case 'rating':
+        return Icons.star;
+      case 'message':
+        return Icons.message;
+      case 'system':
+        return Icons.info;
+      case 'reminder':
+        return Icons.alarm;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  Color _getNotificationColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'job_application':
         return Colors.blue;
-      case NotificationType.jobUpdate:
+      case 'job_update':
         return Colors.orange;
-      case NotificationType.payment:
+      case 'payment':
         return Colors.green;
-      case NotificationType.rating:
+      case 'rating':
         return Colors.amber;
-      case NotificationType.message:
+      case 'message':
         return Colors.purple;
-      case NotificationType.system:
+      case 'system':
         return Colors.grey;
-      case NotificationType.reminder:
+      case 'reminder':
         return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 }
@@ -197,7 +220,7 @@ class NotificationListWidget extends StatelessWidget {
   final VoidCallback? onDelete;
   final bool showActions;
   final bool isLoading;
-  final VoidCallback? onRefresh;
+  final Future<void> Function()? onRefresh;
 
   const NotificationListWidget({
     super.key,
@@ -213,9 +236,7 @@ class NotificationListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && notifications.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (notifications.isEmpty) {
@@ -223,11 +244,7 @@ class NotificationListWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.notifications_none,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.notifications_none, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No notifications',
@@ -236,9 +253,9 @@ class NotificationListWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'You\'ll see notifications here when you have them',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             if (onRefresh != null) ...[
@@ -252,7 +269,6 @@ class NotificationListWidget extends StatelessWidget {
         ),
       );
     }
-
     return RefreshIndicator(
       onRefresh: onRefresh ?? () async {},
       child: ListView.builder(
@@ -275,8 +291,8 @@ class NotificationListWidget extends StatelessWidget {
 
 /// Notification type filter widget
 class NotificationTypeFilter extends StatelessWidget {
-  final NotificationType? selectedType;
-  final Function(NotificationType?) onTypeChanged;
+  final String? selectedType;
+  final Function(String?) onTypeChanged;
 
   const NotificationTypeFilter({
     super.key,
@@ -293,18 +309,21 @@ class NotificationTypeFilter extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         children: [
           // All types
-          _buildFilterChip(
-            context,
-            'All',
-            null,
-            selectedType == null,
-          ),
-          
+          _buildFilterChip(context, 'All', null, selectedType == null),
+
           // Individual types
-          ...NotificationType.values.map((type) =>
-            _buildFilterChip(
+          ...[
+            'job_application',
+            'job_update',
+            'payment',
+            'rating',
+            'message',
+            'system',
+            'reminder',
+          ].map(
+            (type) => _buildFilterChip(
               context,
-              type.displayName,
+              _getTypeDisplayName(type),
               type,
               selectedType == type,
             ),
@@ -317,7 +336,7 @@ class NotificationTypeFilter extends StatelessWidget {
   Widget _buildFilterChip(
     BuildContext context,
     String label,
-    NotificationType? type,
+    String? type,
     bool isSelected,
   ) {
     return Padding(
@@ -330,6 +349,27 @@ class NotificationTypeFilter extends StatelessWidget {
         },
       ),
     );
+  }
+
+  String _getTypeDisplayName(String type) {
+    switch (type.toLowerCase()) {
+      case 'job_application':
+        return 'Job Application';
+      case 'job_update':
+        return 'Job Update';
+      case 'payment':
+        return 'Payment';
+      case 'rating':
+        return 'Rating';
+      case 'message':
+        return 'Message';
+      case 'system':
+        return 'System';
+      case 'reminder':
+        return 'Reminder';
+      default:
+        return 'Unknown';
+    }
   }
 }
 
@@ -367,9 +407,9 @@ class NotificationSummaryWidget extends StatelessWidget {
                 size: 24,
               ),
             ),
-            
+
             const SizedBox(width: 16),
-            
+
             // Summary info
             Expanded(
               child: Column(
@@ -384,20 +424,17 @@ class NotificationSummaryWidget extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '$unreadNotifications unread of $totalNotifications total',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
             ),
-            
+
             // View all button
             if (onViewAll != null)
-              TextButton(
-                onPressed: onViewAll,
-                child: const Text('View All'),
-              ),
+              TextButton(onPressed: onViewAll, child: const Text('View All')),
           ],
         ),
       ),

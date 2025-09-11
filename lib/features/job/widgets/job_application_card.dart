@@ -42,88 +42,78 @@ class JobApplicationCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          application.jobTitle,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          application.jobTitle!,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'by ${application.fundiName}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
                   ),
-                  
+
                   // Status badge
                   _buildStatusBadge(context),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Application details
               Row(
                 children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     'Applied ${application.formattedAppliedAt}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
-              
+
               if (application.proposedBudget != null) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
-                      Icons.attach_money,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
+                    Icon(Icons.attach_money, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
                       'Budget: ${application.formattedProposedBudget}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ],
-              
-              if (application.coverLetter.isNotEmpty) ...[
+
+              if (application.coverLetter?.isNotEmpty == true) ...[
                 const SizedBox(height: 12),
                 Text(
                   'Cover Letter',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  application.coverLetter,
+                  application.coverLetter!,
                   style: Theme.of(context).textTheme.bodyMedium,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              
+
               const SizedBox(height: 12),
-              
+
               // Footer row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -131,28 +121,31 @@ class JobApplicationCard extends StatelessWidget {
                   // Application ID
                   Text(
                     'ID: ${application.id}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[500],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
                   ),
-                  
+
                   // Action buttons
                   if (showActions) ...[
                     Row(
                       children: [
-                        if (application.status == JobApplicationStatus.pending) ...[
+                        if (application.status ==
+                            JobApplicationStatus.pending) ...[
                           TextButton(
                             onPressed: onWithdraw,
                             child: const Text('Withdraw'),
                           ),
                         ],
-                        if (application.status == JobApplicationStatus.accepted) ...[
+                        if (application.status ==
+                            JobApplicationStatus.accepted) ...[
                           TextButton(
                             onPressed: onAccept,
                             child: const Text('Accept'),
                           ),
                         ],
-                        if (application.status == JobApplicationStatus.rejected) ...[
+                        if (application.status ==
+                            JobApplicationStatus.rejected) ...[
                           TextButton(
                             onPressed: onReject,
                             child: const Text('Reject'),
@@ -171,9 +164,9 @@ class JobApplicationCard extends StatelessWidget {
   }
 
   Widget _buildStatusBadge(BuildContext context) {
-    Color backgroundColor;
-    Color textColor;
-    
+    Color backgroundColor = Colors.grey[100]!;
+    Color textColor = Colors.grey[800]!;
+
     switch (application.status) {
       case JobApplicationStatus.pending:
         backgroundColor = Colors.orange[100]!;
@@ -200,7 +193,7 @@ class JobApplicationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        application.status.displayName,
+        _getStatusText(application.status as JobApplicationStatus),
         style: TextStyle(
           color: textColor,
           fontSize: 12,
@@ -208,6 +201,19 @@ class JobApplicationCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getStatusText(JobApplicationStatus status) {
+    switch (status) {
+      case JobApplicationStatus.pending:
+        return 'Pending';
+      case JobApplicationStatus.accepted:
+        return 'Accepted';
+      case JobApplicationStatus.rejected:
+        return 'Rejected';
+      case JobApplicationStatus.withdrawn:
+        return 'Withdrawn';
+    }
   }
 }
 
@@ -220,7 +226,7 @@ class JobApplicationListWidget extends StatelessWidget {
   final VoidCallback? onReject;
   final bool showActions;
   final bool isLoading;
-  final VoidCallback? onRefresh;
+  final Future<void> Function()? onRefresh;
 
   const JobApplicationListWidget({
     super.key,
@@ -237,9 +243,7 @@ class JobApplicationListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && applications.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (applications.isEmpty) {
@@ -247,11 +251,7 @@ class JobApplicationListWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.assignment_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.assignment_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No applications found',
@@ -260,9 +260,9 @@ class JobApplicationListWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Your job applications will appear here',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             if (onRefresh != null) ...[
@@ -318,16 +318,11 @@ class JobApplicationStatusFilter extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         children: [
           // All statuses
-          _buildFilterChip(
-            context,
-            'All',
-            null,
-            selectedStatus == null,
-          ),
-          
+          _buildFilterChip(context, 'All', null, selectedStatus == null),
+
           // Individual statuses
-          ...JobApplicationStatus.values.map((status) =>
-            _buildFilterChip(
+          ...JobApplicationStatus.values.map(
+            (status) => _buildFilterChip(
               context,
               status.displayName,
               status,

@@ -125,7 +125,7 @@ class StarRatingDisplay extends StatelessWidget {
 class RatingSummaryWidget extends StatelessWidget {
   final double averageRating;
   final int totalRatings;
-  final List<RatingDistribution>? ratingDistribution;
+  final List<Map<String, dynamic>>? ratingDistribution;
 
   const RatingSummaryWidget({
     super.key,
@@ -190,7 +190,7 @@ class RatingSummaryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildRatingBar(BuildContext context, RatingDistribution distribution) {
+  Widget _buildRatingBar(BuildContext context, Map<String, dynamic> distribution) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -201,7 +201,7 @@ class RatingSummaryWidget extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  '${distribution.rating}',
+                  '${distribution['rating']}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(width: 4),
@@ -225,7 +225,7 @@ class RatingSummaryWidget extends StatelessWidget {
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
-                widthFactor: distribution.percentage / 100,
+                widthFactor: distribution['percentage'] / 100,
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.orange[600],
@@ -240,7 +240,7 @@ class RatingSummaryWidget extends StatelessWidget {
           SizedBox(
             width: 40,
             child: Text(
-              '${distribution.percentage.toStringAsFixed(0)}%',
+              '${distribution['percentage'].toStringAsFixed(0)}%',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Colors.grey[600],
               ),
@@ -255,7 +255,7 @@ class RatingSummaryWidget extends StatelessWidget {
 
 /// Rating card widget
 class RatingCard extends StatelessWidget {
-  final RatingModel rating;
+  final Map<String, dynamic> rating;
   final VoidCallback? onTap;
   final bool showJobTitle;
 
@@ -284,10 +284,10 @@ class RatingCard extends StatelessWidget {
                   // Customer image
                   CircleAvatar(
                     radius: 20,
-                    backgroundImage: rating.customerImageUrl != null
-                        ? NetworkImage(rating.customerImageUrl!)
+                    backgroundImage: rating['customerImageUrl'] != null
+                        ? NetworkImage(rating['customerImageUrl']!)
                         : null,
-                    child: rating.customerImageUrl == null
+                    child: rating['customerImageUrl'] == null
                         ? const Icon(Icons.person, size: 20)
                         : null,
                   ),
@@ -300,14 +300,14 @@ class RatingCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          rating.customerName,
+                          rating['customerName'] ?? '',
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
                         StarRatingDisplay(
-                          rating: rating.rating.toDouble(),
+                          rating: rating['rating'].toDouble(),
                           size: 14,
                         ),
                       ],
@@ -316,7 +316,7 @@ class RatingCard extends StatelessWidget {
                   
                   // Time ago
                   Text(
-                    rating.timeAgo,
+                    rating['timeAgo'] ?? '',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -328,7 +328,7 @@ class RatingCard extends StatelessWidget {
               if (showJobTitle) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Job: ${rating.jobTitle}',
+                  'Job: ${rating['jobTitle'] ?? ''}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -336,10 +336,10 @@ class RatingCard extends StatelessWidget {
               ],
               
               // Review text
-              if (rating.hasReview) ...[
+              if (rating['hasReview'] ?? false) ...[
                 const SizedBox(height: 12),
                 Text(
-                  rating.review!,
+                  rating['review'] ?? '',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],

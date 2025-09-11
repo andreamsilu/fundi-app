@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/payment_provider.dart';
-import '../models/payment_model.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 
 /// Payment form screen for processing payments
@@ -35,8 +34,8 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     // Pre-fill with user data if available
     final authProvider = context.read<AuthProvider>();
     if (authProvider.user != null) {
-      _phoneController.text = authProvider.user!.phoneNumber ?? '';
-      _emailController.text = authProvider.user!.email;
+      _phoneController.text = authProvider.user!.phone ?? '';
+      _emailController.text = authProvider.user!.email ?? '';
     }
   }
 

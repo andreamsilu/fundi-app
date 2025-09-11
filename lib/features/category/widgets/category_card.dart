@@ -1,5 +1,47 @@
 import 'package:flutter/material.dart';
-import '../models/category_model.dart';
+
+/// Category model for representing category data
+class CategoryModel {
+  final String id;
+  final String name;
+  final String? description;
+  final String? iconName;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const CategoryModel({
+    required this.id,
+    required this.name,
+    this.description,
+    this.iconName,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  /// Factory constructor for creating CategoryModel from JSON
+  factory CategoryModel.fromJson(Map<String, dynamic> json) {
+    return CategoryModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      iconName: json['iconName'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
+  /// Convert CategoryModel to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'iconName': iconName,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+}
 
 /// Category card widget for displaying category information
 class CategoryCard extends StatelessWidget {
@@ -18,7 +60,9 @@ class CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : null,
+      color: isSelected
+          ? Theme.of(context).primaryColor.withOpacity(0.1)
+          : null,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -44,9 +88,9 @@ class CategoryCard extends StatelessWidget {
                       size: 24,
                     ),
                   ),
-                  
+
                   const SizedBox(width: 16),
-                  
+
                   // Category name
                   Expanded(
                     child: Text(
@@ -56,7 +100,7 @@ class CategoryCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   // Selection indicator
                   if (isSelected)
                     Icon(
@@ -66,8 +110,9 @@ class CategoryCard extends StatelessWidget {
                     ),
                 ],
               ),
-              
-              if (category.description != null && category.description!.isNotEmpty) ...[
+
+              if (category.description != null &&
+                  category.description!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
                   category.description!,
@@ -76,26 +121,8 @@ class CategoryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              
-              const SizedBox(height: 12),
-              
-              // Category stats
-              Row(
-                children: [
-                  Icon(
-                    Icons.work,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${category.jobCount} jobs',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
+
+              // Job count section removed - not available in CategoryModel
             ],
           ),
         ),
@@ -157,7 +184,7 @@ class CategoryGridWidget extends StatelessWidget {
   final Function(CategoryModel)? onCategorySelected;
   final CategoryModel? selectedCategory;
   final bool isLoading;
-  final VoidCallback? onRefresh;
+  final Future<void> Function()? onRefresh;
 
   const CategoryGridWidget({
     super.key,
@@ -171,9 +198,7 @@ class CategoryGridWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && categories.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (categories.isEmpty) {
@@ -181,11 +206,7 @@ class CategoryGridWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.category_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.category_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No categories found',
@@ -194,9 +215,9 @@ class CategoryGridWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Categories will appear here when available',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             if (onRefresh != null) ...[
@@ -210,7 +231,6 @@ class CategoryGridWidget extends StatelessWidget {
         ),
       );
     }
-
     return RefreshIndicator(
       onRefresh: onRefresh ?? () async {},
       child: GridView.builder(
@@ -226,7 +246,9 @@ class CategoryGridWidget extends StatelessWidget {
           final category = categories[index];
           return CategoryCard(
             category: category,
-            onTap: onCategorySelected != null ? () => onCategorySelected!(category) : null,
+            onTap: onCategorySelected != null
+                ? () => onCategorySelected!(category)
+                : null,
             isSelected: selectedCategory?.id == category.id,
           );
         },
@@ -241,7 +263,7 @@ class CategoryListWidget extends StatelessWidget {
   final Function(CategoryModel)? onCategorySelected;
   final CategoryModel? selectedCategory;
   final bool isLoading;
-  final VoidCallback? onRefresh;
+  final Future<void> Function()? onRefresh;
 
   const CategoryListWidget({
     super.key,
@@ -255,9 +277,7 @@ class CategoryListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && categories.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (categories.isEmpty) {
@@ -265,11 +285,7 @@ class CategoryListWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.category_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.category_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No categories found',
@@ -278,9 +294,9 @@ class CategoryListWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Categories will appear here when available',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             if (onRefresh != null) ...[
@@ -304,7 +320,9 @@ class CategoryListWidget extends StatelessWidget {
           final category = categories[index];
           return CategoryCard(
             category: category,
-            onTap: onCategorySelected != null ? () => onCategorySelected!(category) : null,
+            onTap: onCategorySelected != null
+                ? () => onCategorySelected!(category)
+                : null,
             isSelected: selectedCategory?.id == category.id,
           );
         },
@@ -366,9 +384,9 @@ class _CategorySearchWidgetState extends State<CategorySearchWidget> {
             ),
             onChanged: widget.onSearch,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Categories
           Expanded(
             child: CategoryListWidget(

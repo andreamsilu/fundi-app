@@ -444,105 +444,107 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         position: _slideAnimation,
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Animated Icon with interactive demo
-              GestureDetector(
-                onTap: () => _showInteractiveDemo(page),
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        colors: [
-                          page.color.withValues(alpha: 0.2),
-                          page.color.withValues(alpha: 0.1),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Animated Icon with interactive demo
+                GestureDetector(
+                  onTap: () => _showInteractiveDemo(page),
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            page.color.withValues(alpha: 0.2),
+                            page.color.withValues(alpha: 0.1),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: page.color.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
                         ],
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: page.color.withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: AnimatedRotation(
-                      turns: _rotationAnimation.value * 0.1,
-                      duration: const Duration(milliseconds: 2000),
-                      child: Icon(page.image, size: 100, color: page.color),
+                      child: AnimatedRotation(
+                        turns: _rotationAnimation.value * 0.1,
+                        duration: const Duration(milliseconds: 2000),
+                        child: Icon(page.image, size: 100, color: page.color),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-              // Animated Title
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Text(
-                  page.title,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppTheme.darkGray,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Animated Description
-              SlideTransition(
-                position: _slideAnimation,
-                child: Text(
-                  page.description,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.mediumGray,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Interactive Features List
-              _buildFeaturesList(page),
-
-              const SizedBox(height: 16),
-
-              // Demo hint
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: page.color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: page.color.withValues(alpha: 0.3),
-                    ),
-                  ),
+                // Animated Title
+                FadeTransition(
+                  opacity: _fadeAnimation,
                   child: Text(
-                    page.demoText,
-                    style: TextStyle(
-                      color: page.color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    page.title,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: AppTheme.darkGray,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Animated Description
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: Text(
+                    page.description,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppTheme.mediumGray,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Interactive Features List
+                _buildFeaturesList(page),
+
+                const SizedBox(height: 16),
+
+                // Demo hint
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: page.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: page.color.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      page.demoText,
+                      style: TextStyle(
+                        color: page.color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

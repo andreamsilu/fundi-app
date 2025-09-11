@@ -221,9 +221,9 @@ class RatingProvider extends ChangeNotifier {
   int getTotalRatingsForFundi(String fundiId) {
     return getRatingsByFundiId(fundiId).length;
   }
-
   /// Get rating distribution for a fundi
-  List<RatingDistribution> getRatingDistributionForFundi(String fundiId) {
+  /// Returns a list of maps containing rating, count, and percentage
+  List<Map<String, dynamic>> getRatingDistributionForFundi(String fundiId) {
     final ratings = getRatingsByFundiId(fundiId);
     if (ratings.isEmpty) return [];
 
@@ -240,11 +240,11 @@ class RatingProvider extends ChangeNotifier {
       final percentage = ratings.isNotEmpty 
           ? (entry.value / ratings.length) * 100 
           : 0.0;
-      return RatingDistribution(
-        rating: entry.key,
-        count: entry.value,
-        percentage: percentage,
-      );
+      return {
+        'rating': entry.key,
+        'count': entry.value,
+        'percentage': percentage,
+      };
     }).toList();
   }
 

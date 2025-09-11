@@ -1,55 +1,49 @@
 import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
 
-/// Message card widget for displaying chat messages
+/// Simple message card widget for Firebase chat
 class MessageCard extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
-  final VoidCallback? onTap;
 
-  const MessageCard({
-    super.key,
-    required this.message,
-    required this.isMe,
-    this.onTap,
-  });
+  const MessageCard({super.key, required this.message, required this.isMe});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!isMe) ...[
             // Sender avatar
             CircleAvatar(
               radius: 16,
-              backgroundImage: message.senderImageUrl != null
-                  ? NetworkImage(message.senderImageUrl!)
-                  : null,
-              child: message.senderImageUrl == null
-                  ? Text(
-                      message.senderName.isNotEmpty ? message.senderName[0].toUpperCase() : 'U',
-                      style: const TextStyle(fontSize: 12),
-                    )
-                  : null,
+              child: Text(
+                message.senderId.isNotEmpty
+                    ? message.senderId[0].toUpperCase()
+                    : 'U',
+                style: const TextStyle(fontSize: 12),
+              ),
             ),
             const SizedBox(width: 8),
           ],
-          
+
           // Message bubble
           Flexible(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isMe 
-                    ? Theme.of(context).primaryColor
-                    : Colors.grey[200],
+                color: isMe ? Theme.of(context).primaryColor : Colors.grey[200],
                 borderRadius: BorderRadius.circular(20).copyWith(
-                  bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
-                  bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
+                  bottomLeft: isMe
+                      ? const Radius.circular(20)
+                      : const Radius.circular(4),
+                  bottomRight: isMe
+                      ? const Radius.circular(4)
+                      : const Radius.circular(20),
                 ),
               ),
               child: Column(
@@ -63,12 +57,12 @@ class MessageCard extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 4),
-                  
+
                   // Timestamp
                   Text(
-                    message.formattedCreatedAt,
+                    message.timeAgo,
                     style: TextStyle(
                       color: isMe ? Colors.white70 : Colors.grey[600],
                       fontSize: 12,
@@ -78,186 +72,21 @@ class MessageCard extends StatelessWidget {
               ),
             ),
           ),
-          
-          if (isMe) ...[
-            const SizedBox(width: 8),
-            // Message status
-            Icon(
-              _getMessageStatusIcon(message.status),
-              size: 16,
-              color: _getMessageStatusColor(message.status),
-            ),
-          ],
         ],
       ),
     );
   }
-
-  IconData _getMessageStatusIcon(MessageStatus status) {
-    switch (status) {
-      case MessageStatus.sent:
-        return Icons.check;
-      case MessageStatus.delivered:
-        return Icons.done_all;
-      case MessageStatus.read:
-        return Icons.done_all;
-      case MessageStatus.failed:
-        return Icons.error;
-    }
-  }
-
-  Color _getMessageStatusColor(MessageStatus status) {
-    switch (status) {
-      case MessageStatus.sent:
-        return Colors.grey;
-      case MessageStatus.delivered:
-        return Colors.grey;
-      case MessageStatus.read:
-        return Colors.blue;
-      case MessageStatus.failed:
-        return Colors.red;
-    }
-  }
 }
 
-/// Chat bubble widget
-class ChatBubble extends StatelessWidget {
-  final MessageModel message;
-  final bool isMe;
-  final VoidCallback? onTap;
-
-  const ChatBubble({
-    super.key,
-    required this.message,
-    required this.isMe,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
-        child: Row(
-          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-          children: [
-            if (!isMe) ...[
-              // Sender avatar
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: message.senderImageUrl != null
-                    ? NetworkImage(message.senderImageUrl!)
-                    : null,
-                child: message.senderImageUrl == null
-                    ? Text(
-                        message.senderName.isNotEmpty ? message.senderName[0].toUpperCase() : 'U',
-                        style: const TextStyle(fontSize: 14),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 8),
-            ],
-            
-            // Message content
-            Flexible(
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.7,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isMe 
-                      ? Theme.of(context).primaryColor
-                      : Colors.grey[200],
-                  borderRadius: BorderRadius.circular(20).copyWith(
-                    bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
-                    bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Message text
-                    Text(
-                      message.content,
-                      style: TextStyle(
-                        color: isMe ? Colors.white : Colors.black87,
-                        fontSize: 16,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Timestamp and status
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          message.formattedCreatedAt,
-                          style: TextStyle(
-                            color: isMe ? Colors.white70 : Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                        if (isMe) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            _getMessageStatusIcon(message.status),
-                            size: 16,
-                            color: _getMessageStatusColor(message.status),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getMessageStatusIcon(MessageStatus status) {
-    switch (status) {
-      case MessageStatus.sent:
-        return Icons.check;
-      case MessageStatus.delivered:
-        return Icons.done_all;
-      case MessageStatus.read:
-        return Icons.done_all;
-      case MessageStatus.failed:
-        return Icons.error;
-    }
-  }
-
-  Color _getMessageStatusColor(MessageStatus status) {
-    switch (status) {
-      case MessageStatus.sent:
-        return Colors.grey;
-      case MessageStatus.delivered:
-        return Colors.grey;
-      case MessageStatus.read:
-        return Colors.blue;
-      case MessageStatus.failed:
-        return Colors.red;
-    }
-  }
-}
-
-/// Chat input widget
+/// Simple chat input widget
 class ChatInputWidget extends StatefulWidget {
   final Function(String) onSendMessage;
   final bool isLoading;
-  final String? hintText;
 
   const ChatInputWidget({
     super.key,
     required this.onSendMessage,
     this.isLoading = false,
-    this.hintText,
   });
 
   @override
@@ -266,12 +95,10 @@ class ChatInputWidget extends StatefulWidget {
 
 class _ChatInputWidgetState extends State<ChatInputWidget> {
   final TextEditingController _messageController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
 
   @override
   void dispose() {
     _messageController.dispose();
-    _focusNode.dispose();
     super.dispose();
   }
 
@@ -303,9 +130,8 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
           Expanded(
             child: TextField(
               controller: _messageController,
-              focusNode: _focusNode,
               decoration: InputDecoration(
-                hintText: widget.hintText ?? 'Type a message...',
+                hintText: 'Type a message...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -322,9 +148,9 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
               onSubmitted: (_) => _sendMessage(),
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Send button
           Container(
             decoration: BoxDecoration(
@@ -342,10 +168,7 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Icon(
-                      Icons.send,
-                      color: Colors.white,
-                    ),
+                  : const Icon(Icons.send, color: Colors.white),
             ),
           ),
         ],
@@ -354,13 +177,12 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
   }
 }
 
-/// Chat header widget
+/// Simple chat header widget
 class ChatHeaderWidget extends StatelessWidget {
   final String recipientName;
   final String? recipientImageUrl;
   final bool isOnline;
   final VoidCallback? onBack;
-  final VoidCallback? onInfo;
 
   const ChatHeaderWidget({
     super.key,
@@ -368,7 +190,6 @@ class ChatHeaderWidget extends StatelessWidget {
     this.recipientImageUrl,
     this.isOnline = false,
     this.onBack,
-    this.onInfo,
   });
 
   @override
@@ -392,9 +213,9 @@ class ChatHeaderWidget extends StatelessWidget {
             onPressed: onBack ?? () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back),
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Recipient info
           Expanded(
             child: Row(
@@ -409,7 +230,9 @@ class ChatHeaderWidget extends StatelessWidget {
                           : null,
                       child: recipientImageUrl == null
                           ? Text(
-                              recipientName.isNotEmpty ? recipientName[0].toUpperCase() : 'U',
+                              recipientName.isNotEmpty
+                                  ? recipientName[0].toUpperCase()
+                                  : 'U',
                               style: const TextStyle(fontSize: 16),
                             )
                           : null,
@@ -424,18 +247,15 @@ class ChatHeaderWidget extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.green,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 2,
-                            ),
+                            border: Border.all(color: Colors.white, width: 2),
                           ),
                         ),
                       ),
                   ],
                 ),
-                
+
                 const SizedBox(width: 12),
-                
+
                 // Recipient name and status
                 Expanded(
                   child: Column(
@@ -443,9 +263,8 @@ class ChatHeaderWidget extends StatelessWidget {
                     children: [
                       Text(
                         recipientName,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         isOnline ? 'Online' : 'Offline',
@@ -459,14 +278,50 @@ class ChatHeaderWidget extends StatelessWidget {
               ],
             ),
           ),
-          
-          // Info button
-          IconButton(
-            onPressed: onInfo,
-            icon: const Icon(Icons.info_outline),
-          ),
         ],
       ),
+    );
+  }
+}
+
+/// Simple message list widget
+class MessageListWidget extends StatelessWidget {
+  final List<MessageModel> messages;
+  final String currentUserId;
+  final bool isLoading;
+
+  const MessageListWidget({
+    super.key,
+    required this.messages,
+    required this.currentUserId,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading && messages.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (messages.isEmpty) {
+      return const Center(
+        child: Text(
+          'No messages yet.\nStart a conversation!',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final message = messages[index];
+        final isMe = message.senderId == currentUserId;
+
+        return MessageCard(message: message, isMe: isMe);
+      },
     );
   }
 }
