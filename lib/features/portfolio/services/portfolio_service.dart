@@ -2,6 +2,7 @@ import 'dart:io';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/constants/api_endpoints.dart';
 import '../models/portfolio_model.dart';
 
 /// Portfolio service for managing fundi portfolios
@@ -21,9 +22,8 @@ class PortfolioService {
       Logger.apiRequest('GET', '/portfolios');
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/portfolios',
+        ApiEndpoints.getFundiPortfolioEndpoint(fundiId),
         queryParameters: {
-          'fundi_id': fundiId,
           'page': page,
           'limit': limit,
           if (category != null) 'category': category,
@@ -81,7 +81,7 @@ class PortfolioService {
       Logger.apiRequest('GET', '/portfolios/$portfolioId');
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/portfolios/$portfolioId',
+        ApiEndpoints.getUpdatePortfolioEndpoint(portfolioId),
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -135,7 +135,7 @@ class PortfolioService {
       Logger.apiRequest('POST', '/portfolios');
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/portfolios',
+        ApiEndpoints.createPortfolio,
         data: {
           'fundi_id': fundiId,
           'title': title,
@@ -203,7 +203,7 @@ class PortfolioService {
       Logger.apiRequest('PUT', '/portfolios/$portfolioId');
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/portfolios/$portfolioId',
+        ApiEndpoints.getUpdatePortfolioEndpoint(portfolioId),
         data: {
           if (title != null) 'title': title,
           if (description != null) 'description': description,
@@ -258,7 +258,7 @@ class PortfolioService {
       Logger.apiRequest('DELETE', '/portfolios/$portfolioId');
 
       final response = await _apiClient.delete<Map<String, dynamic>>(
-        '/portfolios/$portfolioId',
+        ApiEndpoints.getDeletePortfolioEndpoint(portfolioId),
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -300,7 +300,7 @@ class PortfolioService {
       // This would typically involve uploading files to a storage service
       // For now, we'll simulate the upload process
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/portfolios/$portfolioId/media',
+        ApiEndpoints.uploadPortfolioMedia,
         data: {'file_paths': filePaths, 'file_types': fileTypes},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -345,7 +345,7 @@ class PortfolioService {
       Logger.apiRequest('GET', '/portfolios/categories');
 
       final response = await _apiClient.get<List<dynamic>>(
-        '/portfolios/categories',
+        ApiEndpoints.categories,
         fromJson: (data) => data as List<dynamic>,
       );
 

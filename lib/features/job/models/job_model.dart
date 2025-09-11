@@ -1,66 +1,65 @@
 import 'package:flutter/material.dart';
 
-/// Job model representing job postings and applications
+/// Job model representing job postings
+/// This model follows the API structure exactly
 class JobModel {
   final String id;
+  final String customerId;
+  final String categoryId;
   final String title;
   final String description;
-  final String category;
-  final String location;
-  final double? latitude;
-  final double? longitude;
   final double budget;
-  final String budgetType; // 'fixed' or 'hourly'
-  final JobStatus status;
-  final String customerId;
+  final String budgetType;
+  final DateTime deadline;
+  final double? locationLat;
+  final double? locationLng;
+  final String status;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  
+  // Additional fields for UI/UX (not in API but needed for mobile)
+  final String? categoryName;
+  final String? location;
   final String? customerName;
   final String? customerImageUrl;
-  final String? assignedFundiId;
-  final String? assignedFundiName;
-  final String? assignedFundiImageUrl;
-  final List<String> imageUrls;
-  final List<String> requiredSkills;
-  final DateTime deadline;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final List<String>? imageUrls;
+  final List<String>? requiredSkills;
   final Map<String, dynamic>? metadata;
 
   const JobModel({
     required this.id,
+    required this.customerId,
+    required this.categoryId,
     required this.title,
     required this.description,
-    required this.category,
-    required this.location,
-    this.latitude,
-    this.longitude,
     required this.budget,
     required this.budgetType,
+    required this.deadline,
+    this.locationLat,
+    this.locationLng,
     required this.status,
-    required this.customerId,
+    this.createdAt,
+    this.updatedAt,
+    this.categoryName,
+    this.location,
     this.customerName,
     this.customerImageUrl,
-    this.assignedFundiId,
-    this.assignedFundiName,
-    this.assignedFundiImageUrl,
-    required this.imageUrls,
-    required this.requiredSkills,
-    required this.deadline,
-    required this.createdAt,
-    required this.updatedAt,
+    this.imageUrls,
+    this.requiredSkills,
     this.metadata,
   });
 
   /// Check if job is open for applications
-  bool get isOpen => status == JobStatus.open;
+  bool get isOpen => status == 'open';
 
   /// Check if job is in progress
-  bool get isInProgress => status == JobStatus.inProgress;
+  bool get isInProgress => status == 'in_progress';
 
   /// Check if job is completed
-  bool get isCompleted => status == JobStatus.completed;
+  bool get isCompleted => status == 'completed';
 
   /// Check if job is cancelled
-  bool get isCancelled => status == JobStatus.cancelled;
+  bool get isCancelled => status == 'cancelled';
 
   /// Check if job has deadline passed
   bool get isDeadlinePassed => DateTime.now().isAfter(deadline);
@@ -68,9 +67,6 @@ class JobModel {
   /// Get formatted budget string
   String get formattedBudget {
     final currency = 'TZS'; // Tanzanian Shilling
-    if (budgetType == 'hourly') {
-      return '$currency ${budget.toStringAsFixed(0)}/hour';
-    }
     return '$currency ${budget.toStringAsFixed(0)}';
   }
 
@@ -96,110 +92,118 @@ class JobModel {
     }
   }
 
-  /// Create JobModel from JSON
+  /// Get formatted deadline
+  String get formattedDeadline {
+    final now = DateTime.now();
+    final difference = deadline.difference(now);
+    
+    if (difference.isNegative) {
+      return 'Deadline passed';
+    }
+    
+    final days = difference.inDays;
+    final hours = difference.inHours % 24;
+    
+    if (days > 0) {
+      return '$days day${days > 1 ? 's' : ''} left';
+    } else if (hours > 0) {
+      return '$hours hour${hours > 1 ? 's' : ''} left';
+    } else {
+      return 'Less than 1 hour left';
+    }
+  }
+
+  /// Get category (alias for categoryName)
+  String? get category => categoryName;
+
+  /// Create JobModel from JSON (follows API structure)
   factory JobModel.fromJson(Map<String, dynamic> json) {
     return JobModel(
       id: json['id'] as String,
+      customerId: json['customer_id'] as String,
+      categoryId: json['category_id'] as String,
       title: json['title'] as String,
       description: json['description'] as String,
-      category: json['category'] as String,
-      location: json['location'] as String,
-      latitude: json['latitude'] as double?,
-      longitude: json['longitude'] as double?,
       budget: (json['budget'] as num).toDouble(),
-      budgetType: json['budget_type'] as String,
-      status: JobStatus.fromString(json['status'] as String),
-      customerId: json['customer_id'] as String,
-      customerName: json['customer_name'] as String?,
-      customerImageUrl: json['customer_image_url'] as String?,
-      assignedFundiId: json['assigned_fundi_id'] as String?,
-      assignedFundiName: json['assigned_fundi_name'] as String?,
-      assignedFundiImageUrl: json['assigned_fundi_image_url'] as String?,
-      imageUrls: List<String>.from(json['image_urls'] ?? []),
-      requiredSkills: List<String>.from(json['required_skills'] ?? []),
+      budgetType: json['budget_type'] as String? ?? 'fixed',
       deadline: DateTime.parse(json['deadline'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      locationLat: json['location_lat'] != null ? (json['location_lat'] as num).toDouble() : null,
+      locationLng: json['location_lng'] != null ? (json['location_lng'] as num).toDouble() : null,
+      status: json['status'] as String,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      categoryName: json['category_name'] as String?, // Additional field for mobile
+      location: json['location'] as String?, // Additional field for mobile
+      customerName: json['customer_name'] as String?, // Additional field for mobile
+      customerImageUrl: json['customer_image_url'] as String?, // Additional field for mobile
+      imageUrls: json['image_urls'] != null ? List<String>.from(json['image_urls'] as List) : null, // Additional field for mobile
+      requiredSkills: json['required_skills'] != null ? List<String>.from(json['required_skills'] as List) : null, // Additional field for mobile
+      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
     );
   }
 
-  /// Convert JobModel to JSON
+  /// Convert JobModel to JSON (follows API structure exactly)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'customer_id': customerId,
+      'category_id': categoryId,
       'title': title,
       'description': description,
-      'category': category,
-      'location': location,
-      'latitude': latitude,
-      'longitude': longitude,
       'budget': budget,
       'budget_type': budgetType,
-      'status': status.value,
-      'customer_id': customerId,
-      'customer_name': customerName,
-      'customer_image_url': customerImageUrl,
-      'assigned_fundi_id': assignedFundiId,
-      'assigned_fundi_name': assignedFundiName,
-      'assigned_fundi_image_url': assignedFundiImageUrl,
-      'image_urls': imageUrls,
-      'required_skills': requiredSkills,
       'deadline': deadline.toIso8601String(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-      'metadata': metadata,
+      'location_lat': locationLat,
+      'location_lng': locationLng,
+      'status': status,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
   /// Create a copy with updated fields
   JobModel copyWith({
     String? id,
+    String? customerId,
+    String? categoryId,
     String? title,
     String? description,
-    String? category,
-    String? location,
-    double? latitude,
-    double? longitude,
     double? budget,
     String? budgetType,
-    JobStatus? status,
-    String? customerId,
-    String? customerName,
-    String? customerImageUrl,
-    String? assignedFundiId,
-    String? assignedFundiName,
-    String? assignedFundiImageUrl,
-    List<String>? imageUrls,
-    List<String>? requiredSkills,
     DateTime? deadline,
+    double? locationLat,
+    double? locationLng,
+    String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? categoryName,
+    String? location,
+    String? customerName,
+    String? customerImageUrl,
+    List<String>? imageUrls,
+    List<String>? requiredSkills,
     Map<String, dynamic>? metadata,
   }) {
     return JobModel(
       id: id ?? this.id,
+      customerId: customerId ?? this.customerId,
+      categoryId: categoryId ?? this.categoryId,
       title: title ?? this.title,
       description: description ?? this.description,
-      category: category ?? this.category,
-      location: location ?? this.location,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
       budget: budget ?? this.budget,
       budgetType: budgetType ?? this.budgetType,
-      status: status ?? this.status,
-      customerId: customerId ?? this.customerId,
-      customerName: customerName ?? this.customerName,
-      customerImageUrl: customerImageUrl ?? this.customerImageUrl,
-      assignedFundiId: assignedFundiId ?? this.assignedFundiId,
-      assignedFundiName: assignedFundiName ?? this.assignedFundiName,
-      assignedFundiImageUrl:
-          assignedFundiImageUrl ?? this.assignedFundiImageUrl,
-      imageUrls: imageUrls ?? this.imageUrls,
-      requiredSkills: requiredSkills ?? this.requiredSkills,
       deadline: deadline ?? this.deadline,
+      locationLat: locationLat ?? this.locationLat,
+      locationLng: locationLng ?? this.locationLng,
+      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      categoryName: categoryName ?? this.categoryName,
+      location: location ?? this.location,
+      customerName: customerName ?? this.customerName,
+      customerImageUrl: customerImageUrl ?? this.customerImageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
+      requiredSkills: requiredSkills ?? this.requiredSkills,
       metadata: metadata ?? this.metadata,
     );
   }

@@ -1,228 +1,202 @@
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 
-/// Comprehensive logging utility for the Fundi App
-/// Provides different log levels and formatted output for debugging and monitoring
+/// Centralized logging utility for the application
+/// Provides different log levels and formatted output
 class Logger {
   static const String _tag = 'FundiApp';
 
-  /// Log levels for different types of messages
-  static const int _verbose = 0;
-  static const int _debug = 1;
-  static const int _info = 2;
-  static const int _warning = 3;
-  static const int _error = 4;
-
-  /// Log verbose messages (most detailed)
-  static void verbose(
-    String message, {
-    String? tag,
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    _log(
-      _verbose,
-      'VERBOSE',
-      message,
-      tag: tag,
-      error: error,
-      stackTrace: stackTrace,
-    );
-  }
-
-  /// Log debug messages
-  static void debug(
-    String message, {
-    String? tag,
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    _log(
-      _debug,
-      'DEBUG',
-      message,
-      tag: tag,
-      error: error,
-      stackTrace: stackTrace,
-    );
-  }
-
-  /// Log info messages
-  static void info(
-    String message, {
-    String? tag,
-    Object? error,
-    StackTrace? stackTrace,
-    Map<String, dynamic>? data,
-  }) {
-    _log(
-      _info,
-      'INFO',
-      message,
-      tag: tag,
-      error: error,
-      stackTrace: stackTrace,
-      data: data,
-    );
-  }
-
-  /// Log warning messages
-  static void warning(
-    String message, {
-    String? tag,
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    _log(
-      _warning,
-      'WARNING',
-      message,
-      tag: tag,
-      error: error,
-      stackTrace: stackTrace,
-    );
-  }
-
-  /// Log error messages
-  static void error(
-    String message, {
-    String? tag,
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    _log(
-      _error,
-      'ERROR',
-      message,
-      tag: tag,
-      error: error,
-      stackTrace: stackTrace,
-    );
-  }
-
-  /// Log API requests
-  static void apiRequest(
-    String method,
-    String url, {
-    Map<String, dynamic>? headers,
-    dynamic body,
-  }) {
-    final message = 'API Request: $method $url';
-    final details = <String, dynamic>{
-      'method': method,
-      'url': url,
-      'headers': headers,
-      'body': body,
-    };
-
-    if (kDebugMode) {
-      developer.log(message, name: '${_tag}_API', level: _info, error: details);
-    }
-  }
-
-  /// Log API responses
-  static void apiResponse(
-    String method,
-    String url,
-    int statusCode, {
-    dynamic response,
-  }) {
-    final message = 'API Response: $method $url - $statusCode';
-    final details = <String, dynamic>{
-      'method': method,
-      'url': url,
-      'statusCode': statusCode,
-      'response': response,
-    };
-
-    if (kDebugMode) {
-      developer.log(message, name: '${_tag}_API', level: _info, error: details);
-    }
-  }
-
-  /// Log API errors
-  static void apiError(
-    String method,
-    String url,
-    Object error, {
-    StackTrace? stackTrace,
-  }) {
-    final message = 'API Error: $method $url';
-
+  /// Log info message
+  static void info(String message, {Map<String, dynamic>? data}) {
     if (kDebugMode) {
       developer.log(
         message,
-        name: '${_tag}_API',
-        level: _error,
+        name: _tag,
+        level: 800,
+        time: DateTime.now(),
+        error: data != null ? data.toString() : null,
+      );
+    }
+  }
+
+  /// Log warning message
+  static void warning(String message, {Map<String, dynamic>? data, Object? error}) {
+    if (kDebugMode) {
+      developer.log(
+        message,
+        name: _tag,
+        level: 900,
+        time: DateTime.now(),
+        error: error ?? (data != null ? data.toString() : null),
+      );
+    }
+  }
+
+  /// Log error message
+  static void error(String message, {Object? error, StackTrace? stackTrace}) {
+    if (kDebugMode) {
+      developer.log(
+        message,
+        name: _tag,
+        level: 1000,
+        time: DateTime.now(),
         error: error,
         stackTrace: stackTrace,
       );
     }
   }
 
-  /// Log user actions
-  static void userAction(String action, {Map<String, dynamic>? data}) {
-    final message = 'User Action: $action';
-
-    if (kDebugMode) {
-      developer.log(message, name: '${_tag}_USER', level: _info, error: data);
-    }
-  }
-
-  /// Log navigation events
-  static void navigation(String from, String to, {Map<String, dynamic>? data}) {
-    final message = 'Navigation: $from -> $to';
-
-    if (kDebugMode) {
-      developer.log(message, name: '${_tag}_NAV', level: _debug, error: data);
-    }
-  }
-
-  /// Log performance metrics
-  static void performance(
-    String operation,
-    Duration duration, {
-    Map<String, dynamic>? metadata,
-  }) {
-    final message = 'Performance: $operation took ${duration.inMilliseconds}ms';
-
+  /// Log debug message
+  static void debug(String message, {Map<String, dynamic>? data}) {
     if (kDebugMode) {
       developer.log(
         message,
-        name: '${_tag}_PERF',
-        level: _info,
-        error: {
-          'operation': operation,
-          'duration_ms': duration.inMilliseconds,
-          ...?metadata,
-        },
+        name: _tag,
+        level: 700,
+        time: DateTime.now(),
+        error: data != null ? data.toString() : null,
       );
     }
   }
 
-  /// Internal logging method
-  static void _log(
-    int level,
-    String levelName,
-    String message, {
-    String? tag,
-    Object? error,
-    StackTrace? stackTrace,
-    Map<String, dynamic>? data,
+  /// Log API request
+  static void apiRequest(
+    String method,
+    String url, {
+    Map<String, dynamic>? headers,
+    dynamic body,
   }) {
     if (kDebugMode) {
-      final logData = <String, dynamic>{
-        if (error != null) 'error': error,
-        if (data != null) ...data,
-      };
-
       developer.log(
-        message,
-        name: tag ?? _tag,
-        level: level,
-        error: logData.isNotEmpty ? logData : null,
+        'API Request: $method $url',
+        name: '${_tag}_API',
+        level: 800,
+        time: DateTime.now(),
+        error: {
+          'headers': headers,
+          'body': body,
+        }.toString(),
+      );
+    }
+  }
+
+  /// Log API response
+  static void apiResponse(
+    String method,
+    String url,
+    int statusCode, {
+    dynamic response,
+  }) {
+    if (kDebugMode) {
+      developer.log(
+        'API Response: $method $url - $statusCode',
+        name: '${_tag}_API',
+        level: 800,
+        time: DateTime.now(),
+        error: response?.toString(),
+      );
+    }
+  }
+
+  /// Log API error
+  static void apiError(
+    String method,
+    String url,
+    Object error, {
+    StackTrace? stackTrace,
+  }) {
+    if (kDebugMode) {
+      developer.log(
+        'API Error: $method $url',
+        name: '${_tag}_API',
+        level: 1000,
+        time: DateTime.now(),
+        error: error,
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Log authentication events
+  static void auth(String message, {Map<String, dynamic>? data}) {
+    if (kDebugMode) {
+      developer.log(
+        'AUTH: $message',
+        name: '${_tag}_AUTH',
+        level: 800,
+        time: DateTime.now(),
+        error: data?.toString(),
+      );
+    }
+  }
+
+  /// Log payment events
+  static void payment(String message, {Map<String, dynamic>? data}) {
+    if (kDebugMode) {
+      developer.log(
+        'PAYMENT: $message',
+        name: '${_tag}_PAYMENT',
+        level: 800,
+        time: DateTime.now(),
+        error: data?.toString(),
+      );
+    }
+  }
+
+  /// Log rating events
+  static void rating(String message, {Map<String, dynamic>? data}) {
+    if (kDebugMode) {
+      developer.log(
+        'RATING: $message',
+        name: '${_tag}_RATING',
+        level: 800,
+        time: DateTime.now(),
+        error: data?.toString(),
+      );
+    }
+  }
+
+  /// Log job events
+  static void job(String message, {Map<String, dynamic>? data}) {
+    if (kDebugMode) {
+      developer.log(
+        'JOB: $message',
+        name: '${_tag}_JOB',
+        level: 800,
+        time: DateTime.now(),
+        error: data?.toString(),
+      );
+    }
+  }
+
+  /// Log portfolio events
+  static void portfolio(String message, {Map<String, dynamic>? data}) {
+    if (kDebugMode) {
+      developer.log(
+        'PORTFOLIO: $message',
+        name: '${_tag}_PORTFOLIO',
+        level: 800,
+        time: DateTime.now(),
+        error: data?.toString(),
+      );
+    }
+  }
+
+  /// Log user events
+  static void user(String message, {Map<String, dynamic>? data}) {
+    if (kDebugMode) {
+      developer.log(
+        'USER: $message',
+        name: '${_tag}_USER',
+        level: 800,
+        time: DateTime.now(),
+        error: data?.toString(),
+      );
+    }
+  }
+
+  /// Log user actions (alias for user method)
+  static void userAction(String message, {Map<String, dynamic>? data}) {
+    user(message, data: data);
   }
 }

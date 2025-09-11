@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/job_model.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/extensions/string_extensions.dart';
 
-/// Reusable job card widget for displaying job information
-/// Features consistent styling and interactive elements
-class JobCard extends StatefulWidget {
+/// Job card widget for displaying job information
+class JobCard extends StatelessWidget {
   final JobModel job;
   final VoidCallback? onTap;
   final VoidCallback? onApply;
   final bool showApplyButton;
-  final bool isCompact;
 
   const JobCard({
     super.key,
@@ -18,341 +15,354 @@ class JobCard extends StatefulWidget {
     this.onTap,
     this.onApply,
     this.showApplyButton = true,
-    this.isCompact = false,
   });
 
   @override
-  State<JobCard> createState() => _JobCardState();
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Job title
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job.title,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          job.category ?? 'General',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Budget
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      job.formattedBudget,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Description
+              Text(
+                job.description,
+                style: Theme.of(context).textTheme.bodyMedium,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Job details
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      job.location ?? 'Location not specified',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+              
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 16,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    job.formattedDeadline,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Footer row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Status badge
+                  _buildStatusBadge(context),
+                  
+                  // Apply button
+                  if (showApplyButton && onApply != null)
+                    ElevatedButton(
+                      onPressed: onApply,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('Apply'),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(BuildContext context) {
+    Color backgroundColor;
+    Color textColor;
+    
+    switch (job.status) {
+      case JobStatus.open:
+        backgroundColor = Colors.green[100]!;
+        textColor = Colors.green[800]!;
+        break;
+      case JobStatus.inProgress:
+        backgroundColor = Colors.blue[100]!;
+        textColor = Colors.blue[800]!;
+        break;
+      case JobStatus.completed:
+        backgroundColor = Colors.grey[100]!;
+        textColor = Colors.grey[800]!;
+        break;
+      case JobStatus.cancelled:
+        backgroundColor = Colors.red[100]!;
+        textColor = Colors.red[800]!;
+        break;
+      default:
+        backgroundColor = Colors.grey[100]!;
+        textColor = Colors.grey[800]!;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        job.status.displayName,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
 }
 
-class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
+/// Job list widget
+class JobListWidget extends StatelessWidget {
+  final List<JobModel> jobs;
+  final VoidCallback? onTap;
+  final VoidCallback? onApply;
+  final bool showApplyButton;
+  final bool isLoading;
+  final Future<void> Function()? onRefresh;
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _handleTapDown(TapDownDetails details) {
-    _animationController.forward();
-  }
-
-  void _handleTapUp(TapUpDetails details) {
-    _animationController.reverse();
-  }
-
-  void _handleTapCancel() {
-    _animationController.reverse();
-  }
+  const JobListWidget({
+    super.key,
+    required this.jobs,
+    this.onTap,
+    this.onApply,
+    this.showApplyButton = true,
+    this.isLoading = false,
+    this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with title and status
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.job.title,
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              _buildStatusChip(),
-                            ],
-                          ),
-                        ),
-                        if (widget.job.customerImageUrl != null)
-                          _buildCustomerAvatar(),
-                      ],
-                    ),
+    if (isLoading && jobs.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
 
-                    const SizedBox(height: 12),
-
-                    // Category and location
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.category_outlined,
-                          size: 16,
-                          color: AppTheme.mediumGray,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.job.category,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.mediumGray),
-                        ),
-                        const SizedBox(width: 16),
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 16,
-                          color: AppTheme.mediumGray,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            widget.job.location,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppTheme.mediumGray),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    if (!widget.isCompact) ...[
-                      const SizedBox(height: 12),
-
-                      // Description
-                      Text(
-                        widget.job.description,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Skills
-                      if (widget.job.requiredSkills.isNotEmpty)
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children:
-                              widget.job.requiredSkills.take(3).map((skill) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.lightGreen.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: AppTheme.lightGreen,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    skill,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall?.copyWith(
-                                      color: AppTheme.primaryGreen,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                        ),
-
-                      const SizedBox(height: 12),
-                    ],
-
-                    // Footer with budget and deadline
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Budget',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: AppTheme.mediumGray),
-                              ),
-                              Text(
-                                widget.job.formattedBudget,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleMedium?.copyWith(
-                                  color: AppTheme.primaryGreen,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Deadline',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppTheme.mediumGray),
-                            ),
-                            Text(
-                              widget.job.formattedTimeRemaining,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(
-                                color:
-                                    widget.job.isDeadlinePassed
-                                        ? AppTheme.errorColor
-                                        : AppTheme.mediumGray,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    // Apply button
-                    if (widget.showApplyButton && widget.job.isOpen) ...[
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: widget.onApply,
-                          icon: const Icon(Icons.send, size: 18),
-                          label: const Text('Apply Now'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: context.accentColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+    if (jobs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.work_outline,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No jobs found',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Check back later for new opportunities',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[600],
               ),
             ),
+            if (onRefresh != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: onRefresh,
+                child: const Text('Refresh'),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: onRefresh ?? () async {},
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: jobs.length,
+        itemBuilder: (context, index) {
+          final job = jobs[index];
+          return JobCard(
+            job: job,
+            onTap: onTap,
+            onApply: onApply,
+            showApplyButton: showApplyButton,
           );
         },
       ),
     );
   }
-
-  Widget _buildStatusChip() {
-    Color backgroundColor;
-    Color textColor;
-
-    switch (widget.job.status) {
-      case JobStatus.open:
-        backgroundColor = AppTheme.successColor.withValues(alpha: 0.1);
-        textColor = AppTheme.successColor;
-        break;
-      case JobStatus.inProgress:
-        backgroundColor = AppTheme.infoColor.withValues(alpha: 0.1);
-        textColor = AppTheme.infoColor;
-        break;
-      case JobStatus.completed:
-        backgroundColor = AppTheme.mediumGray.withValues(alpha: 0.1);
-        textColor = AppTheme.mediumGray;
-        break;
-      case JobStatus.cancelled:
-        backgroundColor = AppTheme.errorColor.withValues(alpha: 0.1);
-        textColor = AppTheme.errorColor;
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        widget.job.status.displayName,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomerAvatar() {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: AppTheme.lightGray, width: 2),
-      ),
-      child: ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: widget.job.customerImageUrl!,
-          fit: BoxFit.cover,
-          placeholder:
-              (context, url) => Container(
-                color: AppTheme.lightGray,
-                child: const Icon(Icons.person, color: AppTheme.mediumGray),
-              ),
-          errorWidget:
-              (context, url, error) => Container(
-                color: AppTheme.lightGray,
-                child: const Icon(Icons.person, color: AppTheme.mediumGray),
-              ),
-        ),
-      ),
-    );
-  }
 }
 
-/// Compact job card for list views
-class CompactJobCard extends StatelessWidget {
-  final JobModel job;
-  final VoidCallback? onTap;
+/// Job search widget
+class JobSearchWidget extends StatefulWidget {
+  final Function(String) onSearch;
+  final Function(String) onCategoryChanged;
+  final List<String> categories;
+  final String selectedCategory;
 
-  const CompactJobCard({super.key, required this.job, this.onTap});
+  const JobSearchWidget({
+    super.key,
+    required this.onSearch,
+    required this.onCategoryChanged,
+    required this.categories,
+    required this.selectedCategory,
+  });
+
+  @override
+  State<JobSearchWidget> createState() => _JobSearchWidgetState();
+}
+
+class _JobSearchWidgetState extends State<JobSearchWidget> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return JobCard(
-      job: job,
-      onTap: onTap,
-      showApplyButton: false,
-      isCompact: true,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Search bar
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search jobs...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  _searchController.clear();
+                  widget.onSearch('');
+                },
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: widget.onSearch,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Category filter
+          SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.categories.length,
+              itemBuilder: (context, index) {
+                final category = widget.categories[index];
+                final isSelected = category == widget.selectedCategory;
+                
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(category),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      widget.onCategoryChanged(selected ? category : '');
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
-
-
-

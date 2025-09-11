@@ -41,14 +41,15 @@ class ApiClient {
   /// Create authentication interceptor
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
-      onRequest: (options, handler) {
+      onRequest: (options, handler) async {
+        // Add authentication header
         final token = _sessionManager.authToken;
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
         handler.next(options);
       },
-      onError: (error, handler) {
+      onError: (error, handler) async {
         if (error.response?.statusCode == 401) {
           _handleUnauthorized();
         }
@@ -56,6 +57,7 @@ class ApiClient {
       },
     );
   }
+
 
   /// Create logging interceptor
   Interceptor _createLoggingInterceptor() {
@@ -170,7 +172,7 @@ class ApiClient {
   /// Save authentication token
   Future<void> saveToken(String token) async {
     try {
-      await _sessionManager.refreshToken(token);
+      await _sessionManager.saveToken(token);
       Logger.info('Authentication token saved', data: {'token': 'saved'});
     } catch (e) {
       Logger.error('Failed to save token', error: e);
@@ -333,33 +335,44 @@ class ApiClient {
     Response response,
     T Function(dynamic)? fromJson,
   ) {
-    final data = response.data;
+    final responseData = response.data;
 
-    if (fromJson != null && data != null) {
-      try {
-        final parsedData = fromJson(data);
-        return ApiResponse<T>(
-          data: parsedData,
-          message: data['message'] ?? 'Success',
-          success: true,
-          statusCode: response.statusCode ?? 200,
-        );
-      } catch (e) {
-        Logger.error('Failed to parse response data', error: e);
-        return ApiResponse<T>(
-          data: null,
-          message: 'Failed to parse response',
-          success: false,
-          statusCode: response.statusCode ?? 200,
-        );
+    if (responseData is Map<String, dynamic>) {
+      final success = responseData['success'] ?? false;
+      final message = responseData['message'] ?? 'Success';
+      final data = responseData['data'];
+
+      if (fromJson != null && data != null) {
+        try {
+          final parsedData = fromJson(data);
+          return ApiResponse<T>(
+            data: parsedData,
+            message: message,
+            success: success,
+            statusCode: response.statusCode ?? 200,
+          );
+        } catch (e) {
+          Logger.error('Failed to parse response data', error: e);
+          return ApiResponse<T>(
+            data: null,
+            message: 'Failed to parse response',
+            success: false,
+            statusCode: response.statusCode ?? 200,
+          );
+        }
       }
+
+      return ApiResponse<T>(
+        data: data as T?,
+        message: message,
+        success: success,
+        statusCode: response.statusCode ?? 200,
+      );
     }
 
     return ApiResponse<T>(
-      data: data as T?,
-      message: (data is Map<String, dynamic>)
-          ? data['message'] ?? 'Success'
-          : 'Success',
+      data: responseData as T?,
+      message: 'Success',
       success: true,
       statusCode: response.statusCode ?? 200,
     );

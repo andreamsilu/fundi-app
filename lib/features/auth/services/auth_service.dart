@@ -2,6 +2,7 @@ import '../models/user_model.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_manager.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/constants/api_endpoints.dart';
 
 /// OTP Verification Types
 enum OtpVerificationType { registration, passwordReset, phoneChange }
@@ -31,20 +32,23 @@ class AuthService {
       Logger.userAction('Login attempt', data: {'phoneNumber': phoneNumber});
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/auth/login',
-        data: {'phone_number': phoneNumber, 'password': password},
+        ApiEndpoints.login,
+        data: {'phone': phoneNumber, 'password': password},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
         final token = response.data!['token'] as String;
-        final userData = response.data!['user'] as Map<String, dynamic>;
+        final userData = response.data! as Map<String, dynamic>;
         final user = UserModel.fromJson(userData);
-
+        
         // Save session with token and user data
-        await _sessionManager.saveSession(token: token, user: user);
+        await _sessionManager.saveToken(token);
+        await _sessionManager.saveUser(user);
 
-        Logger.userAction('Login successful', data: {'userId': user.id});
+        Logger.userAction('Login successful', data: {
+          'userId': user.id,
+        });
 
         return AuthResult.success(user: user, message: response.message);
       } else {
@@ -73,9 +77,9 @@ class AuthService {
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/auth/register',
+        ApiEndpoints.register,
         data: {
-          'phone_number': phoneNumber,
+          'phone': phoneNumber,
           'password': password,
           'role': role.value,
         },
@@ -84,13 +88,16 @@ class AuthService {
 
       if (response.success && response.data != null) {
         final token = response.data!['token'] as String;
-        final userData = response.data!['user'] as Map<String, dynamic>;
+        final userData = response.data! as Map<String, dynamic>;
         final user = UserModel.fromJson(userData);
-
+        
         // Save session with token and user data
-        await _sessionManager.saveSession(token: token, user: user);
+        await _sessionManager.saveToken(token);
+        await _sessionManager.saveUser(user);
 
-        Logger.userAction('Registration successful', data: {'userId': user.id});
+        Logger.userAction('Registration successful', data: {
+          'userId': user.id,
+        });
 
         return AuthResult.success(user: user, message: response.message);
       } else {
@@ -114,7 +121,7 @@ class AuthService {
       // Call logout endpoint if user is authenticated
       if (_sessionManager.isAuthenticated) {
         try {
-          await _apiClient.post('/auth/logout');
+          await _apiClient.post(ApiEndpoints.logout);
         } catch (e) {
           // Continue with logout even if API call fails
           Logger.warning('Logout API call failed', error: e);
@@ -132,35 +139,18 @@ class AuthService {
     }
   }
 
-  /// Refresh authentication token
-  Future<bool> refreshToken() async {
-    try {
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        '/auth/refresh',
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
 
-      if (response.success && response.data != null) {
-        final token = response.data!['token'] as String;
-        await _sessionManager.refreshToken(token);
 
-        Logger.info('Token refreshed successfully');
-        return true;
-      }
-
-      Logger.warning('Token refresh failed');
-      return false;
-    } catch (e) {
-      Logger.error('Token refresh error', error: e);
-      return false;
-    }
+  /// Get token information for debugging
+  Map<String, dynamic> getTokenInfo() {
+    return _sessionManager.getTokenInfo();
   }
 
   /// Get current user profile
   Future<UserModel?> getCurrentUserProfile() async {
     try {
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/auth/profile',
+        ApiEndpoints.me,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 

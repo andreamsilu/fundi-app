@@ -17,7 +17,7 @@ class AppConfig {
   /// Initialize the application with all necessary services
   static Future<void> initialize() async {
     // Initialize environment variables
-    await EnvConfig.initialize();
+    EnvConfig.initialize();
 
     // Initialize API client
     // Note: ApiClient initialization is handled in main.dart

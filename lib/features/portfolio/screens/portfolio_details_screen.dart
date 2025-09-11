@@ -5,6 +5,7 @@ import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/extensions/string_extensions.dart';
 import '../../auth/providers/auth_provider.dart';
 
 /// Portfolio details screen showing comprehensive portfolio information
@@ -282,7 +283,7 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
             Icon(Icons.calendar_today, size: 16, color: AppTheme.mediumGray),
             const SizedBox(width: 4),
             Text(
-              '${widget.portfolio.createdAt.day}/${widget.portfolio.createdAt.month}/${widget.portfolio.createdAt.year}',
+              '${widget.portfolio.createdAt?.day ?? 0}/${widget.portfolio.createdAt?.month ?? 0}/${widget.portfolio.createdAt?.year ?? 0}',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
@@ -388,7 +389,7 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
                 radius: 25,
                 backgroundColor: context.primaryColor.withValues(alpha: 0.1),
                 child: Text(
-                  widget.portfolio.fundiName.substring(0, 1).toUpperCase(),
+                  widget.portfolio.fundiName?.substring(0, 1).toUpperCase() ?? 'F',
                   style: TextStyle(
                     color: context.primaryColor,
                     fontWeight: FontWeight.bold,
@@ -402,7 +403,7 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.portfolio.fundiName,
+                      widget.portfolio.fundiName ?? 'Unknown Fundi',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppTheme.darkGray,

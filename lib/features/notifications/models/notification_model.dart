@@ -1,21 +1,20 @@
-import 'package:flutter/material.dart';
-
-/// Notification model representing app notifications
-/// Supports different notification types and actions
+/// Notification model representing user notifications
+/// This model follows the API structure exactly
 class NotificationModel {
   final String id;
   final String userId;
-  final NotificationType type;
+  final String type;
   final String title;
   final String message;
-  final String? imageUrl;
-  final Map<String, dynamic>? data;
-  final bool isRead;
-  final bool isActionable;
-  final String? actionText;
+  final bool readStatus;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  
+  // Additional fields for UI/UX (not in API but needed for mobile)
+  final String? senderName;
+  final String? senderImageUrl;
   final String? actionUrl;
-  final DateTime createdAt;
-  final DateTime? readAt;
+  final Map<String, dynamic>? data;
   final Map<String, dynamic>? metadata;
 
   const NotificationModel({
@@ -24,122 +23,124 @@ class NotificationModel {
     required this.type,
     required this.title,
     required this.message,
-    this.imageUrl,
-    this.data,
-    this.isRead = false,
-    this.isActionable = false,
-    this.actionText,
+    required this.readStatus,
+    this.createdAt,
+    this.updatedAt,
+    this.senderName,
+    this.senderImageUrl,
     this.actionUrl,
-    required this.createdAt,
-    this.readAt,
+    this.data,
     this.metadata,
   });
 
-  /// Get time ago text
-  String get timeAgo {
+  /// Check if notification is read
+  bool get isRead => readStatus;
+
+  /// Check if notification is unread
+  bool get isUnread => !readStatus;
+
+  /// Get notification type display name
+  String get typeDisplayName {
+    switch (type.toLowerCase()) {
+      case 'job_application':
+        return 'Job Application';
+      case 'job_approved':
+        return 'Job Approved';
+      case 'job_rejected':
+        return 'Job Rejected';
+      case 'payment_received':
+        return 'Payment Received';
+      case 'rating_received':
+        return 'Rating Received';
+      case 'message_received':
+        return 'Message Received';
+      case 'system':
+        return 'System Notification';
+      default:
+        return type.replaceAll('_', ' ').split(' ').map((word) => 
+          word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : word
+        ).join(' ');
+    }
+  }
+
+  /// Get notification type name (alias for type)
+  String get name => type;
+
+  /// Get notification icon based on type
+  String get iconName {
+    switch (type.toLowerCase()) {
+      case 'job_application':
+        return 'work';
+      case 'job_approved':
+        return 'check_circle';
+      case 'job_rejected':
+        return 'cancel';
+      case 'payment_received':
+        return 'payment';
+      case 'rating_received':
+        return 'star';
+      case 'message_received':
+        return 'message';
+      case 'system':
+        return 'info';
+      default:
+        return 'notifications';
+    }
+  }
+
+  /// Get formatted time
+  String get formattedTime {
+    if (createdAt == null) return 'Unknown';
     final now = DateTime.now();
-    final difference = now.difference(createdAt);
+    final difference = now.difference(createdAt!);
 
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
+    if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
     } else {
-      return '${(difference.inDays / 7).floor()}w ago';
+      return 'Just now';
     }
   }
 
-  /// Get notification icon
-  String get icon {
-    switch (type) {
-      case NotificationType.jobApplication:
-        return '💼';
-      case NotificationType.jobAccepted:
-        return '✅';
-      case NotificationType.jobRejected:
-        return '❌';
-      case NotificationType.jobCompleted:
-        return '🎉';
-      case NotificationType.message:
-        return '💬';
-      case NotificationType.payment:
-        return '💰';
-      case NotificationType.verification:
-        return '🔐';
-      case NotificationType.system:
-        return '🔔';
-      case NotificationType.promotion:
-        return '🎯';
-    }
+  /// Get short message preview
+  String get messagePreview {
+    if (message.length <= 100) return message;
+    return '${message.substring(0, 100)}...';
   }
 
-  /// Get notification color
-  String get color {
-    switch (type) {
-      case NotificationType.jobApplication:
-        return 'blue';
-      case NotificationType.jobAccepted:
-        return 'green';
-      case NotificationType.jobRejected:
-        return 'red';
-      case NotificationType.jobCompleted:
-        return 'green';
-      case NotificationType.message:
-        return 'blue';
-      case NotificationType.payment:
-        return 'green';
-      case NotificationType.verification:
-        return 'orange';
-      case NotificationType.system:
-        return 'gray';
-      case NotificationType.promotion:
-        return 'purple';
-    }
-  }
-
-  /// Create NotificationModel from JSON
+  /// Create NotificationModel from JSON (follows API structure)
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] as String,
       userId: json['user_id'] as String,
-      type: NotificationType.fromString(json['type'] as String),
+      type: json['type'] as String,
       title: json['title'] as String,
       message: json['message'] as String,
-      imageUrl: json['image_url'] as String?,
-      data: json['data'] as Map<String, dynamic>?,
-      isRead: json['is_read'] as bool? ?? false,
-      isActionable: json['is_actionable'] as bool? ?? false,
-      actionText: json['action_text'] as String?,
-      actionUrl: json['action_url'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      readAt: json['read_at'] != null
-          ? DateTime.parse(json['read_at'] as String)
-          : null,
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      readStatus: json['read_status'] as bool,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      senderName: json['sender_name'] as String?, // Additional field for mobile
+      senderImageUrl: json['sender_image_url'] as String?, // Additional field for mobile
+      actionUrl: json['action_url'] as String?, // Additional field for mobile
+      data: json['data'] as Map<String, dynamic>?, // Additional field for mobile
+      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
     );
   }
 
-  /// Convert NotificationModel to JSON
+  /// Convert NotificationModel to JSON (follows API structure exactly)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'user_id': userId,
-      'type': type.value,
+      'type': type,
       'title': title,
       'message': message,
-      'image_url': imageUrl,
-      'data': data,
-      'is_read': isRead,
-      'is_actionable': isActionable,
-      'action_text': actionText,
-      'action_url': actionUrl,
-      'created_at': createdAt.toIso8601String(),
-      'read_at': readAt?.toIso8601String(),
-      'metadata': metadata,
+      'read_status': readStatus,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
@@ -147,17 +148,17 @@ class NotificationModel {
   NotificationModel copyWith({
     String? id,
     String? userId,
-    NotificationType? type,
+    String? type,
     String? title,
     String? message,
-    String? imageUrl,
-    Map<String, dynamic>? data,
+    bool? readStatus,
     bool? isRead,
-    bool? isActionable,
-    String? actionText,
-    String? actionUrl,
     DateTime? createdAt,
-    DateTime? readAt,
+    DateTime? updatedAt,
+    String? senderName,
+    String? senderImageUrl,
+    String? actionUrl,
+    Map<String, dynamic>? data,
     Map<String, dynamic>? metadata,
   }) {
     return NotificationModel(
@@ -166,14 +167,13 @@ class NotificationModel {
       type: type ?? this.type,
       title: title ?? this.title,
       message: message ?? this.message,
-      imageUrl: imageUrl ?? this.imageUrl,
-      data: data ?? this.data,
-      isRead: isRead ?? this.isRead,
-      isActionable: isActionable ?? this.isActionable,
-      actionText: actionText ?? this.actionText,
-      actionUrl: actionUrl ?? this.actionUrl,
+      readStatus: isRead ?? readStatus ?? this.readStatus,
       createdAt: createdAt ?? this.createdAt,
-      readAt: readAt ?? this.readAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      senderName: senderName ?? this.senderName,
+      senderImageUrl: senderImageUrl ?? this.senderImageUrl,
+      actionUrl: actionUrl ?? this.actionUrl,
+      data: data ?? this.data,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -189,116 +189,79 @@ class NotificationModel {
 
   @override
   String toString() {
-    return 'NotificationModel(id: $id, type: $type, title: $title)';
+    return 'NotificationModel(id: $id, type: $type, title: $title, readStatus: $readStatus)';
   }
 }
 
-/// Notification types
-enum NotificationType {
-  jobApplication('job_application'),
-  jobAccepted('job_accepted'),
-  jobRejected('job_rejected'),
-  jobCompleted('job_completed'),
-  message('message'),
-  payment('payment'),
-  verification('verification'),
-  system('system'),
-  promotion('promotion');
+/// Notification result wrapper
+class NotificationResult {
+  final bool success;
+  final List<NotificationModel> notifications;
+  final int totalCount;
+  final int unreadCount;
+  final int currentPage;
+  final int totalPages;
+  final String? message;
 
-  const NotificationType(this.value);
-  final String value;
+  const NotificationResult({
+    required this.success,
+    required this.notifications,
+    required this.totalCount,
+    required this.unreadCount,
+    required this.currentPage,
+    required this.totalPages,
+    this.message,
+  });
 
-  static NotificationType fromString(String value) {
-    switch (value.toLowerCase()) {
-      case 'job_application':
-        return NotificationType.jobApplication;
-      case 'job_accepted':
-        return NotificationType.jobAccepted;
-      case 'job_rejected':
-        return NotificationType.jobRejected;
-      case 'job_completed':
-        return NotificationType.jobCompleted;
-      case 'message':
-        return NotificationType.message;
-      case 'payment':
-        return NotificationType.payment;
-      case 'verification':
-        return NotificationType.verification;
-      case 'system':
-        return NotificationType.system;
-      case 'promotion':
-        return NotificationType.promotion;
-      default:
-        return NotificationType.system;
-    }
+  factory NotificationResult.success({
+    required List<NotificationModel> notifications,
+    required int totalCount,
+    required int unreadCount,
+    required int currentPage,
+    required int totalPages,
+    String? message,
+  }) {
+    return NotificationResult(
+      success: true,
+      notifications: notifications,
+      totalCount: totalCount,
+      unreadCount: unreadCount,
+      currentPage: currentPage,
+      totalPages: totalPages,
+      message: message,
+    );
   }
 
-  String get displayName {
-    switch (this) {
-      case NotificationType.jobApplication:
-        return 'Job Application';
-      case NotificationType.jobAccepted:
-        return 'Job Accepted';
-      case NotificationType.jobRejected:
-        return 'Job Rejected';
-      case NotificationType.jobCompleted:
-        return 'Job Completed';
-      case NotificationType.message:
-        return 'Message';
-      case NotificationType.payment:
-        return 'Payment';
-      case NotificationType.verification:
-        return 'Verification';
-      case NotificationType.system:
-        return 'System';
-      case NotificationType.promotion:
-        return 'Promotion';
-    }
+  factory NotificationResult.failure({
+    required String message,
+  }) {
+    return NotificationResult(
+      success: false,
+      notifications: [],
+      totalCount: 0,
+      unreadCount: 0,
+      currentPage: 0,
+      totalPages: 0,
+      message: message,
+    );
+  }
+}
+
+/// Service result wrapper
+class ServiceResult {
+  final bool success;
+  final String? message;
+
+  const ServiceResult({
+    required this.success,
+    this.message,
+  });
+
+  factory ServiceResult.success({String? message}) {
+    return ServiceResult(success: true, message: message);
   }
 
-  Color get color {
-    switch (this) {
-      case NotificationType.jobApplication:
-        return Colors.blue;
-      case NotificationType.jobAccepted:
-        return Colors.green;
-      case NotificationType.jobRejected:
-        return Colors.red;
-      case NotificationType.jobCompleted:
-        return Colors.green;
-      case NotificationType.message:
-        return Colors.blue;
-      case NotificationType.payment:
-        return Colors.green;
-      case NotificationType.verification:
-        return Colors.orange;
-      case NotificationType.system:
-        return Colors.grey;
-      case NotificationType.promotion:
-        return Colors.purple;
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case NotificationType.jobApplication:
-        return Icons.work_outline;
-      case NotificationType.jobAccepted:
-        return Icons.check_circle_outline;
-      case NotificationType.jobRejected:
-        return Icons.cancel_outlined;
-      case NotificationType.jobCompleted:
-        return Icons.celebration_outlined;
-      case NotificationType.message:
-        return Icons.message_outlined;
-      case NotificationType.payment:
-        return Icons.payment_outlined;
-      case NotificationType.verification:
-        return Icons.verified_outlined;
-      case NotificationType.system:
-        return Icons.notifications_outlined;
-      case NotificationType.promotion:
-        return Icons.local_offer_outlined;
-    }
+  factory ServiceResult.failure({required String message}) {
+    return ServiceResult(success: false, message: message);
   }
 }

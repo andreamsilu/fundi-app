@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/constants/api_endpoints.dart';
 import '../models/notification_model.dart';
 
 /// Notification service for managing user notifications
@@ -15,7 +16,7 @@ class NotificationService {
   }) async {
     try {
       final response = await _apiClient.get(
-        '/notifications',
+        ApiEndpoints.notifications,
         queryParameters: {
           'page': page,
           'limit': limit,
@@ -59,8 +60,8 @@ class NotificationService {
   /// Mark a notification as read
   Future<ServiceResult> markAsRead(String notificationId) async {
     try {
-      final response = await _apiClient.put(
-        '/notifications/$notificationId/read',
+      final response = await _apiClient.patch(
+        ApiEndpoints.getMarkNotificationAsReadEndpoint(notificationId),
       );
 
       if (response.statusCode == 200) {
@@ -104,7 +105,7 @@ class NotificationService {
   Future<ServiceResult> deleteNotification(String notificationId) async {
     try {
       final response = await _apiClient.delete(
-        '/notifications/$notificationId',
+        ApiEndpoints.getDeleteNotificationEndpoint(notificationId),
       );
 
       if (response.statusCode == 200) {

@@ -1,40 +1,51 @@
 /// User model representing user data throughout the application
+/// This model follows the API structure exactly
 class UserModel {
   final String id;
-  final String email;
-  final String firstName;
-  final String lastName;
-  final String? phoneNumber;
-  final String? profileImageUrl;
-  final UserRole role;
-  final UserStatus status;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String phone;           // Primary identifier (matches API)
+  final String? password;       // Hidden in API responses
+  final UserRole role;          // 'fundi', 'customer', 'admin'
+  final UserStatus status;      // User status
+  final String? nidaNumber;     // National ID number
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  
+  // Additional fields for UI/UX (not in API but needed for mobile)
+  final String? email;          // Optional email for notifications
+  final String? fullName;       // Computed from FundiProfile if available
+  final String? profileImageUrl; // Profile image URL
   final Map<String, dynamic>? metadata;
 
   const UserModel({
     required this.id,
-    required this.email,
-    required this.firstName,
-    required this.lastName,
-    this.phoneNumber,
-    this.profileImageUrl,
+    required this.phone,
+    this.password,
     required this.role,
     required this.status,
-    required this.createdAt,
-    required this.updatedAt,
+    this.nidaNumber,
+    this.createdAt,
+    this.updatedAt,
+    this.email,
+    this.fullName,
+    this.profileImageUrl,
     this.metadata,
   });
 
-  /// Get full name
-  String get fullName => '$firstName $lastName';
-
-  /// Get display name (first name + last initial)
+  /// Get display name (full name or phone if no name)
   String get displayName {
-    if (lastName.isNotEmpty) {
-      return '$firstName ${lastName[0].toUpperCase()}.';
+    if (fullName != null && fullName!.isNotEmpty) {
+      return fullName!;
     }
-    return firstName;
+    return phone;
+  }
+
+  /// Get short display name (first name or phone)
+  String get shortDisplayName {
+    if (fullName != null && fullName!.isNotEmpty) {
+      final names = fullName!.split(' ');
+      return names.isNotEmpty ? names.first : phone;
+    }
+    return phone;
   }
 
   /// Check if user is a customer
@@ -52,36 +63,50 @@ class UserModel {
   /// Check if user is verified
   bool get isVerified => status == UserStatus.verified;
 
-  /// Create UserModel from JSON
+  /// Get user type (alias for role)
+  String get userType => role.value;
+
+  /// Get first name from full name
+  String? get firstName {
+    if (fullName != null && fullName!.isNotEmpty) {
+      final names = fullName!.split(' ');
+      return names.isNotEmpty ? names.first : null;
+    }
+    return null;
+  }
+
+  /// Create UserModel from JSON (follows API structure)
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as String,
-      email: json['email'] as String,
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
-      phoneNumber: json['phone_number'] as String?,
-      profileImageUrl: json['profile_image_url'] as String?,
+      phone: json['phone'] as String,
+      password: json['password'] as String?, // Usually hidden in API responses
       role: UserRole.fromString(json['role'] as String),
       status: UserStatus.fromString(json['status'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      nidaNumber: json['nida_number'] as String?,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      email: json['email'] as String?, // Additional field for mobile
+      fullName: json['full_name'] as String?, // Additional field for mobile
+      profileImageUrl: json['profile_image_url'] as String?, // Additional field for mobile
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
 
-  /// Convert UserModel to JSON
+  /// Convert UserModel to JSON (follows API structure)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'email': email,
-      'first_name': firstName,
-      'last_name': lastName,
-      'phone_number': phoneNumber,
-      'profile_image_url': profileImageUrl,
+      'phone': phone,
+      'password': password, // Usually not sent in API requests
       'role': role.value,
       'status': status.value,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'nida_number': nidaNumber,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'email': email, // Additional field for mobile
+      'full_name': fullName, // Additional field for mobile
+      'profile_image_url': profileImageUrl, // Additional field for mobile
       'metadata': metadata,
     };
   }
@@ -89,28 +114,30 @@ class UserModel {
   /// Create a copy with updated fields
   UserModel copyWith({
     String? id,
-    String? email,
-    String? firstName,
-    String? lastName,
-    String? phoneNumber,
-    String? profileImageUrl,
+    String? phone,
+    String? password,
     UserRole? role,
     UserStatus? status,
+    String? nidaNumber,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? email,
+    String? fullName,
+    String? profileImageUrl,
     Map<String, dynamic>? metadata,
   }) {
     return UserModel(
       id: id ?? this.id,
-      email: email ?? this.email,
-      firstName: firstName ?? this.firstName,
-      lastName: lastName ?? this.lastName,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      phone: phone ?? this.phone,
+      password: password ?? this.password,
       role: role ?? this.role,
       status: status ?? this.status,
+      nidaNumber: nidaNumber ?? this.nidaNumber,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      email: email ?? this.email,
+      fullName: fullName ?? this.fullName,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -126,7 +153,7 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, email: $email, fullName: $fullName, role: $role, status: $status)';
+    return 'UserModel(id: $id, phone: $phone, fullName: $fullName, role: $role, status: $status)';
   }
 }
 

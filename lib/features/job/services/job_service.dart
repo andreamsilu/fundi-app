@@ -1,6 +1,7 @@
 import '../models/job_model.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/constants/api_endpoints.dart';
 
 /// Job service handling all job-related operations
 /// Provides methods for creating, fetching, updating, and managing jobs
@@ -32,19 +33,15 @@ class JobService {
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/jobs',
+        ApiEndpoints.createJob,
         data: {
           'title': title,
           'description': description,
-          'category': category,
-          'location': location,
+          'category_id': category,
           'budget': budget,
-          'budget_type': budgetType,
           'deadline': deadline.toIso8601String(),
-          'required_skills': requiredSkills,
-          'latitude': latitude,
-          'longitude': longitude,
-          'image_urls': imageUrls ?? [],
+          'location_lat': latitude,
+          'location_lng': longitude,
         },
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -100,14 +97,14 @@ class JobService {
       if (search != null) queryParams['search'] = search;
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/jobs',
+        ApiEndpoints.jobs,
         queryParameters: queryParams,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
         final data = response.data!;
-        final jobsData = data['jobs'] as List<dynamic>;
+        final jobsData = data['data'] as List<dynamic>;
         final jobs =
             jobsData
                 .map(
@@ -116,10 +113,10 @@ class JobService {
                 )
                 .toList();
 
-        final pagination = data['pagination'] as Map<String, dynamic>;
-        final totalCount = pagination['total'] as int;
-        final totalPages = pagination['total_pages'] as int;
-        final currentPage = pagination['current_page'] as int;
+        final meta = data['meta'] as Map<String, dynamic>;
+        final totalCount = meta['total'] as int;
+        final totalPages = meta['last_page'] as int;
+        final currentPage = meta['current_page'] as int;
 
         Logger.userAction(
           'Jobs fetched successfully',
@@ -152,7 +149,7 @@ class JobService {
       Logger.userAction('Fetch job by ID', data: {'jobId': jobId});
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/jobs/$jobId',
+        ApiEndpoints.getJobByIdEndpoint(jobId),
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -207,7 +204,7 @@ class JobService {
       if (imageUrls != null) data['image_urls'] = imageUrls;
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/jobs/$jobId',
+        ApiEndpoints.getUpdateJobEndpoint(jobId),
         data: data,
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -237,7 +234,7 @@ class JobService {
       Logger.userAction('Delete job attempt', data: {'jobId': jobId});
 
       final response = await _apiClient.delete<Map<String, dynamic>>(
-        '/jobs/$jobId',
+        ApiEndpoints.getDeleteJobEndpoint(jobId),
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -277,12 +274,18 @@ class JobService {
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/jobs/$jobId/applications',
+        ApiEndpoints.getApplyToJobEndpoint(jobId),
         data: {
-          'message': message,
-          'proposed_budget': proposedBudget,
-          'proposed_budget_type': proposedBudgetType,
-          'estimated_days': estimatedDays,
+          'requirements': {
+            'message': message,
+            'estimated_days': estimatedDays,
+          },
+          'budget_breakdown': {
+            'labor': proposedBudget * 0.7,
+            'materials': proposedBudget * 0.2,
+            'transport': proposedBudget * 0.1,
+          },
+          'estimated_time': estimatedDays * 24, // Convert days to hours
         },
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -318,7 +321,7 @@ class JobService {
       Logger.userAction('Fetch job applications', data: {'jobId': jobId});
 
       final response = await _apiClient.get<List<dynamic>>(
-        '/jobs/$jobId/applications',
+        ApiEndpoints.getJobApplicationsEndpoint(jobId),
         fromJson: (data) => data as List<dynamic>,
       );
 
@@ -367,8 +370,9 @@ class JobService {
         data: {'jobId': jobId, 'applicationId': applicationId},
       );
 
-      final response = await _apiClient.put<Map<String, dynamic>>(
-        '/jobs/$jobId/applications/$applicationId/accept',
+      final response = await _apiClient.patch<Map<String, dynamic>>(
+        ApiEndpoints.getUpdateApplicationStatusEndpoint(applicationId),
+        data: {'status': 'accepted'},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -408,8 +412,9 @@ class JobService {
         data: {'jobId': jobId, 'applicationId': applicationId},
       );
 
-      final response = await _apiClient.put<Map<String, dynamic>>(
-        '/jobs/$jobId/applications/$applicationId/reject',
+      final response = await _apiClient.patch<Map<String, dynamic>>(
+        ApiEndpoints.getUpdateApplicationStatusEndpoint(applicationId),
+        data: {'status': 'rejected'},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 

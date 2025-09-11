@@ -5,6 +5,7 @@ import '../services/portfolio_service.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/extensions/string_extensions.dart';
 import '../../auth/providers/auth_provider.dart';
 
 /// Portfolio gallery screen showing all portfolio items
@@ -420,7 +421,7 @@ class _PortfolioGalleryScreenState extends State<PortfolioGalleryScreen>
                     const SizedBox(height: 4),
 
                     Text(
-                      '${portfolio.createdAt.day}/${portfolio.createdAt.month}/${portfolio.createdAt.year}',
+                      '${portfolio.createdAt?.day ?? 0}/${portfolio.createdAt?.month ?? 0}/${portfolio.createdAt?.year ?? 0}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.mediumGray,
                       ),

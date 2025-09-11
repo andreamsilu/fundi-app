@@ -3,6 +3,7 @@ import '../services/search_service.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/extensions/string_extensions.dart';
 import '../../job/models/job_model.dart';
 import '../../portfolio/models/portfolio_model.dart';
 
@@ -503,7 +504,7 @@ class _SearchScreenState extends State<SearchScreen>
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  job.location,
+                  job.location ?? 'Location not specified',
                   style: TextStyle(color: AppTheme.mediumGray),
                 ),
                 const Spacer(),

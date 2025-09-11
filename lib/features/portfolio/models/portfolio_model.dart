@@ -1,128 +1,144 @@
-/// Portfolio model representing fundi's work portfolio
-/// Contains media files, skills, and work history
+/// Portfolio model representing fundi portfolio items
+/// This model follows the API structure exactly
 class PortfolioModel {
   final String id;
   final String fundiId;
-  final String fundiName;
   final String title;
   final String description;
-  final List<String> imageUrls;
-  final List<String> videoUrls;
-  final List<String> skills;
   final String category;
+  final List<String> skillsUsed;
+  final List<String> images;
+  final int durationHours;
+  final double budget;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  
+  // Additional fields for UI/UX (not in API but needed for mobile)
+  final String? fundiName;
+  final String? fundiImageUrl;
+  final List<String>? imageUrls;
+  final List<String>? videoUrls;
   final String? location;
-  final double? budget;
-  final String? budgetType;
-  final int? durationDays;
-  final DateTime completedAt;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String? clientName;
+  final String? clientImageUrl;
   final Map<String, dynamic>? metadata;
 
   const PortfolioModel({
     required this.id,
     required this.fundiId,
-    required this.fundiName,
     required this.title,
     required this.description,
-    required this.imageUrls,
-    required this.videoUrls,
-    required this.skills,
     required this.category,
+    required this.skillsUsed,
+    required this.images,
+    required this.durationHours,
+    required this.budget,
+    this.createdAt,
+    this.updatedAt,
+    this.fundiName,
+    this.fundiImageUrl,
+    this.imageUrls,
+    this.videoUrls,
     this.location,
-    this.budget,
-    this.budgetType,
-    this.durationDays,
-    required this.completedAt,
-    required this.createdAt,
-    required this.updatedAt,
+    this.clientName,
+    this.clientImageUrl,
     this.metadata,
   });
 
-  /// Get display budget
-  String get displayBudget {
-    if (budget == null) return 'Not specified';
-    if (budget! >= 1000000) {
-      return '${(budget! / 1000000).toStringAsFixed(1)}M ${budgetType ?? ''}';
-    } else if (budget! >= 1000) {
-      return '${(budget! / 1000).toStringAsFixed(1)}K ${budgetType ?? ''}';
+  /// Get formatted budget
+  String get formattedBudget {
+    final currency = 'TZS';
+    if (budget >= 1000000) {
+      return '$currency ${(budget / 1000000).toStringAsFixed(1)}M';
+    } else if (budget >= 1000) {
+      return '$currency ${(budget / 1000).toStringAsFixed(1)}K';
     } else {
-      return '${budget!.toStringAsFixed(0)} ${budgetType ?? ''}';
+      return '$currency ${budget.toStringAsFixed(0)}';
     }
   }
 
-  /// Get duration display
-  String get displayDuration {
-    if (durationDays == null) return 'Not specified';
-    if (durationDays! == 1) return '1 day';
-    if (durationDays! < 7) return '$durationDays days';
-    if (durationDays! < 30) {
-      final weeks = (durationDays! / 7).floor();
-      return weeks == 1 ? '1 week' : '$weeks weeks';
+  /// Get formatted duration
+  String get formattedDuration {
+    if (durationHours < 24) {
+      return '$durationHours hour${durationHours > 1 ? 's' : ''}';
     } else {
-      final months = (durationDays! / 30).floor();
-      return months == 1 ? '1 month' : '$months months';
+      final days = (durationHours / 24).floor();
+      final hours = durationHours % 24;
+      if (hours > 0) {
+        return '$days day${days > 1 ? 's' : ''} $hours hour${hours > 1 ? 's' : ''}';
+      } else {
+        return '$days day${days > 1 ? 's' : ''}';
+      }
     }
   }
 
-  /// Get all media URLs
-  List<String> get allMediaUrls => [...imageUrls, ...videoUrls];
+  /// Get skills as comma-separated string
+  String get skillsString {
+    return skillsUsed.join(', ');
+  }
 
   /// Check if portfolio has images
-  bool get hasImages => imageUrls.isNotEmpty;
+  bool get hasImages => imageUrls != null && imageUrls!.isNotEmpty;
 
   /// Check if portfolio has videos
-  bool get hasVideos => videoUrls.isNotEmpty;
+  bool get hasVideos => videoUrls != null && videoUrls!.isNotEmpty;
 
-  /// Check if portfolio has media
-  bool get hasMedia => hasImages || hasVideos;
+  /// Get formatted created date
+  String get formattedCreatedAt {
+    if (createdAt == null) return 'Unknown';
+    final now = DateTime.now();
+    final difference = now.difference(createdAt!);
 
-  /// Get images (alias for imageUrls)
-  List<String> get images => imageUrls;
+    if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+    } else {
+      return 'Just now';
+    }
+  }
 
-  /// Create PortfolioModel from JSON
+  /// Create PortfolioModel from JSON (follows API structure)
   factory PortfolioModel.fromJson(Map<String, dynamic> json) {
     return PortfolioModel(
       id: json['id'] as String,
       fundiId: json['fundi_id'] as String,
-      fundiName: json['fundi_name'] as String? ?? 'Unknown Fundi',
       title: json['title'] as String,
       description: json['description'] as String,
-      imageUrls: List<String>.from(json['image_urls'] ?? []),
-      videoUrls: List<String>.from(json['video_urls'] ?? []),
-      skills: List<String>.from(json['skills'] ?? []),
-      category: json['category'] as String,
-      location: json['location'] as String?,
-      budget: json['budget'] as double?,
-      budgetType: json['budget_type'] as String?,
-      durationDays: json['duration_days'] as int?,
-      completedAt: DateTime.parse(json['completed_at'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      category: json['category'] as String? ?? 'General',
+      skillsUsed: List<String>.from(json['skills_used'] as List),
+      images: json['images'] != null ? List<String>.from(json['images'] as List) : [],
+      durationHours: json['duration_hours'] as int,
+      budget: (json['budget'] as num).toDouble(),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      fundiName: json['fundi_name'] as String?, // Additional field for mobile
+      fundiImageUrl: json['fundi_image_url'] as String?, // Additional field for mobile
+      imageUrls: json['image_urls'] != null ? List<String>.from(json['image_urls'] as List) : null, // Additional field for mobile
+      videoUrls: json['video_urls'] != null ? List<String>.from(json['video_urls'] as List) : null, // Additional field for mobile
+      location: json['location'] as String?, // Additional field for mobile
+      clientName: json['client_name'] as String?, // Additional field for mobile
+      clientImageUrl: json['client_image_url'] as String?, // Additional field for mobile
+      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
     );
   }
 
-  /// Convert PortfolioModel to JSON
+  /// Convert PortfolioModel to JSON (follows API structure exactly)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'fundi_id': fundiId,
-      'fundi_name': fundiName,
       'title': title,
       'description': description,
-      'image_urls': imageUrls,
-      'video_urls': videoUrls,
-      'skills': skills,
       'category': category,
-      'location': location,
+      'skills_used': skillsUsed,
+      'images': images,
+      'duration_hours': durationHours,
       'budget': budget,
-      'budget_type': budgetType,
-      'duration_days': durationDays,
-      'completed_at': completedAt.toIso8601String(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-      'metadata': metadata,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
@@ -130,39 +146,43 @@ class PortfolioModel {
   PortfolioModel copyWith({
     String? id,
     String? fundiId,
-    String? fundiName,
     String? title,
     String? description,
-    List<String>? imageUrls,
-    List<String>? videoUrls,
-    List<String>? skills,
     String? category,
-    String? location,
+    List<String>? skillsUsed,
+    List<String>? images,
+    int? durationHours,
     double? budget,
-    String? budgetType,
-    int? durationDays,
-    DateTime? completedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? fundiName,
+    String? fundiImageUrl,
+    List<String>? imageUrls,
+    List<String>? videoUrls,
+    String? location,
+    String? clientName,
+    String? clientImageUrl,
     Map<String, dynamic>? metadata,
   }) {
     return PortfolioModel(
       id: id ?? this.id,
       fundiId: fundiId ?? this.fundiId,
-      fundiName: fundiName ?? this.fundiName,
       title: title ?? this.title,
       description: description ?? this.description,
-      imageUrls: imageUrls ?? this.imageUrls,
-      videoUrls: videoUrls ?? this.videoUrls,
-      skills: skills ?? this.skills,
       category: category ?? this.category,
-      location: location ?? this.location,
+      skillsUsed: skillsUsed ?? this.skillsUsed,
+      images: images ?? this.images,
+      durationHours: durationHours ?? this.durationHours,
       budget: budget ?? this.budget,
-      budgetType: budgetType ?? this.budgetType,
-      durationDays: durationDays ?? this.durationDays,
-      completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      fundiName: fundiName ?? this.fundiName,
+      fundiImageUrl: fundiImageUrl ?? this.fundiImageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
+      videoUrls: videoUrls ?? this.videoUrls,
+      location: location ?? this.location,
+      clientName: clientName ?? this.clientName,
+      clientImageUrl: clientImageUrl ?? this.clientImageUrl,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -178,33 +198,100 @@ class PortfolioModel {
 
   @override
   String toString() {
-    return 'PortfolioModel(id: $id, title: $title, category: $category)';
+    return 'PortfolioModel(id: $id, title: $title, fundiId: $fundiId, budget: $formattedBudget)';
   }
 }
 
-/// Portfolio category enum
+/// Portfolio category enumeration
 enum PortfolioCategory {
-  plumbing('plumbing', 'Plumbing'),
-  electrical('electrical', 'Electrical'),
-  carpentry('carpentry', 'Carpentry'),
-  masonry('masonry', 'Masonry'),
-  painting('painting', 'Painting'),
-  roofing('roofing', 'Roofing'),
-  flooring('flooring', 'Flooring'),
-  hvac('hvac', 'HVAC'),
-  landscaping('landscaping', 'Landscaping'),
-  general('general', 'General Construction');
+  general('General'),
+  plumbing('Plumbing'),
+  electrical('Electrical'),
+  carpentry('Carpentry'),
+  masonry('Masonry'),
+  painting('Painting'),
+  roofing('Roofing'),
+  flooring('Flooring'),
+  hvac('HVAC'),
+  landscaping('Landscaping'),
+  automotive('Automotive'),
+  electronics('Electronics'),
+  furniture('Furniture'),
+  metalwork('Metalwork'),
+  other('Other');
 
-  const PortfolioCategory(this.value, this.displayName);
+  const PortfolioCategory(this.value);
   final String value;
-  final String displayName;
 
   static PortfolioCategory fromString(String value) {
-    for (final category in PortfolioCategory.values) {
-      if (category.value == value.toLowerCase()) {
-        return category;
-      }
+    switch (value.toLowerCase()) {
+      case 'general':
+        return PortfolioCategory.general;
+      case 'plumbing':
+        return PortfolioCategory.plumbing;
+      case 'electrical':
+        return PortfolioCategory.electrical;
+      case 'carpentry':
+        return PortfolioCategory.carpentry;
+      case 'masonry':
+        return PortfolioCategory.masonry;
+      case 'painting':
+        return PortfolioCategory.painting;
+      case 'roofing':
+        return PortfolioCategory.roofing;
+      case 'flooring':
+        return PortfolioCategory.flooring;
+      case 'hvac':
+        return PortfolioCategory.hvac;
+      case 'landscaping':
+        return PortfolioCategory.landscaping;
+      case 'automotive':
+        return PortfolioCategory.automotive;
+      case 'electronics':
+        return PortfolioCategory.electronics;
+      case 'furniture':
+        return PortfolioCategory.furniture;
+      case 'metalwork':
+        return PortfolioCategory.metalwork;
+      case 'other':
+        return PortfolioCategory.other;
+      default:
+        return PortfolioCategory.other;
     }
-    return PortfolioCategory.general;
+  }
+
+  String get displayName {
+    switch (this) {
+      case PortfolioCategory.general:
+        return 'General';
+      case PortfolioCategory.plumbing:
+        return 'Plumbing';
+      case PortfolioCategory.electrical:
+        return 'Electrical';
+      case PortfolioCategory.carpentry:
+        return 'Carpentry';
+      case PortfolioCategory.masonry:
+        return 'Masonry';
+      case PortfolioCategory.painting:
+        return 'Painting';
+      case PortfolioCategory.roofing:
+        return 'Roofing';
+      case PortfolioCategory.flooring:
+        return 'Flooring';
+      case PortfolioCategory.hvac:
+        return 'HVAC';
+      case PortfolioCategory.landscaping:
+        return 'Landscaping';
+      case PortfolioCategory.automotive:
+        return 'Automotive';
+      case PortfolioCategory.electronics:
+        return 'Electronics';
+      case PortfolioCategory.furniture:
+        return 'Furniture';
+      case PortfolioCategory.metalwork:
+        return 'Metalwork';
+      case PortfolioCategory.other:
+        return 'Other';
+    }
   }
 }

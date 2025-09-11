@@ -124,7 +124,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       return _notifications.where((n) => !n.isRead).toList();
     return _notifications
         .where(
-          (n) => n.type.name.toLowerCase() == _selectedFilter.toLowerCase(),
+          (n) => n.type.toLowerCase() == _selectedFilter.toLowerCase(),
         )
         .toList();
   }
@@ -255,7 +255,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     if (filter == 'Unread')
       return _notifications.where((n) => !n.isRead).length;
     return _notifications
-        .where((n) => n.type.name.toLowerCase() == filter.toLowerCase())
+        .where((n) => n.type.toLowerCase() == filter.toLowerCase())
         .length;
   }
 
@@ -338,8 +338,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: notification.type.color.withValues(alpha: 0.1),
-            child: Icon(notification.type.icon, color: notification.type.color),
+            backgroundColor: _getNotificationColor(notification.type).withValues(alpha: 0.1),
+            child: Icon(_getNotificationIcon(notification.type), color: _getNotificationColor(notification.type)),
           ),
           title: Text(
             notification.title,
@@ -359,7 +359,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                notification.timeAgo,
+                notification.formattedTime,
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: AppTheme.mediumGray),
@@ -387,22 +387,22 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   void _handleNotificationTap(NotificationModel notification) {
     // TODO: Navigate to relevant screen based on notification type
-    switch (notification.type) {
-      case NotificationType.jobApplication:
-      case NotificationType.jobAccepted:
-      case NotificationType.jobRejected:
-      case NotificationType.jobCompleted:
+    switch (notification.type.toLowerCase()) {
+      case 'job_application':
+      case 'job_approved':
+      case 'job_rejected':
+      case 'job_completed':
         // Navigate to job details
         break;
-      case NotificationType.message:
+      case 'message_received':
         // Navigate to chat
         break;
-      case NotificationType.payment:
-      case NotificationType.verification:
+      case 'payment_received':
+      case 'verification':
         // Navigate to relevant details
         break;
-      case NotificationType.system:
-      case NotificationType.promotion:
+      case 'system':
+      case 'promotion':
         // Show system message
         break;
     }
@@ -433,6 +433,48 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       }
     } catch (e) {
       // Handle error silently
+    }
+  }
+
+  Color _getNotificationColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'job_application':
+        return Colors.blue;
+      case 'job_approved':
+        return Colors.green;
+      case 'job_rejected':
+        return Colors.red;
+      case 'payment_received':
+        return Colors.orange;
+      case 'rating_received':
+        return Colors.amber;
+      case 'message_received':
+        return Colors.purple;
+      case 'system':
+        return Colors.grey;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  IconData _getNotificationIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'job_application':
+        return Icons.work;
+      case 'job_approved':
+        return Icons.check_circle;
+      case 'job_rejected':
+        return Icons.cancel;
+      case 'payment_received':
+        return Icons.payment;
+      case 'rating_received':
+        return Icons.star;
+      case 'message_received':
+        return Icons.message;
+      case 'system':
+        return Icons.info;
+      default:
+        return Icons.notifications;
     }
   }
 }

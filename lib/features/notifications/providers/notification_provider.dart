@@ -38,7 +38,7 @@ class NotificationProvider extends ChangeNotifier {
     if (_selectedType != null) {
       return _notifications
           .where(
-            (n) => n.type.name.toLowerCase() == _selectedType!.toLowerCase(),
+            (n) => n.type.toLowerCase() == _selectedType!.toLowerCase(),
           )
           .toList();
     }

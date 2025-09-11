@@ -5,6 +5,7 @@ import '../services/job_service.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/extensions/string_extensions.dart';
 import '../../auth/providers/auth_provider.dart';
 
 /// Job details screen showing comprehensive job information
@@ -311,7 +312,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
             Icon(Icons.category_outlined, size: 16, color: AppTheme.mediumGray),
             const SizedBox(width: 4),
             Text(
-              widget.job.category,
+              widget.job.category ?? 'General',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
@@ -325,7 +326,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
             const SizedBox(width: 4),
             Expanded(
               child: Text(
-                widget.job.location,
+                widget.job.location ?? 'Location not specified',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
@@ -385,7 +386,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
         // Posted Date
         _buildDetailItem(
           'Posted',
-          '${widget.job.createdAt.day}/${widget.job.createdAt.month}/${widget.job.createdAt.year}',
+          '${widget.job.createdAt?.day ?? 0}/${widget.job.createdAt?.month ?? 0}/${widget.job.createdAt?.year ?? 0}',
           Icons.calendar_today,
         ),
       ],
