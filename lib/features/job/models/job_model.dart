@@ -16,7 +16,7 @@ class JobModel {
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Additional fields for UI/UX (not in API but needed for mobile)
   final String? categoryName;
   final String? location;
@@ -96,14 +96,14 @@ class JobModel {
   String get formattedDeadline {
     final now = DateTime.now();
     final difference = deadline.difference(now);
-    
+
     if (difference.isNegative) {
       return 'Deadline passed';
     }
-    
+
     final days = difference.inDays;
     final hours = difference.inHours % 24;
-    
+
     if (days > 0) {
       return '$days day${days > 1 ? 's' : ''} left';
     } else if (hours > 0) {
@@ -119,26 +119,50 @@ class JobModel {
   /// Create JobModel from JSON (follows API structure)
   factory JobModel.fromJson(Map<String, dynamic> json) {
     return JobModel(
-      id: json['id'] as String,
-      customerId: json['customer_id'] as String,
-      categoryId: json['category_id'] as String,
+      id: json['id']
+          .toString(), // Convert to String to handle both int and String
+      customerId: json['customer_id']
+          .toString(), // Convert to String to handle both int and String
+      categoryId: json['category_id']
+          .toString(), // Convert to String to handle both int and String
       title: json['title'] as String,
       description: json['description'] as String,
-      budget: (json['budget'] as num).toDouble(),
+      budget: JobModel.parseDouble(json['budget']),
       budgetType: json['budget_type'] as String? ?? 'fixed',
       deadline: DateTime.parse(json['deadline'] as String),
-      locationLat: json['location_lat'] != null ? (json['location_lat'] as num).toDouble() : null,
-      locationLng: json['location_lng'] != null ? (json['location_lng'] as num).toDouble() : null,
+      locationLat: json['location_lat'] != null
+          ? JobModel.parseDouble(json['location_lat'])
+          : null,
+      locationLng: json['location_lng'] != null
+          ? JobModel.parseDouble(json['location_lng'])
+          : null,
       status: json['status'] as String,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
-      categoryName: json['category_name'] as String?, // Additional field for mobile
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
+      categoryName: json['category'] != null
+          ? (json['category'] as Map<String, dynamic>)['name'] as String?
+          : json['category_name']
+                as String?, // Handle nested category or direct field
       location: json['location'] as String?, // Additional field for mobile
-      customerName: json['customer_name'] as String?, // Additional field for mobile
-      customerImageUrl: json['customer_image_url'] as String?, // Additional field for mobile
-      imageUrls: json['image_urls'] != null ? List<String>.from(json['image_urls'] as List) : null, // Additional field for mobile
-      requiredSkills: json['required_skills'] != null ? List<String>.from(json['required_skills'] as List) : null, // Additional field for mobile
-      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
+      customerName: json['customer'] != null
+          ? (json['customer'] as Map<String, dynamic>)['phone'] as String?
+          : json['customer_name']
+                as String?, // Handle nested customer or direct field
+      customerImageUrl:
+          json['customer_image_url'] as String?, // Additional field for mobile
+      imageUrls: json['image_urls'] != null
+          ? List<String>.from(json['image_urls'] as List)
+          : null, // Additional field for mobile
+      requiredSkills: json['required_skills'] != null
+          ? List<String>.from(json['required_skills'] as List)
+          : null, // Additional field for mobile
+      metadata: json['metadata'] != null
+          ? json['metadata'] as Map<String, dynamic>
+          : null, // Additional field for mobile
     );
   }
 
@@ -220,6 +244,22 @@ class JobModel {
   @override
   String toString() {
     return 'JobModel(id: $id, title: $title, status: $status, budget: $formattedBudget)';
+  }
+
+  /// Helper method to parse double values from JSON (handles both String and num)
+  static double parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
+  /// Helper method to parse int values from JSON (handles both String and num)
+  static int parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }
 
@@ -317,15 +357,20 @@ class JobApplicationModel {
   /// Create JobApplicationModel from JSON
   factory JobApplicationModel.fromJson(Map<String, dynamic> json) {
     return JobApplicationModel(
-      id: json['id'] as String,
-      jobId: json['job_id'] as String,
-      fundiId: json['fundi_id'] as String,
+      id: json['id']
+          .toString(), // Convert to String to handle both int and String
+      jobId: json['job_id']
+          .toString(), // Convert to String to handle both int and String
+      fundiId: json['fundi_id']
+          .toString(), // Convert to String to handle both int and String
       fundiName: json['fundi_name'] as String,
       fundiImageUrl: json['fundi_image_url'] as String?,
       message: json['message'] as String,
-      proposedBudget: (json['proposed_budget'] as num).toDouble(),
+      proposedBudget: JobModel.parseDouble(json['proposed_budget']),
       proposedBudgetType: json['proposed_budget_type'] as String,
-      estimatedDays: json['estimated_days'] as int,
+      estimatedDays: JobModel.parseInt(
+        json['estimated_days'],
+      ), // Convert to int safely
       status: ApplicationStatus.fromString(json['status'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),

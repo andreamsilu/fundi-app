@@ -4,14 +4,20 @@ import '../config/env_config.dart';
 /// This file contains all the static values used throughout the app
 class AppConstants {
   // API Configuration
-  static String get baseUrl =>
-      EnvConfig.get('API_BASE_URL', defaultValue: 'https://api.fundi.app/v1');
+  static String get baseUrl => EnvConfig.get(
+    'API_BASE_URL',
+    defaultValue: 'http://88.223.92.135:8002/api/v1',
+  );
   static String get apiVersion =>
       EnvConfig.get('API_VERSION', defaultValue: 'v1');
-  static int get connectionTimeout =>
-      EnvConfig.getInt('API_TIMEOUT', defaultValue: 30000);
-  static int get receiveTimeout =>
-      EnvConfig.getInt('API_TIMEOUT', defaultValue: 30000);
+  static int get connectionTimeout => EnvConfig.getInt(
+    'API_TIMEOUT',
+    defaultValue: 60000,
+  ); // Increased to 60 seconds
+  static int get receiveTimeout => EnvConfig.getInt(
+    'API_TIMEOUT',
+    defaultValue: 60000,
+  ); // Increased to 60 seconds
 
   // Storage Keys
   static const String tokenKey = 'auth_token';

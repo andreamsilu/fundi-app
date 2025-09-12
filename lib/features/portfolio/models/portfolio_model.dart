@@ -12,7 +12,7 @@ class PortfolioModel {
   final double budget;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Additional fields for UI/UX (not in API but needed for mobile)
   final String? fundiName;
   final String? fundiImageUrl;
@@ -103,25 +103,41 @@ class PortfolioModel {
   /// Create PortfolioModel from JSON (follows API structure)
   factory PortfolioModel.fromJson(Map<String, dynamic> json) {
     return PortfolioModel(
-      id: json['id'] as String,
-      fundiId: json['fundi_id'] as String,
+      id: json['id']
+          .toString(), // Convert to String to handle both int and String
+      fundiId: json['fundi_id']
+          .toString(), // Convert to String to handle both int and String
       title: json['title'] as String,
       description: json['description'] as String,
       category: json['category'] as String? ?? 'General',
       skillsUsed: List<String>.from(json['skills_used'] as List),
-      images: json['images'] != null ? List<String>.from(json['images'] as List) : [],
+      images: json['images'] != null
+          ? List<String>.from(json['images'] as List)
+          : [],
       durationHours: json['duration_hours'] as int,
       budget: (json['budget'] as num).toDouble(),
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       fundiName: json['fundi_name'] as String?, // Additional field for mobile
-      fundiImageUrl: json['fundi_image_url'] as String?, // Additional field for mobile
-      imageUrls: json['image_urls'] != null ? List<String>.from(json['image_urls'] as List) : null, // Additional field for mobile
-      videoUrls: json['video_urls'] != null ? List<String>.from(json['video_urls'] as List) : null, // Additional field for mobile
+      fundiImageUrl:
+          json['fundi_image_url'] as String?, // Additional field for mobile
+      imageUrls: json['image_urls'] != null
+          ? List<String>.from(json['image_urls'] as List)
+          : null, // Additional field for mobile
+      videoUrls: json['video_urls'] != null
+          ? List<String>.from(json['video_urls'] as List)
+          : null, // Additional field for mobile
       location: json['location'] as String?, // Additional field for mobile
       clientName: json['client_name'] as String?, // Additional field for mobile
-      clientImageUrl: json['client_image_url'] as String?, // Additional field for mobile
-      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
+      clientImageUrl:
+          json['client_image_url'] as String?, // Additional field for mobile
+      metadata:
+          json['metadata']
+              as Map<String, dynamic>?, // Additional field for mobile
     );
   }
 

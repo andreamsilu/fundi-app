@@ -14,7 +14,7 @@ class EnvConfig {
 
     // Set default values for development
     if (!_config.containsKey('API_BASE_URL')) {
-      _config['API_BASE_URL'] = 'http://88.223.92.135/v1';
+      _config['API_BASE_URL'] = 'http://88.223.92.135:8002/api/v1';
     }
     if (!_config.containsKey('API_VERSION')) {
       _config['API_VERSION'] = 'v1';
@@ -120,7 +120,7 @@ class EnvConfig {
 
   /// Get API base URL
   static String get apiBaseUrl {
-    return get('API_BASE_URL', defaultValue: 'https://api.fundi.app/v1');
+    return get('API_BASE_URL', defaultValue: 'http://88.223.92.135:8002/api/v1');
   }
 
   /// Get API version
@@ -165,6 +165,9 @@ class EnvConfig {
 
   /// Get allowed file types
   static List<String> get allowedFileTypes {
-    return getList('ALLOWED_FILE_TYPES', defaultValue: ['jpg', 'jpeg', 'png', 'gif']);
+    return getList(
+      'ALLOWED_FILE_TYPES',
+      defaultValue: ['jpg', 'jpeg', 'png', 'gif'],
+    );
   }
 }

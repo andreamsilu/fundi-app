@@ -40,8 +40,11 @@ class JobService {
           'category_id': category,
           'budget': budget,
           'deadline': deadline.toIso8601String(),
+          'location': location,
           'location_lat': latitude,
           'location_lng': longitude,
+          'required_skills': requiredSkills,
+          'image_urls': imageUrls,
         },
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -105,18 +108,16 @@ class JobService {
       if (response.success && response.data != null) {
         final data = response.data!;
         final jobsData = data['data'] as List<dynamic>;
-        final jobs =
-            jobsData
-                .map(
-                  (jobData) =>
-                      JobModel.fromJson(jobData as Map<String, dynamic>),
-                )
-                .toList();
+        final jobs = jobsData
+            .map(
+              (jobData) => JobModel.fromJson(jobData as Map<String, dynamic>),
+            )
+            .toList();
 
-        final meta = data['meta'] as Map<String, dynamic>;
-        final totalCount = meta['total'] as int;
-        final totalPages = meta['last_page'] as int;
-        final currentPage = meta['current_page'] as int;
+        // Pagination data is directly in the response, not nested under 'meta'
+        final totalCount = data['total'] as int;
+        final totalPages = data['last_page'] as int;
+        final currentPage = data['current_page'] as int;
 
         Logger.userAction(
           'Jobs fetched successfully',
@@ -256,7 +257,8 @@ class JobService {
   }
 
   /// Apply for a job
-  Future<ApplicationResult> applyForJob(String id, {
+  Future<ApplicationResult> applyForJob(
+    String id, {
     required String jobId,
     required String message,
     required double proposedBudget,
@@ -276,10 +278,7 @@ class JobService {
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.getApplyToJobEndpoint(jobId),
         data: {
-          'requirements': {
-            'message': message,
-            'estimated_days': estimatedDays,
-          },
+          'requirements': {'message': message, 'estimated_days': estimatedDays},
           'budget_breakdown': {
             'labor': proposedBudget * 0.7,
             'materials': proposedBudget * 0.2,
@@ -326,14 +325,12 @@ class JobService {
       );
 
       if (response.success && response.data != null) {
-        final applications =
-            response.data!
-                .map(
-                  (appData) => JobApplicationModel.fromJson(
-                    appData as Map<String, dynamic>,
-                  ),
-                )
-                .toList();
+        final applications = response.data!
+            .map(
+              (appData) =>
+                  JobApplicationModel.fromJson(appData as Map<String, dynamic>),
+            )
+            .toList();
 
         Logger.userAction(
           'Job applications fetched successfully',
@@ -567,6 +564,3 @@ class ApplicationListResult {
     );
   }
 }
-
-
-

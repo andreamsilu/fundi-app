@@ -1,3 +1,5 @@
+import 'job_model.dart';
+
 /// JobApplication model representing job applications
 /// This model follows the API structure exactly
 class JobApplicationModel {
@@ -11,7 +13,7 @@ class JobApplicationModel {
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Additional fields for UI/UX (not in API but needed for mobile)
   final String? fundiName;
   final String? fundiImageUrl;
@@ -108,21 +110,43 @@ class JobApplicationModel {
       id: json['id'] as String,
       jobId: json['job_id'] as String,
       fundiId: json['fundi_id'] as String,
-      requirements: json['requirements'] as Map<String, dynamic>?,
-      budgetBreakdown: json['budget_breakdown'] as Map<String, dynamic>?,
-      totalBudget: json['total_budget'] != null ? (json['total_budget'] as num).toDouble() : null,
-      estimatedTime: json['estimated_time'] as int?,
+      requirements: json['requirements'] != null
+          ? json['requirements'] as Map<String, dynamic>
+          : null,
+      budgetBreakdown: json['budget_breakdown'] != null
+          ? json['budget_breakdown'] as Map<String, dynamic>
+          : null,
+      totalBudget: json['total_budget'] != null
+          ? JobModel.parseDouble(json['total_budget'])
+          : null,
+      estimatedTime: json['estimated_time'] != null
+          ? JobModel.parseInt(json['estimated_time'])
+          : null,
       status: json['status'] as String,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       fundiName: json['fundi_name'] as String?, // Additional field for mobile
-      fundiImageUrl: json['fundi_image_url'] as String?, // Additional field for mobile
+      fundiImageUrl:
+          json['fundi_image_url'] as String?, // Additional field for mobile
       jobTitle: json['job_title'] as String?, // Additional field for mobile
-      coverLetter: json['cover_letter'] as String?, // Additional field for mobile
-      proposedBudget: json['proposed_budget'] != null ? (json['proposed_budget'] as num).toDouble() : null, // Additional field for mobile
-      proposedBudgetType: json['proposed_budget_type'] as String?, // Additional field for mobile
-      estimatedDays: json['estimated_days'] as int?, // Additional field for mobile
-      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
+      coverLetter:
+          json['cover_letter'] as String?, // Additional field for mobile
+      proposedBudget: json['proposed_budget'] != null
+          ? JobModel.parseDouble(json['proposed_budget'])
+          : null, // Additional field for mobile
+      proposedBudgetType:
+          json['proposed_budget_type']
+              as String?, // Additional field for mobile
+      estimatedDays: json['estimated_days'] != null
+          ? JobModel.parseInt(json['estimated_days'])
+          : null, // Additional field for mobile
+      metadata: json['metadata'] != null
+          ? json['metadata'] as Map<String, dynamic>
+          : null, // Additional field for mobile
     );
   }
 

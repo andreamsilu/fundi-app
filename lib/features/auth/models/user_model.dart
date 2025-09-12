@@ -2,17 +2,17 @@
 /// This model follows the API structure exactly
 class UserModel {
   final String id;
-  final String phone;           // Primary identifier (matches API)
-  final String? password;       // Hidden in API responses
-  final UserRole role;          // 'fundi', 'customer', 'admin'
-  final UserStatus status;      // User status
-  final String? nidaNumber;     // National ID number
+  final String phone; // Primary identifier (matches API)
+  final String? password; // Hidden in API responses
+  final UserRole role; // 'fundi', 'customer', 'admin'
+  final UserStatus status; // User status
+  final String? nidaNumber; // National ID number
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Additional fields for UI/UX (not in API but needed for mobile)
-  final String? email;          // Optional email for notifications
-  final String? fullName;       // Computed from FundiProfile if available
+  final String? email; // Optional email for notifications
+  final String? fullName; // Computed from FundiProfile if available
   final String? profileImageUrl; // Profile image URL
   final Map<String, dynamic>? metadata;
 
@@ -78,17 +78,25 @@ class UserModel {
   /// Create UserModel from JSON (follows API structure)
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as String,
+      id: json['id']
+          .toString(), // Convert to String to handle both int and String
       phone: json['phone'] as String,
       password: json['password'] as String?, // Usually hidden in API responses
       role: UserRole.fromString(json['role'] as String),
-      status: UserStatus.fromString(json['status'] as String),
+      status: json['status'] != null
+          ? UserStatus.fromString(json['status'] as String)
+          : UserStatus.active, // Default to active if not provided
       nidaNumber: json['nida_number'] as String?,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       email: json['email'] as String?, // Additional field for mobile
       fullName: json['full_name'] as String?, // Additional field for mobile
-      profileImageUrl: json['profile_image_url'] as String?, // Additional field for mobile
+      profileImageUrl:
+          json['profile_image_url'] as String?, // Additional field for mobile
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
@@ -234,6 +242,3 @@ enum UserStatus {
     }
   }
 }
-
-
-

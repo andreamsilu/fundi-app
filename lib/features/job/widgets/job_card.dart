@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/job_model.dart';
-import '../../../core/extensions/string_extensions.dart';
 
 /// Job card widget for displaying job information
 class JobCard extends StatelessWidget {
@@ -40,26 +39,27 @@ class JobCard extends StatelessWidget {
                       children: [
                         Text(
                           job.title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           job.category ?? 'General',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
                   ),
-                  
+
                   // Budget
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -74,9 +74,9 @@ class JobCard extends StatelessWidget {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Description
               Text(
                 job.description,
@@ -84,64 +84,59 @@ class JobCard extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Job details
               Row(
                 children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       job.location ?? 'Location not specified',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Row(
                 children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     job.formattedDeadline,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Footer row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Status badge
                   _buildStatusBadge(context),
-                  
+
                   // Apply button
                   if (showApplyButton && onApply != null)
                     ElevatedButton(
                       onPressed: onApply,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -160,27 +155,33 @@ class JobCard extends StatelessWidget {
   Widget _buildStatusBadge(BuildContext context) {
     Color backgroundColor;
     Color textColor;
-    
-    switch (job.status) {
-      case JobStatus.open:
+    String statusText;
+
+    switch (job.status.toLowerCase()) {
+      case 'open':
         backgroundColor = Colors.green[100]!;
         textColor = Colors.green[800]!;
+        statusText = 'Open';
         break;
-      case JobStatus.inProgress:
+      case 'in_progress':
         backgroundColor = Colors.blue[100]!;
         textColor = Colors.blue[800]!;
+        statusText = 'In Progress';
         break;
-      case JobStatus.completed:
+      case 'completed':
         backgroundColor = Colors.grey[100]!;
         textColor = Colors.grey[800]!;
+        statusText = 'Completed';
         break;
-      case JobStatus.cancelled:
+      case 'cancelled':
         backgroundColor = Colors.red[100]!;
         textColor = Colors.red[800]!;
+        statusText = 'Cancelled';
         break;
       default:
         backgroundColor = Colors.grey[100]!;
         textColor = Colors.grey[800]!;
+        statusText = job.status;
         break;
     }
 
@@ -191,7 +192,7 @@ class JobCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        job.status.displayName,
+        statusText,
         style: TextStyle(
           color: textColor,
           fontSize: 12,
@@ -224,9 +225,7 @@ class JobListWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && jobs.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (jobs.isEmpty) {
@@ -234,11 +233,7 @@ class JobListWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.work_outline,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.work_outline, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No jobs found',
@@ -247,9 +242,9 @@ class JobListWidget extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Check back later for new opportunities',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
             if (onRefresh != null) ...[
               const SizedBox(height: 16),
@@ -335,9 +330,9 @@ class _JobSearchWidgetState extends State<JobSearchWidget> {
             ),
             onChanged: widget.onSearch,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Category filter
           SizedBox(
             height: 40,
@@ -347,7 +342,7 @@ class _JobSearchWidgetState extends State<JobSearchWidget> {
               itemBuilder: (context, index) {
                 final category = widget.categories[index];
                 final isSelected = category == widget.selectedCategory;
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(

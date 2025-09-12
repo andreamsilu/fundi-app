@@ -151,7 +151,7 @@ class _JobCreationScreenState extends State<JobCreationScreen>
         location: _locationController.text.trim(),
         deadline: DateTime.now().add(Duration(days: 30)),
         requiredSkills: [],
-        imageUrls: _selectedImages as List<String>,
+        imageUrls: _selectedImages.map((file) => file.path).toList(),
       );
 
       if (result.success) {

@@ -10,9 +10,10 @@ import '../../../core/theme/app_theme.dart';
 /// Profile screen displaying user information
 /// Shows user details and provides access to edit functionality
 class ProfileScreen extends StatefulWidget {
-  final String userId;
+  final String?
+  userId; // Make userId optional since we get current user profile
 
-  const ProfileScreen({super.key, required this.userId});
+  const ProfileScreen({super.key, this.userId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -73,7 +74,11 @@ class _ProfileScreenState extends State<ProfileScreen>
         _errorMessage = null;
       });
 
-      final profile = await ProfileService().getProfile(widget.userId);
+      print('ProfileScreen: Loading current user profile');
+      final profile = await ProfileService().getProfile(widget.userId ?? '');
+      print(
+        'ProfileScreen: Profile loaded: ${profile != null ? 'Success' : 'Failed'}',
+      );
 
       if (mounted) {
         setState(() {
@@ -92,19 +97,26 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _editProfile() async {
-    if (_profile == null) return;
+    if (_profile == null) {
+      print('ProfileScreen: Cannot edit - profile is null');
+      return;
+    }
 
-    final result = await Navigator.push<ProfileModel>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProfileEditScreen(profile: _profile!),
-      ),
-    );
+    try {
+      final result = await Navigator.push<ProfileModel>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfileEditScreen(profile: _profile!),
+        ),
+      );
 
-    if (result != null) {
-      setState(() {
-        _profile = result;
-      });
+      if (result != null && mounted) {
+        setState(() {
+          _profile = result;
+        });
+      }
+    } catch (e) {
+      print('ProfileScreen: Edit profile error: $e');
     }
   }
 
@@ -136,7 +148,16 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ErrorBanner(message: _errorMessage!),
+            ErrorBanner(
+              message: _errorMessage!,
+              onDismiss: () {
+                if (mounted) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
+              },
+            ),
             const SizedBox(height: 16),
             AppButton(
               text: 'Retry',
@@ -149,7 +170,18 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     if (_profile == null) {
-      return const Center(child: Text('Profile not found'));
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_off, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('Profile not found'),
+            SizedBox(height: 8),
+            Text('Unable to load your profile information'),
+          ],
+        ),
+      );
     }
 
     return SingleChildScrollView(
@@ -217,8 +249,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       .map(
                         (skill) => Chip(
                           label: Text(skill),
-                          backgroundColor: context.primaryColor.withValues(alpha:
-                            0.1,
+                          backgroundColor: context.primaryColor.withValues(
+                            alpha: 0.1,
                           ),
                           labelStyle: TextStyle(color: context.primaryColor),
                         ),
@@ -274,7 +306,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [context.primaryColor, context.primaryColor.withValues(alpha: 0.8)],
+          colors: [
+            context.primaryColor,
+            context.primaryColor.withValues(alpha: 0.8),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

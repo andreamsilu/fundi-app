@@ -17,6 +17,7 @@ class PortfolioProvider extends ChangeNotifier {
   String? _searchQuery;
   String? _selectedCategory;
   String? _fundiId;
+  bool _mounted = true;
 
   /// Get portfolios list
   List<PortfolioModel> get portfolios => _portfolios;
@@ -168,7 +169,7 @@ class PortfolioProvider extends ChangeNotifier {
 
       if (result.success && result.portfolio != null) {
         _portfolios.insert(0, result.portfolio!);
-        notifyListeners();
+        _safeNotifyListeners();
         Logger.info(
           'Portfolio created successfully',
           data: {'portfolioId': result.portfolio!.id, 'count': 1},
@@ -223,7 +224,7 @@ class PortfolioProvider extends ChangeNotifier {
 
       if (result.success && result.portfolio != null) {
         _updatePortfolioInList(result.portfolio!);
-        notifyListeners();
+        _safeNotifyListeners();
         Logger.info(
           'Portfolio updated successfully',
           data: {'portfolioId': portfolioId},
@@ -252,7 +253,7 @@ class PortfolioProvider extends ChangeNotifier {
 
       if (result.success) {
         _portfolios.removeWhere((portfolio) => portfolio.id == portfolioId);
-        notifyListeners();
+        _safeNotifyListeners();
         Logger.info(
           'Portfolio deleted successfully',
           data: {'portfolioId': portfolioId},
@@ -320,31 +321,31 @@ class PortfolioProvider extends ChangeNotifier {
   void clearFilters() {
     _searchQuery = null;
     _selectedCategory = null;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Set loading state
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Set loading more state
   void _setLoadingMore(bool loading) {
     _isLoadingMore = loading;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Set error message
   void _setError(String error) {
     _errorMessage = error;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Clear error message
   void _clearError() {
     _errorMessage = null;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Clear error manually
@@ -360,5 +361,35 @@ class PortfolioProvider extends ChangeNotifier {
     if (index != -1) {
       _portfolios[index] = updatedPortfolio;
     }
+  }
+
+  /// Safely notify listeners, avoiding build-time calls
+  void _safeNotifyListeners() {
+    // Use addPostFrameCallback to avoid calling notifyListeners during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_mounted) {
+        notifyListeners();
+      }
+    });
+  }
+
+  /// Clear all state to prevent stacking
+  void clearState() {
+    _portfolios.clear();
+    _isLoading = false;
+    _isLoadingMore = false;
+    _errorMessage = null;
+    _currentPage = 1;
+    _totalPages = 1;
+    _searchQuery = null;
+    _selectedCategory = null;
+    _fundiId = null;
+    _safeNotifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _mounted = false;
+    super.dispose();
   }
 }

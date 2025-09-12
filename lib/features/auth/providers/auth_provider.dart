@@ -11,6 +11,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isInitialized = false;
 
   /// Get current user
   UserModel? get user => _user;
@@ -33,12 +34,18 @@ class AuthProvider extends ChangeNotifier {
   /// Check if user is admin
   bool get isAdmin => _user?.isAdmin ?? false;
 
+  /// Check if provider is initialized
+  bool get isInitialized => _isInitialized;
+
   /// Initialize authentication state
   Future<void> initialize() async {
+    if (_isInitialized) return;
+
     _setLoading(true);
     try {
       await _authService.initialize();
       _user = _authService.currentUser;
+      _isInitialized = true;
       Logger.info('Auth provider initialized');
     } catch (e) {
       Logger.error('Auth provider initialization error', error: e);
@@ -253,5 +260,11 @@ class AuthProvider extends ChangeNotifier {
   /// Clear error manually
   void clearError() {
     _clearError();
+  }
+
+  @override
+  void dispose() {
+    // Clean up any resources if needed
+    super.dispose();
   }
 }

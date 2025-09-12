@@ -21,7 +21,8 @@ class CategoryModel {
   /// Factory constructor for creating CategoryModel from JSON
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(
-      id: json['id'] as String,
+      id: json['id']
+          .toString(), // Convert to String to handle both int and String
       name: json['name'] as String,
       description: json['description'] as String?,
       iconName: json['iconName'] as String?,

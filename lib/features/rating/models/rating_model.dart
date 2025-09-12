@@ -9,7 +9,7 @@ class RatingModel {
   final String? review;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Additional fields for UI/UX (not in API but needed for mobile)
   final String? fundiName;
   final String? fundiImageUrl;
@@ -63,20 +63,33 @@ class RatingModel {
   /// Create RatingModel from JSON (follows API structure)
   factory RatingModel.fromJson(Map<String, dynamic> json) {
     return RatingModel(
-      id: json['id'] as String,
-      fundiId: json['fundi_id'] as String,
-      customerId: json['customer_id'] as String,
-      jobId: json['job_id'] as String,
+      id: json['id']
+          .toString(), // Convert to String to handle both int and String
+      fundiId: json['fundi_id']
+          .toString(), // Convert to String to handle both int and String
+      customerId: json['customer_id']
+          .toString(), // Convert to String to handle both int and String
+      jobId: json['job_id']
+          .toString(), // Convert to String to handle both int and String
       rating: json['rating'] as int,
       review: json['review'] as String?,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       fundiName: json['fundi_name'] as String?, // Additional field for mobile
-      fundiImageUrl: json['fundi_image_url'] as String?, // Additional field for mobile
-      customerName: json['customer_name'] as String?, // Additional field for mobile
-      customerImageUrl: json['customer_image_url'] as String?, // Additional field for mobile
+      fundiImageUrl:
+          json['fundi_image_url'] as String?, // Additional field for mobile
+      customerName:
+          json['customer_name'] as String?, // Additional field for mobile
+      customerImageUrl:
+          json['customer_image_url'] as String?, // Additional field for mobile
       jobTitle: json['job_title'] as String?, // Additional field for mobile
-      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
+      metadata:
+          json['metadata']
+              as Map<String, dynamic>?, // Additional field for mobile
     );
   }
 
@@ -190,9 +203,14 @@ class FundiRatingSummary {
       threeStarCount: json['three_star_count'] as int,
       twoStarCount: json['two_star_count'] as int,
       oneStarCount: json['one_star_count'] as int,
-      recentRatings: (json['recent_ratings'] as List<dynamic>?)
-          ?.map((rating) => RatingModel.fromJson(rating as Map<String, dynamic>))
-          .toList() ?? [],
+      recentRatings:
+          (json['recent_ratings'] as List<dynamic>?)
+              ?.map(
+                (rating) =>
+                    RatingModel.fromJson(rating as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
     );
   }
 

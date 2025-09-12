@@ -475,6 +475,22 @@ class JobProvider extends ChangeNotifier {
     _clearError();
   }
 
+  /// Clear all state to prevent stacking
+  void clearState() {
+    _jobs.clear();
+    _myJobs.clear();
+    _applications.clear();
+    _isLoading = false;
+    _isLoadingMore = false;
+    _errorMessage = null;
+    _currentPage = 1;
+    _totalPages = 1;
+    _searchQuery = null;
+    _selectedCategory = null;
+    _selectedLocation = null;
+    notifyListeners();
+  }
+
   /// Update job in a list
   void _updateJobInList(List<JobModel> list, JobModel updatedJob) {
     final index = list.indexWhere((job) => job.id == updatedJob.id);

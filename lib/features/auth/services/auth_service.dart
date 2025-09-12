@@ -38,17 +38,15 @@ class AuthService {
       );
 
       if (response.success && response.data != null) {
-        final token = response.data!['token'] as String;
         final userData = response.data! as Map<String, dynamic>;
+        final token = userData['token'] as String;
         final user = UserModel.fromJson(userData);
-        
+
         // Save session with token and user data
         await _sessionManager.saveToken(token);
         await _sessionManager.saveUser(user);
 
-        Logger.userAction('Login successful', data: {
-          'userId': user.id,
-        });
+        Logger.userAction('Login successful', data: {'userId': user.id});
 
         return AuthResult.success(user: user, message: response.message);
       } else {
@@ -78,11 +76,7 @@ class AuthService {
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.register,
-        data: {
-          'phone': phoneNumber,
-          'password': password,
-          'role': role.value,
-        },
+        data: {'phone': phoneNumber, 'password': password, 'role': role.value},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -90,14 +84,12 @@ class AuthService {
         final token = response.data!['token'] as String;
         final userData = response.data! as Map<String, dynamic>;
         final user = UserModel.fromJson(userData);
-        
+
         // Save session with token and user data
         await _sessionManager.saveToken(token);
         await _sessionManager.saveUser(user);
 
-        Logger.userAction('Registration successful', data: {
-          'userId': user.id,
-        });
+        Logger.userAction('Registration successful', data: {'userId': user.id});
 
         return AuthResult.success(user: user, message: response.message);
       } else {
@@ -138,8 +130,6 @@ class AuthService {
       await _sessionManager.clearSession();
     }
   }
-
-
 
   /// Get token information for debugging
   Map<String, dynamic> getTokenInfo() {

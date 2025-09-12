@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/portfolio_model.dart';
 import '../services/portfolio_service.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/extensions/string_extensions.dart';
-import '../../auth/providers/auth_provider.dart';
 
 /// Portfolio gallery screen showing all portfolio items
 /// Allows viewing, filtering, and managing portfolio items
@@ -142,21 +139,7 @@ class _PortfolioGalleryScreenState extends State<PortfolioGalleryScreen>
         title: const Text('Portfolio Gallery'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              if (authProvider.isFundi) {
-                return IconButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/create-portfolio');
-                  },
-                  icon: const Icon(Icons.add),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
+        actions: [],
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,

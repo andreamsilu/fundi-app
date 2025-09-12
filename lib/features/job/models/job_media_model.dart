@@ -8,7 +8,7 @@ class JobMediaModel {
   final int orderIndex;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Additional fields for UI/UX (not in API but needed for mobile)
   final String? fileUrl;
   final String? thumbnailUrl;
@@ -43,7 +43,7 @@ class JobMediaModel {
   /// Get formatted file size
   String get formattedFileSize {
     if (fileSize == null) return 'Unknown size';
-    
+
     if (fileSize! < 1024) {
       return '${fileSize!} B';
     } else if (fileSize! < 1024 * 1024) {
@@ -68,13 +68,20 @@ class JobMediaModel {
       mediaType: json['media_type'] as String,
       filePath: json['file_path'] as String,
       orderIndex: json['order_index'] as int,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       fileUrl: json['file_url'] as String?, // Additional field for mobile
-      thumbnailUrl: json['thumbnail_url'] as String?, // Additional field for mobile
+      thumbnailUrl:
+          json['thumbnail_url'] as String?, // Additional field for mobile
       fileSize: json['file_size'] as int?, // Additional field for mobile
       fileName: json['file_name'] as String?, // Additional field for mobile
-      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
+      metadata: json['metadata'] != null
+          ? json['metadata'] as Map<String, dynamic>
+          : null, // Additional field for mobile
     );
   }
 

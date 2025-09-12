@@ -6,7 +6,6 @@ import '../../../shared/widgets/error_widget.dart';
 import '../providers/portfolio_provider.dart';
 import '../models/portfolio_model.dart';
 import 'portfolio_gallery_screen.dart';
-import 'portfolio_creation_screen.dart';
 
 /// Portfolio screen for viewing and managing portfolios
 class PortfolioScreen extends StatefulWidget {
@@ -60,19 +59,6 @@ class _PortfolioScreenState extends State<PortfolioScreen>
         title: const Text('Portfolio'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PortfolioCreationScreen(),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -141,18 +127,6 @@ class _PortfolioScreenState extends State<PortfolioScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PortfolioCreationScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Add Portfolio Item'),
-          ),
         ],
       ),
     );

@@ -19,6 +19,7 @@ class AppInitializer extends StatefulWidget {
 class _AppInitializerState extends State<AppInitializer> {
   bool _isCheckingOnboarding = true;
   bool _hasCompletedOnboarding = false;
+  bool _isInitializingAuth = false;
 
   @override
   void initState() {
@@ -55,19 +56,18 @@ class _AppInitializerState extends State<AppInitializer> {
 
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        // Consumer<AuthProvider> builder called
-
-        // Initialize auth provider on first build
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          if (mounted) {
-            // Initializing AuthProvider
-            await authProvider.initialize();
-          }
-        });
+        // Initialize auth provider only once
+        if (!_isInitializingAuth) {
+          _isInitializingAuth = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (mounted && !authProvider.isInitialized) {
+              await authProvider.initialize();
+            }
+          });
+        }
 
         // Show loading screen while initializing
         if (authProvider.isLoading) {
-          // Showing loading screen
           return const Scaffold(
             body: LoadingWidget(message: 'Initializing Fundi App...', size: 50),
           );

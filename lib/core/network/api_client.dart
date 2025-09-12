@@ -17,6 +17,10 @@ class ApiClient {
 
   /// Initialize the API client with base configuration
   Future<void> initialize() async {
+    Logger.info(
+      'Initializing API client with base URL: ${AppConstants.baseUrl}',
+    );
+
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
@@ -58,7 +62,6 @@ class ApiClient {
     );
   }
 
-
   /// Create logging interceptor
   Interceptor _createLoggingInterceptor() {
     return InterceptorsWrapper(
@@ -69,6 +72,7 @@ class ApiClient {
           headers: options.headers,
           body: options.data,
         );
+        Logger.info('Making API request to: ${options.uri}');
         handler.next(options);
       },
       onResponse: (response, handler) {

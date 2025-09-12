@@ -86,6 +86,7 @@ class ProfileModel {
 
   /// Check if user is active
   bool get isActive => status == UserStatus.active;
+
   /// Check if user has verified status
   bool get hasVerifiedStatus => status == UserStatus.verified;
 
@@ -141,16 +142,21 @@ class ProfileModel {
   /// Create ProfileModel from JSON
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
-      id: json['id'] as String,
-      email: json['email'] as String,
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
-      phoneNumber: json['phone_number'] as String?,
+      id: json['id'].toString(),
+      email: json['email'] as String? ?? '',
+      firstName:
+          json['first_name'] as String? ?? json['name'] as String? ?? 'User',
+      lastName: json['last_name'] as String? ?? '',
+      phoneNumber: json['phone_number'] as String? ?? json['phone'] as String?,
       profileImageUrl: json['profile_image_url'] as String?,
       role: UserRole.fromString(json['role'] as String),
-      status: UserStatus.fromString(json['status'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      status: UserStatus.fromString(json['status'] as String? ?? 'active'),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : DateTime.now(),
       bio: json['bio'] as String?,
       location: json['location'] as String?,
       nidaNumber: json['nida_number'] as String?,

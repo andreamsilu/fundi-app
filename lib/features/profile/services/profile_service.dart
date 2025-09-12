@@ -16,8 +16,9 @@ class ProfileService {
     try {
       Logger.userAction('Get profile', data: {'userId': userId});
 
+      // Use the correct endpoint - get current user profile
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/profiles/$userId',
+        '/users/me',
         fromJson: (data) => data as Map<String, dynamic>,
       );
 

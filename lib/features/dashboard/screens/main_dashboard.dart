@@ -10,6 +10,7 @@ import '../../portfolio/screens/portfolio_screen.dart';
 import '../../messaging/screens/chat_list_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
+import '../../help/screens/help_screen.dart';
 import '../services/dashboard_service.dart';
 import '../models/dashboard_model.dart';
 
@@ -47,47 +48,88 @@ class _MainDashboardState extends State<MainDashboard>
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         return Scaffold(
+          drawer: _buildDrawer(authProvider),
+          appBar: _buildAppBar(authProvider),
           body: IndexedStack(
             index: _currentIndex,
             children: _getScreens(authProvider),
           ),
           bottomNavigationBar: _buildBottomNavigationBar(authProvider),
           floatingActionButton: _buildFloatingActionButton(authProvider),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         );
       },
     );
   }
 
-  /// Get screens based on user role
+  /// Get screens based on user role (customers and fundis only)
   List<Widget> _getScreens(AuthProvider authProvider) {
     if (authProvider.isCustomer) {
       return [
-        const JobListScreen(), // Home - Available jobs
-        const JobListScreen(), // My Jobs - Posted jobs
-        const PortfolioScreen(), // Portfolio - View fundi portfolios
-        const ChatListScreen(), // Messages
-        const ProfileScreen(userId: ''), // Profile
-      ];
-    } else if (authProvider.isFundi) {
-      return [
-        const JobListScreen(), // Home - Available jobs
-        const JobListScreen(), // Applied Jobs - Applied jobs
-        const PortfolioScreen(), // Portfolio - Manage portfolio
-        const ChatListScreen(), // Messages
-        const ProfileScreen(userId: ''), // Profile
+        const JobListScreen(title: 'Available Jobs'), // Home - Available jobs
+        const JobListScreen(
+          title: 'My Jobs',
+          showFilterButton: false,
+        ), // My Jobs - Posted jobs
+        const ProfileScreen(), // Profile
       ];
     } else {
-      // Admin
+      // Fundi
       return [
-        const JobListScreen(), // Home - All jobs
-        const JobListScreen(), // Jobs - Job management
-        const PortfolioScreen(), // Portfolio - All portfolios
-        const ChatListScreen(), // Messages
-        const ProfileScreen(userId: ''), // Profile
+        const JobListScreen(title: 'Find Jobs'), // Home - Available jobs
+        const JobListScreen(
+          title: 'Applied Jobs',
+          showFilterButton: false,
+        ), // Applied Jobs - Applied jobs
+        const ProfileScreen(), // Profile
       ];
     }
+  }
+
+  /// Build dynamic AppBar based on current page
+  PreferredSizeWidget _buildAppBar(AuthProvider authProvider) {
+    String title;
+    
+    switch (_currentIndex) {
+      case 0:
+        if (authProvider.isCustomer) {
+          title = 'Available Jobs';
+        } else {
+          title = 'Find Jobs';
+        }
+        break;
+      case 1:
+        if (authProvider.isCustomer) {
+          title = 'My Jobs';
+        } else {
+          title = 'Applied Jobs';
+        }
+        break;
+      case 2:
+        title = 'Profile';
+        break;
+      default:
+        title = 'Fundi';
+    }
+
+    return AppBar(
+      title: Text(title),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationsScreen(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 
   /// Build bottom navigation bar
@@ -135,44 +177,6 @@ class _MainDashboardState extends State<MainDashboard>
           activeIcon: Icon(Icons.work),
           label: 'My Jobs',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.work_outline),
-          activeIcon: Icon(Icons.work),
-          label: 'Portfolio',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.message_outlined),
-          activeIcon: Icon(Icons.message),
-          label: 'Messages',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ];
-    } else if (authProvider.isFundi) {
-      return [
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.assignment_outlined),
-          activeIcon: Icon(Icons.assignment),
-          label: 'Applied',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.work_outline),
-          activeIcon: Icon(Icons.work),
-          label: 'Portfolio',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.message_outlined),
-          activeIcon: Icon(Icons.message),
-          label: 'Messages',
-        ),
         const BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           activeIcon: Icon(Icons.person),
@@ -180,27 +184,17 @@ class _MainDashboardState extends State<MainDashboard>
         ),
       ];
     } else {
-      // Admin
+      // Fundi
       return [
         const BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_outlined),
-          activeIcon: Icon(Icons.dashboard),
-          label: 'Dashboard',
+          icon: Icon(Icons.search),
+          activeIcon: Icon(Icons.search),
+          label: 'Find Jobs',
         ),
         const BottomNavigationBarItem(
-          icon: Icon(Icons.work_outline),
-          activeIcon: Icon(Icons.work),
-          label: 'Jobs',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.work_outline),
-          activeIcon: Icon(Icons.work),
-          label: 'Portfolio',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.message_outlined),
-          activeIcon: Icon(Icons.message),
-          label: 'Messages',
+          icon: Icon(Icons.assignment_outlined),
+          activeIcon: Icon(Icons.assignment),
+          label: 'Applied',
         ),
         const BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
@@ -211,10 +205,189 @@ class _MainDashboardState extends State<MainDashboard>
     }
   }
 
+  /// Build drawer menu with additional options
+  Widget _buildDrawer(AuthProvider authProvider) {
+    return Drawer(
+      child: Column(
+        children: [
+          // Drawer Header
+          _buildDrawerHeader(authProvider),
+
+          // Drawer Items
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                // Portfolio Section
+                _buildDrawerSection(
+                  title: 'Portfolio',
+                  children: [
+                    _buildDrawerItem(
+                      icon: Icons.work_outline,
+                      title: 'View Portfolio',
+                      onTap: () => _navigateToPortfolio(),
+                    ),
+                    if (authProvider.isFundi) ...[
+                      _buildDrawerItem(
+                        icon: Icons.add_circle_outline,
+                        title: 'Add Portfolio',
+                        onTap: () => _navigateToAddPortfolio(),
+                      ),
+                    ],
+                  ],
+                ),
+
+                const Divider(),
+
+                // Communication Section
+                _buildDrawerSection(
+                  title: 'Communication',
+                  children: [
+                    _buildDrawerItem(
+                      icon: Icons.message_outlined,
+                      title: 'Messages',
+                      onTap: () => _navigateToMessages(),
+                    ),
+                    _buildDrawerItem(
+                      icon: Icons.notifications_outlined,
+                      title: 'Notifications',
+                      onTap: () => _navigateToNotifications(),
+                    ),
+                  ],
+                ),
+
+                const Divider(),
+
+                // Settings Section
+                _buildDrawerSection(
+                  title: 'Settings',
+                  children: [
+                    _buildDrawerItem(
+                      icon: Icons.settings_outlined,
+                      title: 'Settings',
+                      onTap: () => _navigateToSettings(),
+                    ),
+                    _buildDrawerItem(
+                      icon: Icons.help_outline,
+                      title: 'Help & Support',
+                      onTap: () => _navigateToHelp(),
+                    ),
+                  ],
+                ),
+
+                const Divider(),
+
+                // Logout
+                _buildDrawerItem(
+                  icon: Icons.logout,
+                  title: 'Logout',
+                  onTap: () => _handleLogout(authProvider),
+                  isDestructive: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build drawer header with user info
+  Widget _buildDrawerHeader(AuthProvider authProvider) {
+    final user = authProvider.user;
+    return UserAccountsDrawerHeader(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.accentGreen,
+            AppTheme.accentGreen.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      accountName: Text(
+        user?.fullName ?? 'User',
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      accountEmail: Text(
+        user?.email ?? 'user@example.com',
+        style: const TextStyle(fontSize: 14, color: Colors.white70),
+      ),
+      currentAccountPicture: CircleAvatar(
+        backgroundColor: Colors.white,
+        child: Text(
+          user?.firstName?.substring(0, 1).toUpperCase() ?? 'U',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.accentGreen,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build drawer section with title
+  Widget _buildDrawerSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.mediumGray,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        ...children,
+      ],
+    );
+  }
+
+  /// Build drawer item
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isDestructive ? Colors.red : AppTheme.mediumGray,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isDestructive ? Colors.red : AppTheme.darkGray,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: () {
+        Navigator.pop(context); // Close drawer
+        onTap();
+      },
+    );
+  }
+
   /// Build floating action button based on user role
   Widget? _buildFloatingActionButton(AuthProvider authProvider) {
     if (authProvider.isCustomer) {
       return FloatingActionButton(
+        heroTag: "main_dashboard_fab_customer",
         onPressed: () {
           // Navigate to create job screen
           _navigateToCreateJob();
@@ -222,8 +395,10 @@ class _MainDashboardState extends State<MainDashboard>
         backgroundColor: AppTheme.primaryGreen,
         child: const Icon(Icons.add, color: AppTheme.white),
       );
-    } else if (authProvider.isFundi) {
+    } else {
+      // Fundi
       return FloatingActionButton(
+        heroTag: "main_dashboard_fab_fundi",
         onPressed: () {
           // Navigate to add portfolio screen
           _navigateToAddPortfolio();
@@ -232,17 +407,94 @@ class _MainDashboardState extends State<MainDashboard>
         child: const Icon(Icons.add_a_photo, color: AppTheme.white),
       );
     }
-    return null; // Admin doesn't need FAB
   }
 
   /// Navigate to create job screen
   void _navigateToCreateJob() {
-    Navigator.pushNamed(context, '/create-job');
+    print('MainDashboard: Navigating to create job screen');
+    try {
+      Navigator.pushNamed(context, '/create-job');
+      print('MainDashboard: Navigation successful');
+    } catch (e) {
+      print('MainDashboard: Navigation error: $e');
+    }
   }
 
   /// Navigate to add portfolio screen
   void _navigateToAddPortfolio() {
-    Navigator.pushNamed(context, '/create-portfolio');
+    print('MainDashboard: Navigating to create portfolio screen');
+    try {
+      Navigator.pushNamed(context, '/create-portfolio');
+      print('MainDashboard: Portfolio navigation successful');
+    } catch (e) {
+      print('MainDashboard: Portfolio navigation error: $e');
+    }
+  }
+
+  /// Navigate to portfolio screen
+  void _navigateToPortfolio() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PortfolioScreen()),
+    );
+  }
+
+  /// Navigate to messages screen
+  void _navigateToMessages() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ChatListScreen()),
+    );
+  }
+
+  /// Navigate to notifications screen
+  void _navigateToNotifications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+    );
+  }
+
+  /// Navigate to settings screen
+  void _navigateToSettings() {
+    Navigator.pushNamed(context, '/settings');
+  }
+
+  /// Navigate to help screen
+  void _navigateToHelp() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const HelpScreen()),
+    );
+  }
+
+  /// Handle logout
+  void _handleLogout(AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await authProvider.logout();
+                if (mounted) {
+                  Navigator.of(context).pushReplacementNamed('/login');
+                }
+              },
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -335,7 +587,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
       builder: (context, authProvider, child) {
         return Scaffold(
           appBar: AppBar(
-            title: Text(_getWelcomeMessage(authProvider)),
+            title: const Text('Dashboard'),
             actions: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
@@ -405,23 +657,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
         ),
       ),
     );
-  }
-
-  String _getWelcomeMessage(AuthProvider authProvider) {
-    final user = authProvider.user;
-    if (user == null) return 'Welcome';
-
-    final timeOfDay = DateTime.now().hour;
-    String greeting;
-    if (timeOfDay < 12) {
-      greeting = 'Good Morning';
-    } else if (timeOfDay < 17) {
-      greeting = 'Good Afternoon';
-    } else {
-      greeting = 'Good Evening';
-    }
-
-    return '$greeting, ${user.firstName}';
   }
 
   Widget _buildQuickStats(BuildContext context, AuthProvider authProvider) {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/navigation_guard.dart';
 
 /// Login screen for user authentication
 /// Features email/password login with validation and error handling
@@ -72,25 +74,23 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      final result = await AuthService().login(
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.login(
         phoneNumber: _phoneController.text.trim(),
         password: _passwordController.text,
       );
 
-      if (result.success && result.user != null) {
-        // Navigate to appropriate screen based on user role
+      if (success) {
+        // Navigate to dashboard - MainDashboard will handle role-based UI
         if (mounted) {
-          if (result.user!.isCustomer) {
-            Navigator.pushReplacementNamed(context, '/customer-dashboard');
-          } else if (result.user!.isFundi) {
-            Navigator.pushReplacementNamed(context, '/fundi-dashboard');
-          } else {
-            Navigator.pushReplacementNamed(context, '/admin-dashboard');
-          }
+          await NavigationGuard().safePushReplacementNamed(
+            context,
+            '/dashboard',
+          );
         }
       } else {
         setState(() {
-          _errorMessage = result.message;
+          _errorMessage = authProvider.errorMessage ?? 'Login failed';
         });
       }
     } catch (e) {
