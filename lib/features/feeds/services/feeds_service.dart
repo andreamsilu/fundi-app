@@ -1,0 +1,412 @@
+import '../../../core/network/api_client.dart';
+import '../../../core/constants/api_endpoints.dart';
+import '../models/fundi_model.dart';
+import '../models/job_model.dart';
+
+/// Service class for handling feeds-related API operations
+/// Implements proper separation of concerns for feeds functionality
+class FeedsService {
+  final ApiClient _apiClient;
+
+  FeedsService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+
+  /// Get paginated list of fundis with filters
+  ///
+  /// Parameters:
+  /// - page: Page number for pagination
+  /// - limit: Number of items per page
+  /// - searchQuery: Search term for fundi name or skills
+  /// - location: Filter by location
+  /// - skills: Filter by specific skills
+  /// - minRating: Minimum rating filter
+  /// - isAvailable: Filter by availability status
+  /// - isVerified: Filter by verification status
+  Future<Map<String, dynamic>> getFundis({
+    int page = 1,
+    int limit = 20,
+    String? searchQuery,
+    String? location,
+    List<String>? skills,
+    double? minRating,
+    bool? isAvailable,
+    bool? isVerified,
+  }) async {
+    try {
+      // Build query parameters
+      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        queryParams['search'] = searchQuery;
+      }
+      if (location != null && location.isNotEmpty) {
+        queryParams['location'] = location;
+      }
+      if (skills != null && skills.isNotEmpty) {
+        queryParams['skills'] = skills.join(',');
+      }
+      if (minRating != null) {
+        queryParams['minRating'] = minRating;
+      }
+      if (isAvailable != null) {
+        queryParams['isAvailable'] = isAvailable;
+      }
+      if (isVerified != null) {
+        queryParams['isVerified'] = isVerified;
+      }
+
+      final response = await _apiClient.get(
+        ApiEndpoints.apiFundis,
+        queryParameters: queryParams,
+      );
+
+      if (response.success && response.data != null) {
+        final List<dynamic> fundiData = response.data['fundis'] ?? [];
+        final fundis = fundiData
+            .map((json) => FundiModel.fromJson(json))
+            .toList();
+
+        return {
+          'success': true,
+          'fundis': fundis,
+          'pagination': response.data['pagination'] ?? {},
+          'message': 'Fundis fetched successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'fundis': <FundiModel>[],
+          'pagination': {},
+          'message': response.message,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'fundis': <FundiModel>[],
+        'pagination': {},
+        'message': 'Error fetching fundis: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get paginated list of jobs with filters
+  ///
+  /// Parameters:
+  /// - page: Page number for pagination
+  /// - limit: Number of items per page
+  /// - searchQuery: Search term for job title or description
+  /// - category: Filter by job category
+  /// - location: Filter by location
+  /// - minBudget: Minimum budget filter
+  /// - maxBudget: Maximum budget filter
+  /// - status: Filter by job status
+  /// - isUrgent: Filter by urgent jobs only
+  Future<Map<String, dynamic>> getJobs({
+    int page = 1,
+    int limit = 20,
+    String? searchQuery,
+    String? category,
+    String? location,
+    double? minBudget,
+    double? maxBudget,
+    String? status,
+    bool? isUrgent,
+  }) async {
+    try {
+      // Build query parameters
+      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        queryParams['search'] = searchQuery;
+      }
+      if (category != null && category.isNotEmpty) {
+        queryParams['category'] = category;
+      }
+      if (location != null && location.isNotEmpty) {
+        queryParams['location'] = location;
+      }
+      if (minBudget != null) {
+        queryParams['minBudget'] = minBudget;
+      }
+      if (maxBudget != null) {
+        queryParams['maxBudget'] = maxBudget;
+      }
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
+      }
+      if (isUrgent != null) {
+        queryParams['isUrgent'] = isUrgent;
+      }
+
+      final response = await _apiClient.get(
+        ApiEndpoints.apiJobs,
+        queryParameters: queryParams,
+      );
+
+      if (response.success && response.data != null) {
+        final List<dynamic> jobData = response.data['jobs'] ?? [];
+        final jobs = jobData.map((json) => JobModel.fromJson(json)).toList();
+
+        return {
+          'success': true,
+          'jobs': jobs,
+          'pagination': response.data['pagination'] ?? {},
+          'message': 'Jobs fetched successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'jobs': <JobModel>[],
+          'pagination': {},
+          'message': response.message,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'jobs': <JobModel>[],
+        'pagination': {},
+        'message': 'Error fetching jobs: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get detailed fundi profile by ID
+  Future<Map<String, dynamic>> getFundiProfile(String fundiId) async {
+    try {
+      final response = await _apiClient.get(
+        ApiEndpoints.getFundiEndpoint(fundiId),
+      );
+
+      if (response.success && response.data != null) {
+        final fundi = FundiModel.fromJson(response.data);
+        return {
+          'success': true,
+          'fundi': fundi,
+          'message': 'Fundi profile fetched successfully',
+        };
+      } else {
+        return {'success': false, 'fundi': null, 'message': response.message};
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'fundi': null,
+        'message': 'Error fetching fundi profile: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get detailed job information by ID
+  Future<Map<String, dynamic>> getJobDetails(String jobId) async {
+    try {
+      final response = await _apiClient.get(ApiEndpoints.getJobEndpoint(jobId));
+
+      if (response.success && response.data != null) {
+        final job = JobModel.fromJson(response.data);
+        return {
+          'success': true,
+          'job': job,
+          'message': 'Job details fetched successfully',
+        };
+      } else {
+        return {'success': false, 'job': null, 'message': response.message};
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'job': null,
+        'message': 'Error fetching job details: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get available job categories
+  Future<Map<String, dynamic>> getJobCategories() async {
+    try {
+      final response = await _apiClient.get(ApiEndpoints.apiJobsCategories);
+
+      if (response.success && response.data != null) {
+        return {
+          'success': true,
+          'categories': response.data['categories'] ?? [],
+          'message': 'Categories fetched successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'categories': <String>[],
+          'message': response.message,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'categories': <String>[],
+        'message': 'Error fetching categories: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get available skills list
+  Future<Map<String, dynamic>> getSkills() async {
+    try {
+      final response = await _apiClient.get(ApiEndpoints.apiSkills);
+
+      if (response.success && response.data != null) {
+        return {
+          'success': true,
+          'skills': response.data['skills'] ?? [],
+          'message': 'Skills fetched successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'skills': <String>[],
+          'message': response.message,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'skills': <String>[],
+        'message': 'Error fetching skills: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get available locations
+  Future<Map<String, dynamic>> getLocations() async {
+    try {
+      final response = await _apiClient.get(ApiEndpoints.apiLocations);
+
+      if (response.success && response.data != null) {
+        return {
+          'success': true,
+          'locations': response.data['locations'] ?? [],
+          'message': 'Locations fetched successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'locations': <String>[],
+          'message': response.message,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'locations': <String>[],
+        'message': 'Error fetching locations: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Request fundi for a job (customer action)
+  Future<Map<String, dynamic>> requestFundi({
+    required String jobId,
+    required String fundiId,
+    required String message,
+  }) async {
+    try {
+      final requestData = {
+        'jobId': jobId,
+        'fundiId': fundiId,
+        'message': message,
+      };
+
+      final response = await _apiClient.post(
+        ApiEndpoints.apiJobsRequestFundi,
+        {},
+        requestData,
+      );
+
+      if (response.success) {
+        return {'success': true, 'message': response.message};
+      } else {
+        return {'success': false, 'message': response.message};
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error sending fundi request: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Apply to a job (fundi action)
+  Future<Map<String, dynamic>> applyToJob({
+    required String jobId,
+    required String coverLetter,
+    required double proposedBudget,
+    required int estimatedDuration,
+    required Map<String, dynamic> budgetBreakdown,
+  }) async {
+    try {
+      final applicationData = {
+        'jobId': jobId,
+        'coverLetter': coverLetter,
+        'proposedBudget': proposedBudget,
+        'estimatedDuration': estimatedDuration,
+        'budgetBreakdown': budgetBreakdown,
+      };
+
+      final response = await _apiClient.post(
+        ApiEndpoints.apiJobsApply,
+        {},
+        applicationData,
+      );
+
+      if (response.success) {
+        return {'success': true, 'message': response.message};
+      } else {
+        return {'success': false, 'message': response.message};
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error submitting job application: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Create a new job (customer action)
+  Future<Map<String, dynamic>> createJob({
+    required String title,
+    required String description,
+    required String categoryId,
+    required double budget,
+    required String budgetType,
+    required String deadline,
+    String? fundiId, // Optional: for specific fundi request
+  }) async {
+    try {
+      final jobData = {
+        'title': title,
+        'description': description,
+        'category_id': categoryId,
+        'budget': budget.toString(),
+        'budget_type': budgetType,
+        'deadline': deadline,
+        if (fundiId != null) 'fundi_id': fundiId,
+      };
+
+      final response = await _apiClient.post(ApiEndpoints.jobs, {}, jobData);
+
+      if (response.success) {
+        return {
+          'success': true,
+          'job': response.data,
+          'message': response.message,
+        };
+      } else {
+        return {'success': false, 'message': response.message};
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error creating job: ${e.toString()}',
+      };
+    }
+  }
+}

@@ -19,10 +19,10 @@ class PortfolioService {
     String? search,
   }) async {
     try {
-      Logger.apiRequest('GET', '/portfolios');
+      Logger.apiRequest('GET', ApiEndpoints.portfolios);
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.getFundiPortfolioEndpoint(fundiId),
+        ApiEndpoints.portfolios,
         queryParameters: {
           'page': page,
           'limit': limit,
@@ -34,7 +34,7 @@ class PortfolioService {
 
       Logger.apiResponse(
         'GET',
-        '/portfolios',
+        ApiEndpoints.portfolios,
         response.statusCode,
         response: response.data,
       );
@@ -64,7 +64,7 @@ class PortfolioService {
         );
       }
     } catch (e) {
-      Logger.apiError('GET', '/portfolios', e);
+      Logger.apiError('GET', ApiEndpoints.portfolios, e);
       return PortfolioResult(
         success: false,
         portfolios: [],
@@ -78,16 +78,19 @@ class PortfolioService {
   /// Get a specific portfolio by ID
   Future<PortfolioDetailResult> getPortfolio(String portfolioId) async {
     try {
-      Logger.apiRequest('GET', '/portfolios/$portfolioId');
+      Logger.apiRequest(
+        'GET',
+        ApiEndpoints.getPortfolioByIdEndpoint(portfolioId),
+      );
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.getUpdatePortfolioEndpoint(portfolioId),
+        ApiEndpoints.getPortfolioByIdEndpoint(portfolioId),
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       Logger.apiResponse(
         'GET',
-        '/portfolios/$portfolioId',
+        ApiEndpoints.getPortfolioByIdEndpoint(portfolioId),
         response.statusCode,
         response: response.data,
       );
@@ -107,7 +110,11 @@ class PortfolioService {
         );
       }
     } catch (e) {
-      Logger.apiError('GET', '/portfolios/$portfolioId', e);
+      Logger.apiError(
+        'GET',
+        ApiEndpoints.getPortfolioByIdEndpoint(portfolioId),
+        e,
+      );
       return PortfolioDetailResult(
         success: false,
         portfolio: null,
@@ -129,14 +136,19 @@ class PortfolioService {
     String? budgetType,
     int? durationDays,
     DateTime? completedAt,
-    Map<String, dynamic>? metadata, required List<String> images, required String clientName, required String address, required List<File> videos,
+    Map<String, dynamic>? metadata,
+    required List<String> images,
+    required String clientName,
+    required String address,
+    required List<File> videos,
   }) async {
     try {
-      Logger.apiRequest('POST', '/portfolios');
+      Logger.apiRequest('POST', ApiEndpoints.createPortfolio);
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.createPortfolio,
-        data: {
+        {},
+        {
           'fundi_id': fundiId,
           'title': title,
           'description': description,
@@ -155,7 +167,7 @@ class PortfolioService {
 
       Logger.apiResponse(
         'POST',
-        '/portfolios',
+        ApiEndpoints.createPortfolio,
         response.statusCode,
         response: response.data,
       );
@@ -175,7 +187,7 @@ class PortfolioService {
         );
       }
     } catch (e) {
-      Logger.apiError('POST', '/portfolios', e);
+      Logger.apiError('POST', ApiEndpoints.createPortfolio, e);
       return PortfolioDetailResult(
         success: false,
         portfolio: null,
@@ -200,10 +212,14 @@ class PortfolioService {
     Map<String, dynamic>? metadata,
   }) async {
     try {
-      Logger.apiRequest('PUT', '/portfolios/$portfolioId');
+      Logger.apiRequest(
+        'PUT',
+        ApiEndpoints.getUpdatePortfolioEndpoint(portfolioId),
+      );
 
       final response = await _apiClient.put<Map<String, dynamic>>(
         ApiEndpoints.getUpdatePortfolioEndpoint(portfolioId),
+        {},
         data: {
           if (title != null) 'title': title,
           if (description != null) 'description': description,
@@ -223,7 +239,7 @@ class PortfolioService {
 
       Logger.apiResponse(
         'PUT',
-        '/portfolios/$portfolioId',
+        ApiEndpoints.getUpdatePortfolioEndpoint(portfolioId),
         response.statusCode,
         response: response.data,
       );
@@ -243,7 +259,11 @@ class PortfolioService {
         );
       }
     } catch (e) {
-      Logger.apiError('PUT', '/portfolios/$portfolioId', e);
+      Logger.apiError(
+        'PUT',
+        ApiEndpoints.getUpdatePortfolioEndpoint(portfolioId),
+        e,
+      );
       return PortfolioDetailResult(
         success: false,
         portfolio: null,
@@ -255,7 +275,10 @@ class PortfolioService {
   /// Delete a portfolio item
   Future<PortfolioResult> deletePortfolio(String portfolioId) async {
     try {
-      Logger.apiRequest('DELETE', '/portfolios/$portfolioId');
+      Logger.apiRequest(
+        'DELETE',
+        ApiEndpoints.getDeletePortfolioEndpoint(portfolioId),
+      );
 
       final response = await _apiClient.delete<Map<String, dynamic>>(
         ApiEndpoints.getDeletePortfolioEndpoint(portfolioId),
@@ -264,7 +287,7 @@ class PortfolioService {
 
       Logger.apiResponse(
         'DELETE',
-        '/portfolios/$portfolioId',
+        ApiEndpoints.getDeletePortfolioEndpoint(portfolioId),
         response.statusCode,
         response: response.data,
       );
@@ -277,7 +300,11 @@ class PortfolioService {
         message: response.message,
       );
     } catch (e) {
-      Logger.apiError('DELETE', '/portfolios/$portfolioId', e);
+      Logger.apiError(
+        'DELETE',
+        ApiEndpoints.getDeletePortfolioEndpoint(portfolioId),
+        e,
+      );
       return PortfolioResult(
         success: false,
         portfolios: [],
@@ -295,19 +322,20 @@ class PortfolioService {
     required List<String> fileTypes, // 'image' or 'video'
   }) async {
     try {
-      Logger.apiRequest('POST', '/portfolios/$portfolioId/media');
+      Logger.apiRequest('POST', ApiEndpoints.uploadPortfolioMedia);
 
       // This would typically involve uploading files to a storage service
       // For now, we'll simulate the upload process
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.uploadPortfolioMedia,
-        data: {'file_paths': filePaths, 'file_types': fileTypes},
+        {},
+        {'file_paths': filePaths, 'file_types': fileTypes},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       Logger.apiResponse(
         'POST',
-        '/portfolios/$portfolioId/media',
+        ApiEndpoints.uploadPortfolioMedia,
         response.statusCode,
         response: response.data,
       );
@@ -329,7 +357,7 @@ class PortfolioService {
         );
       }
     } catch (e) {
-      Logger.apiError('POST', '/portfolios/$portfolioId/media', e);
+      Logger.apiError('POST', ApiEndpoints.uploadPortfolioMedia, e);
       return MediaUploadResult(
         success: false,
         imageUrls: [],
@@ -342,7 +370,7 @@ class PortfolioService {
   /// Get portfolio categories
   Future<List<String>> getCategories() async {
     try {
-      Logger.apiRequest('GET', '/portfolios/categories');
+      Logger.apiRequest('GET', ApiEndpoints.categories);
 
       final response = await _apiClient.get<List<dynamic>>(
         ApiEndpoints.categories,
@@ -351,7 +379,7 @@ class PortfolioService {
 
       Logger.apiResponse(
         'GET',
-        '/portfolios/categories',
+        ApiEndpoints.categories,
         response.statusCode,
         response: response.data,
       );
@@ -362,7 +390,7 @@ class PortfolioService {
         return PortfolioCategory.values.map((e) => e.value).toList();
       }
     } catch (e) {
-      Logger.apiError('GET', '/portfolios/categories', e);
+      Logger.apiError('GET', ApiEndpoints.categories, e);
       return PortfolioCategory.values.map((e) => e.value).toList();
     }
   }

@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/constants/api_endpoints.dart';
@@ -16,10 +15,7 @@ class PaymentService {
     try {
       final response = await _apiClient.get(
         ApiEndpoints.payments,
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
+        queryParameters: {'page': page, 'limit': limit},
       );
 
       if (response.success) {
@@ -57,7 +53,8 @@ class PaymentService {
     try {
       final response = await _apiClient.post(
         ApiEndpoints.createPayment,
-        data: {
+        {},
+        {
           'amount': amount,
           'payment_type': paymentType,
           'pesapal_reference': pesapalReference,
@@ -92,7 +89,9 @@ class PaymentService {
       final response = await _apiClient.get(ApiEndpoints.paymentRequirements);
 
       if (response.success) {
-        final requirements = PaymentRequirementsModel.fromJson(response.data['data']);
+        final requirements = PaymentRequirementsModel.fromJson(
+          response.data['data'],
+        );
         return ApiResponse<PaymentRequirementsModel>(
           success: true,
           data: requirements,
@@ -101,7 +100,9 @@ class PaymentService {
       } else {
         return ApiResponse<PaymentRequirementsModel>(
           success: false,
-          message: response.data['message'] ?? 'Failed to fetch payment requirements',
+          message:
+              response.data['message'] ??
+              'Failed to fetch payment requirements',
         );
       }
     } catch (e) {
@@ -119,21 +120,22 @@ class PaymentService {
     String? jobId,
   }) async {
     try {
-      final data = {
-        'action': action,
-      };
-      
+      final data = {'action': action};
+
       if (jobId != null) {
         data['job_id'] = jobId;
       }
 
       final response = await _apiClient.post(
         ApiEndpoints.checkPaymentRequired,
-        data: data,
+        {},
+        data,
       );
 
       if (response.success) {
-        final validation = PaymentValidationModel.fromJson(response.data['data']);
+        final validation = PaymentValidationModel.fromJson(
+          response.data['data'],
+        );
         return ApiResponse<PaymentValidationModel>(
           success: true,
           data: validation,
@@ -165,8 +167,9 @@ class PaymentService {
     try {
       // This would integrate with Pesapal API
       // For now, we'll simulate the process
-      final pesapalReference = 'PESAPAL_${DateTime.now().millisecondsSinceEpoch}';
-      
+      final pesapalReference =
+          'PESAPAL_${DateTime.now().millisecondsSinceEpoch}';
+
       // Create payment record
       final paymentResponse = await createPayment(
         amount: amount,
@@ -208,7 +211,9 @@ class PaymentService {
     try {
       // This would check with Pesapal API for actual payment status
       // For now, we'll simulate a successful payment
-      final response = await _apiClient.get('/payments/verify/$pesapalReference');
+      final response = await _apiClient.get(
+        ApiEndpoints.getPaymentVerificationEndpoint(pesapalReference),
+      );
 
       if (response.success) {
         final payment = PaymentModel.fromJson(response.data['data']);

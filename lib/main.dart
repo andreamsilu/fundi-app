@@ -11,6 +11,8 @@ import 'features/messaging/providers/messaging_provider.dart';
 import 'features/search/providers/search_provider.dart';
 import 'features/notifications/providers/notification_provider.dart';
 import 'features/settings/providers/settings_provider.dart';
+import 'features/feeds/providers/feeds_provider.dart';
+import 'features/work_approval/providers/work_approval_provider.dart';
 
 /// Main entry point of the Fundi App
 /// Initializes the app with proper theme, providers, and routing
@@ -75,6 +77,18 @@ class FundiApp extends StatelessWidget {
         create: (_) {
           // Creating SettingsProvider instance
           return SettingsProvider();
+        },
+      ),
+      ChangeNotifierProvider(
+        create: (_) {
+          // Creating FeedsProvider instance
+          return FeedsProvider();
+        },
+      ),
+      ChangeNotifierProvider(
+        create: (_) {
+          // Creating WorkApprovalProvider instance
+          return WorkApprovalProvider();
         },
       ),
     ];

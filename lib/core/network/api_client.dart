@@ -226,8 +226,9 @@ class ApiClient {
 
   /// POST request
   Future<ApiResponse<T>> post<T>(
-    String path, {
-    dynamic data,
+    String path,
+    Map<String, String> map,
+    Map<String, dynamic> requestData, {
     Map<String, dynamic>? queryParameters,
     Options? options,
     T Function(dynamic)? fromJson,
@@ -235,7 +236,7 @@ class ApiClient {
     try {
       final response = await _dio.post(
         path,
-        data: data,
+        data: map,
         queryParameters: queryParameters,
         options: options,
       );
@@ -247,8 +248,9 @@ class ApiClient {
 
   /// PUT request
   Future<ApiResponse<T>> put<T>(
-    String path, {
-    dynamic data,
+    String path,
+    Map<String, String> map, {
+    required dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
     T Function(dynamic)? fromJson,

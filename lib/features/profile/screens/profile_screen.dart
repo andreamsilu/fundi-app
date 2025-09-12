@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/profile_model.dart';
 import '../services/profile_service.dart';
 import 'profile_edit_screen.dart';
+import '../../fundi_application/screens/fundi_application_screen.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
@@ -120,25 +123,70 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(onPressed: _editProfile, icon: const Icon(Icons.edit)),
-        ],
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(position: _slideAnimation, child: _buildBody()),
+  void _navigateToFundiApplication() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const FundiApplicationScreen(),
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildFundiApplicationStatus() {
+    // TODO: Implement fundi application status checking
+    // This would check if the user has already applied to become a fundi
+    // and show the current status (pending, approved, rejected)
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.lightGray.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.lightGray),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: AppTheme.mediumGray,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Apply to become a fundi and start earning from your skills',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.mediumGray,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Profile'),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              IconButton(onPressed: _editProfile, icon: const Icon(Icons.edit)),
+            ],
+          ),
+          body: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(position: _slideAnimation, child: _buildBody(authProvider)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(AuthProvider authProvider) {
     if (_isLoading) {
       return const Center(child: LoadingWidget(message: 'Loading profile...'));
     }
@@ -286,13 +334,39 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: 24),
           ],
 
-          // Edit Button
-          AppButton(
-            text: 'Edit Profile',
-            onPressed: _editProfile,
-            isFullWidth: true,
-            size: ButtonSize.large,
-            icon: Icons.edit,
+          // Action Buttons
+          Column(
+            children: [
+              // Edit Profile Button
+              AppButton(
+                text: 'Edit Profile',
+                onPressed: _editProfile,
+                isFullWidth: true,
+                size: ButtonSize.large,
+                icon: Icons.edit,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Become Fundi Button (only for customers)
+              if (authProvider.isCustomer) ...[
+                AppButton(
+                  text: 'Become a Fundi',
+                  onPressed: _navigateToFundiApplication,
+                  isFullWidth: true,
+                  size: ButtonSize.large,
+                  type: ButtonType.secondary,
+                  icon: Icons.build_circle,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Fundi Application Status (for customers who applied)
+              if (authProvider.isCustomer) ...[
+                _buildFundiApplicationStatus(),
+                const SizedBox(height: 16),
+              ],
+            ],
           ),
 
           const SizedBox(height: 32),

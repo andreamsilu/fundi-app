@@ -1,6 +1,7 @@
 import '../../../core/network/api_client.dart';
 import '../models/chat_model.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/constants/api_endpoints.dart';
 
 /// Chat service for managing chat conversations and messages
 /// Handles all chat-related API operations
@@ -17,7 +18,7 @@ class ChatService {
       Logger.userAction('Fetch chat conversations');
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/chats',
+        ApiEndpoints.chats,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -54,7 +55,7 @@ class ChatService {
       Logger.userAction('Fetch chat messages', data: {'chatId': chatId});
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/chats/$chatId/messages',
+        ApiEndpoints.getChatMessagesEndpoint(chatId),
         queryParameters: {'page': page, 'limit': limit},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -96,8 +97,9 @@ class ChatService {
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/chats/$chatId/messages',
-        data: {'content': content, 'type': messageType ?? 'text'},
+        ApiEndpoints.getChatMessagesEndpoint(chatId),
+        {},
+        {'content': content, 'type': messageType ?? 'text'},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -135,7 +137,8 @@ class ChatService {
       );
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/chats/$chatId/messages/read',
+        ApiEndpoints.getChatMessagesReadEndpoint(chatId),
+        {},
         data: {'message_ids': messageIds},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -170,8 +173,9 @@ class ChatService {
       Logger.userAction('Create chat', data: {'otherUserId': otherUserId});
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/chats',
-        data: {'other_user_id': otherUserId},
+        ApiEndpoints.chats,
+        {},
+        {'other_user_id': otherUserId},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 

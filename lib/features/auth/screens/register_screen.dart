@@ -32,7 +32,8 @@ class _RegisterScreenState extends State<RegisterScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
-  UserRole _selectedRole = UserRole.customer;
+  // All users are created as customers by default
+  final UserRole _selectedRole = UserRole.customer;
 
   @override
   void initState() {
@@ -106,18 +107,9 @@ class _RegisterScreenState extends State<RegisterScreen>
             );
 
             if (registerResult.success && registerResult.user != null) {
-              // Navigate to appropriate screen based on user role
+              // All new users are customers, navigate to dashboard
               if (mounted) {
-                if (registerResult.user!.isCustomer) {
-                  Navigator.pushReplacementNamed(
-                    context,
-                    '/customer-dashboard',
-                  );
-                } else if (registerResult.user!.isFundi) {
-                  Navigator.pushReplacementNamed(context, '/fundi-dashboard');
-                } else {
-                  Navigator.pushReplacementNamed(context, '/admin-dashboard');
-                }
+                Navigator.pushReplacementNamed(context, '/dashboard');
               }
             } else {
               setState(() {
@@ -270,11 +262,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                       },
                     ),
 
-                    const SizedBox(height: 24),
-
-                    // Role selection
-                    _buildRoleSelection(),
-
                     const SizedBox(height: 32),
 
                     // Register button
@@ -393,104 +380,22 @@ class _RegisterScreenState extends State<RegisterScreen>
         const SizedBox(height: 8),
 
         Text(
-          'Join our community of skilled professionals',
+          'Join our community and start your journey as a customer',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
         ),
-      ],
-    );
-  }
 
-  Widget _buildRoleSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+        const SizedBox(height: 8),
+
         Text(
-          'I am a:',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.darkGray,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildRoleOption(
-                role: UserRole.customer,
-                title: 'Customer',
-                subtitle: 'Looking for services',
-                icon: Icons.person_outline,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildRoleOption(
-                role: UserRole.fundi,
-                title: 'Fundi',
-                subtitle: 'Providing services',
-                icon: Icons.build_outlined,
-              ),
-            ),
-          ],
+          'You can apply to become a fundi later from your profile',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppTheme.mediumGray),
         ),
       ],
     );
   }
 
-  Widget _buildRoleOption({
-    required UserRole role,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    final isSelected = _selectedRole == role;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedRole = role;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? context.primaryColor : AppTheme.lightGray,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected
-              ? context.primaryColor.withValues(alpha: 0.1)
-              : Colors.transparent,
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: isSelected ? context.primaryColor : AppTheme.mediumGray,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isSelected ? context.primaryColor : AppTheme.darkGray,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppTheme.mediumGray),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

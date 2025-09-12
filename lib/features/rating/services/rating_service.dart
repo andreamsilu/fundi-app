@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/constants/api_endpoints.dart';
@@ -16,15 +15,12 @@ class RatingService {
     String? review,
   }) async {
     try {
-      final response = await _apiClient.post(
-        ApiEndpoints.createRating,
-        data: {
-          'fundi_id': fundiId,
-          'job_id': jobId,
-          'rating': rating,
-          'review': review,
-        },
-      );
+      final response = await _apiClient.post(ApiEndpoints.createRating, {
+        'fundi_id': fundiId,
+        'job_id': jobId,
+        'rating': rating.toString(),
+        'review': review ?? '',
+      }, {});
 
       if (response.success) {
         final rating = RatingModel.fromJson(response.data['data']);
@@ -57,10 +53,7 @@ class RatingService {
     try {
       final response = await _apiClient.get(
         ApiEndpoints.getFundiRatingsEndpoint(fundiId),
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
+        queryParameters: {'page': page, 'limit': limit},
       );
 
       if (response.success) {
@@ -93,10 +86,7 @@ class RatingService {
     try {
       final response = await _apiClient.get(
         ApiEndpoints.myRatings,
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
+        queryParameters: {'page': page, 'limit': limit},
       );
 
       if (response.success) {
@@ -138,6 +128,7 @@ class RatingService {
 
       final response = await _apiClient.put(
         ApiEndpoints.getUpdateRatingEndpoint(ratingId),
+        {},
         data: data,
       );
 
@@ -164,11 +155,11 @@ class RatingService {
   }
 
   /// Delete rating and review
-  Future<ApiResponse<bool>> deleteRating({
-    required String ratingId,
-  }) async {
+  Future<ApiResponse<bool>> deleteRating({required String ratingId}) async {
     try {
-      final response = await _apiClient.delete(ApiEndpoints.getDeleteRatingEndpoint(ratingId));
+      final response = await _apiClient.delete(
+        ApiEndpoints.getDeleteRatingEndpoint(ratingId),
+      );
 
       if (response.success) {
         return ApiResponse<bool>(
@@ -190,7 +181,6 @@ class RatingService {
       );
     }
   }
-
 }
 
 /// Generic API response wrapper

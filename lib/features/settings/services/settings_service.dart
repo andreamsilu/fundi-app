@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/constants/api_endpoints.dart';
 import '../models/settings_model.dart';
 
 /// Settings service for managing user preferences and app configuration
@@ -9,7 +10,7 @@ class SettingsService {
   /// Get user settings
   Future<SettingsResult> getSettings() async {
     try {
-      final response = await _apiClient.get('/settings');
+      final response = await _apiClient.get(ApiEndpoints.settings);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -35,7 +36,8 @@ class SettingsService {
   Future<ServiceResult> updateSettings(SettingsModel settings) async {
     try {
       final response = await _apiClient.put(
-        '/settings',
+        ApiEndpoints.settings,
+        {},
         data: settings.toJson(),
       );
 
@@ -59,7 +61,7 @@ class SettingsService {
   Future<ServiceResult> updateSetting(String key, dynamic value) async {
     try {
       final response = await _apiClient.patch(
-        '/settings/$key',
+        ApiEndpoints.getSettingsByKeyEndpoint(key),
         data: {'value': value},
       );
 
@@ -82,7 +84,11 @@ class SettingsService {
   /// Reset settings to default
   Future<ServiceResult> resetToDefault() async {
     try {
-      final response = await _apiClient.post('/settings/reset');
+      final response = await _apiClient.post(
+        ApiEndpoints.settingsReset,
+        {},
+        {},
+      );
 
       if (response.statusCode == 200) {
         return ServiceResult(success: true);
@@ -103,7 +109,7 @@ class SettingsService {
   /// Export settings
   Future<SettingsExportResult> exportSettings() async {
     try {
-      final response = await _apiClient.get('/settings/export');
+      final response = await _apiClient.get(ApiEndpoints.settingsExport);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -128,8 +134,9 @@ class SettingsService {
   ) async {
     try {
       final response = await _apiClient.post(
-        '/settings/import',
-        data: settingsData,
+        ApiEndpoints.settingsImport,
+        settingsData.cast<String, String>(),
+        {},
       );
 
       if (response.statusCode == 200) {
@@ -151,7 +158,7 @@ class SettingsService {
   /// Get available themes
   Future<List<ThemeOption>> getAvailableThemes() async {
     try {
-      final response = await _apiClient.get('/settings/themes');
+      final response = await _apiClient.get(ApiEndpoints.settingsThemes);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -169,7 +176,7 @@ class SettingsService {
   /// Get available languages
   Future<List<LanguageOption>> getAvailableLanguages() async {
     try {
-      final response = await _apiClient.get('/settings/languages');
+      final response = await _apiClient.get(ApiEndpoints.settingsLanguages);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -188,7 +195,8 @@ class SettingsService {
   Future<ServiceResult> updatePrivacySettings(PrivacySettings privacy) async {
     try {
       final response = await _apiClient.put(
-        '/settings/privacy',
+        ApiEndpoints.settingsPrivacy,
+        {},
         data: privacy.toJson(),
       );
 
@@ -214,7 +222,8 @@ class SettingsService {
   ) async {
     try {
       final response = await _apiClient.put(
-        '/settings/notifications',
+        ApiEndpoints.settingsNotifications,
+        {},
         data: preferences.toJson(),
       );
 

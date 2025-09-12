@@ -83,7 +83,11 @@ class NotificationService {
   /// Mark all notifications as read
   Future<ServiceResult> markAllAsRead() async {
     try {
-      final response = await _apiClient.put('/notifications/read-all');
+      final response = await _apiClient.put(
+        ApiEndpoints.markAllNotificationsAsRead,
+        {},
+        data: null,
+      );
 
       if (response.statusCode == 200) {
         return ServiceResult(success: true);
@@ -127,7 +131,9 @@ class NotificationService {
   /// Clear all notifications
   Future<ServiceResult> clearAllNotifications() async {
     try {
-      final response = await _apiClient.delete('/notifications/clear-all');
+      final response = await _apiClient.delete(
+        ApiEndpoints.clearAllNotifications,
+      );
 
       if (response.statusCode == 200) {
         return ServiceResult(success: true);
@@ -148,7 +154,7 @@ class NotificationService {
   /// Get notification settings
   Future<NotificationSettingsResult> getNotificationSettings() async {
     try {
-      final response = await _apiClient.get('/notifications/settings');
+      final response = await _apiClient.get(ApiEndpoints.notificationSettings);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -176,7 +182,8 @@ class NotificationService {
   ) async {
     try {
       final response = await _apiClient.put(
-        '/notifications/settings',
+        ApiEndpoints.notificationSettings,
+        {},
         data: settings.toJson(),
       );
 
@@ -199,7 +206,11 @@ class NotificationService {
   /// Send a test notification
   Future<ServiceResult> sendTestNotification() async {
     try {
-      final response = await _apiClient.post('/notifications/test');
+      final response = await _apiClient.post(
+        ApiEndpoints.testNotification,
+        {},
+        {},
+      );
 
       if (response.statusCode == 200) {
         return ServiceResult(success: true);

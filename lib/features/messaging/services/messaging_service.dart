@@ -1,6 +1,7 @@
 import 'dart:io';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/constants/api_endpoints.dart';
 import '../models/chat_model.dart' hide MessageModel;
 import '../models/message_model.dart';
 
@@ -15,7 +16,7 @@ class MessagingService {
       Logger.apiRequest('GET', '/chats');
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/chats',
+        ApiEndpoints.chats,
         queryParameters: {'page': page, 'limit': limit},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -70,11 +71,9 @@ class MessagingService {
       Logger.apiRequest('POST', '/chats');
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/chats',
-        data: {
-          'participant1_id': participant1Id,
-          'participant2_id': participant2Id,
-        },
+        ApiEndpoints.chats,
+        {},
+        {'participant1_id': participant1Id, 'participant2_id': participant2Id},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -120,7 +119,7 @@ class MessagingService {
       Logger.apiRequest('GET', '/chats/$chatId/messages');
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/chats/$chatId/messages',
+        ApiEndpoints.getChatMessagesEndpoint(chatId),
         queryParameters: {
           'page': page,
           'limit': limit,
@@ -179,8 +178,9 @@ class MessagingService {
       Logger.apiRequest('POST', '/chats/$chatId/messages');
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/chats/$chatId/messages',
-        data: {'type': 'text', 'content': content},
+        ApiEndpoints.getChatMessagesEndpoint(chatId),
+        {},
+        {'type': 'text', 'content': content},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -225,12 +225,9 @@ class MessagingService {
       Logger.apiRequest('POST', '/chats/$chatId/messages');
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/chats/$chatId/messages',
-        data: {
-          'type': 'image',
-          'content': caption ?? '',
-          'image_url': imageUrl,
-        },
+        ApiEndpoints.getChatMessagesEndpoint(chatId),
+        {},
+        {'type': 'image', 'content': caption ?? '', 'image_url': imageUrl},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -277,8 +274,9 @@ class MessagingService {
       Logger.apiRequest('POST', '/chats/$chatId/messages');
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/chats/$chatId/messages',
-        data: {
+        ApiEndpoints.getChatMessagesEndpoint(chatId),
+        {},
+        {
           'type': 'file',
           'content': caption ?? '',
           'file_url': fileUrl,
@@ -328,7 +326,8 @@ class MessagingService {
       Logger.apiRequest('PUT', '/chats/$chatId/messages/read');
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/chats/$chatId/messages/read',
+        ApiEndpoints.getChatMessagesReadEndpoint(chatId),
+        {},
         data: {'message_ids': messageIds},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -383,7 +382,7 @@ class MessagingService {
       Logger.apiRequest('DELETE', '/chats/$chatId/messages/$messageId');
 
       final response = await _apiClient.delete<Map<String, dynamic>>(
-        '/chats/$chatId/messages/$messageId',
+        ApiEndpoints.getChatMessageEndpoint(chatId, messageId),
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -422,7 +421,7 @@ class MessagingService {
     try {
       Logger.apiRequest('POST', '/messages/upload');
       final response = await _apiClient.uploadFile<Map<String, dynamic>>(
-        '/messages/upload',
+        ApiEndpoints.messageUpload,
         File(filePath),
         fieldName: 'file',
         additionalData: {'file_name': fileName, 'file_size': fileSize},

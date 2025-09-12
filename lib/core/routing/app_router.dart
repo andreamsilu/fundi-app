@@ -21,6 +21,12 @@ import '../../features/messaging/screens/chat_screen.dart';
 import '../../features/search/screens/search_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/fundi_application/screens/fundi_application_screen.dart';
+import '../../features/feeds/screens/fundi_feed_screen.dart';
+import '../../features/feeds/screens/job_feed_screen.dart';
+import '../../features/feeds/screens/fundi_profile_screen.dart';
+import '../../features/feeds/screens/job_details_screen.dart' hide JobDetailsScreen;
+import '../../features/work_approval/screens/work_approval_screen.dart';
 
 /// Centralized routing configuration for the Fundi App
 /// Handles route definitions, navigation, and route guards
@@ -42,6 +48,11 @@ class AppRouter {
   static const String search = '/search';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
+  static const String fundiApplication = '/fundi-application';
+  static const String fundiFeed = '/fundi-feed';
+  static const String jobFeed = '/job-feed';
+  static const String fundiProfile = '/fundi-profile';
+  static const String workApproval = '/work-approval';
   static const String home = '/';
 
   /// Route generation function for named routes
@@ -112,7 +123,10 @@ class AppRouter {
 
       case '/portfolio-gallery':
         final args = settings.arguments as String?;
-        return _buildRoute(PortfolioGalleryScreen(portfolioId: args ?? ''), settings);
+        return _buildRoute(
+          PortfolioGalleryScreen(portfolioId: args ?? ''),
+          settings,
+        );
 
       case '/portfolio-details':
         final args = settings.arguments as PortfolioModel?;
@@ -142,6 +156,28 @@ class AppRouter {
 
       case '/settings':
         return _buildRoute(const SettingsScreen(), settings);
+
+      case '/fundi-application':
+        return _buildRoute(const FundiApplicationScreen(), settings);
+
+      case '/fundi-feed':
+        return _buildRoute(const FundiFeedScreen(), settings);
+
+      case '/job-feed':
+        return _buildRoute(const JobFeedScreen(), settings);
+
+      case '/fundi-profile':
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args?['fundi'] == null) {
+          return _buildRoute(
+            const Scaffold(body: Center(child: Text('Fundi not found'))),
+            settings,
+          );
+        }
+        return _buildRoute(FundiProfileScreen(fundi: args!['fundi']), settings);
+
+      case '/work-approval':
+        return _buildRoute(const WorkApprovalScreen(), settings);
 
       default:
         return _buildRoute(

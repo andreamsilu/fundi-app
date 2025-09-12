@@ -30,15 +30,15 @@ class AuthService {
   }) async {
     try {
       Logger.userAction('Login attempt', data: {'phoneNumber': phoneNumber});
-
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.login,
-        data: {'phone': phoneNumber, 'password': password},
+        {'phone': phoneNumber, 'password': password},
+        {},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
-        final userData = response.data! as Map<String, dynamic>;
+        final userData = response.data!;
         final token = userData['token'] as String;
         final user = UserModel.fromJson(userData);
 
@@ -76,13 +76,14 @@ class AuthService {
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.register,
-        data: {'phone': phoneNumber, 'password': password, 'role': role.value},
+        {'phone': phoneNumber, 'password': password, 'role': role.value},
+        {},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
         final token = response.data!['token'] as String;
-        final userData = response.data! as Map<String, dynamic>;
+        final userData = response.data!;
         final user = UserModel.fromJson(userData);
 
         // Save session with token and user data
@@ -113,7 +114,7 @@ class AuthService {
       // Call logout endpoint if user is authenticated
       if (_sessionManager.isAuthenticated) {
         try {
-          await _apiClient.post(ApiEndpoints.logout);
+          await _apiClient.post(ApiEndpoints.logout, {}, {});
         } catch (e) {
           // Continue with logout even if API call fails
           Logger.warning('Logout API call failed', error: e);
@@ -190,7 +191,8 @@ class AuthService {
       if (preferences != null) data['preferences'] = preferences;
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/auth/profile',
+        ApiEndpoints.authProfile,
+        {},
         data: data,
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -224,7 +226,8 @@ class AuthService {
       Logger.userAction('Password change attempt');
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/auth/change-password',
+        ApiEndpoints.authChangePassword,
+        {},
         data: {
           'current_password': currentPassword,
           'new_password': newPassword,
@@ -257,8 +260,9 @@ class AuthService {
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/auth/forgot-password',
-        data: {'phone_number': phoneNumber},
+        ApiEndpoints.authForgotPassword,
+        {'phone_number': phoneNumber},
+        {},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -290,15 +294,12 @@ class AuthService {
         data: {'phoneNumber': phoneNumber, 'type': type.name},
       );
 
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        '/auth/send-otp',
-        data: {
-          'phone_number': phoneNumber,
-          'type': type.name,
-          if (userId != null) 'user_id': userId,
-        },
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
+      final response = await _apiClient
+          .post<Map<String, dynamic>>(ApiEndpoints.authSendOtp, {
+            'phone_number': phoneNumber,
+            'type': type.name,
+            if (userId != null) 'user_id': userId.toString(),
+          }, {}, fromJson: (data) => data as Map<String, dynamic>);
 
       if (response.success) {
         Logger.userAction('OTP sent successfully');
@@ -329,16 +330,13 @@ class AuthService {
         data: {'phoneNumber': phoneNumber, 'type': type.name},
       );
 
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        '/auth/verify-otp',
-        data: {
-          'phone_number': phoneNumber,
-          'otp': otp,
-          'type': type.name,
-          if (userId != null) 'user_id': userId,
-        },
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
+      final response = await _apiClient
+          .post<Map<String, dynamic>>(ApiEndpoints.authVerifyOtp, {
+            'phone_number': phoneNumber,
+            'otp': otp,
+            'type': type.name,
+            if (userId != null) 'user_id': userId.toString(),
+          }, {}, fromJson: (data) => data as Map<String, dynamic>);
 
       if (response.success && response.data != null) {
         // For registration, save session
@@ -389,14 +387,12 @@ class AuthService {
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/auth/reset-password',
-        data: {
+        ApiEndpoints.authResetPassword,
+        {
           'phone_number': phoneNumber,
           'otp': otp,
-          'new_password': newPassword,
-        },
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
+            'new_password': newPassword,
+          }, {},  fromJson: (data) => data as Map<String, dynamic>);
 
       if (response.success) {
         Logger.userAction('Password reset successful');

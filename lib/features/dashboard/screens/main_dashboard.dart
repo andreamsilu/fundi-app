@@ -11,6 +11,7 @@ import '../../messaging/screens/chat_list_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../help/screens/help_screen.dart';
+import '../../fundi_application/screens/fundi_application_screen.dart';
 import '../services/dashboard_service.dart';
 import '../models/dashboard_model.dart';
 
@@ -89,7 +90,7 @@ class _MainDashboardState extends State<MainDashboard>
   /// Build dynamic AppBar based on current page
   PreferredSizeWidget _buildAppBar(AuthProvider authProvider) {
     String title;
-    
+
     switch (_currentIndex) {
       case 0:
         if (authProvider.isCustomer) {
@@ -239,6 +240,29 @@ class _MainDashboardState extends State<MainDashboard>
 
                 const Divider(),
 
+                // Feed Section
+                _buildDrawerSection(
+                  title: 'Discover',
+                  children: [
+                    if (authProvider.isCustomer) ...[
+                      _buildDrawerItem(
+                        icon: Icons.people_outline,
+                        title: 'Find Fundis',
+                        onTap: () => _navigateToFundiFeed(),
+                      ),
+                    ],
+                    if (authProvider.isFundi) ...[
+                      _buildDrawerItem(
+                        icon: Icons.work_outline,
+                        title: 'Find Jobs',
+                        onTap: () => _navigateToJobFeed(),
+                      ),
+                    ],
+                  ],
+                ),
+
+                const Divider(),
+
                 // Communication Section
                 _buildDrawerSection(
                   title: 'Communication',
@@ -257,6 +281,38 @@ class _MainDashboardState extends State<MainDashboard>
                 ),
 
                 const Divider(),
+
+                // Work Approval Section (for customers only)
+                if (authProvider.isCustomer) ...[
+                  _buildDrawerSection(
+                    title: 'Work Management',
+                    children: [
+                      _buildDrawerItem(
+                        icon: Icons.approval,
+                        title: 'Work Approval',
+                        onTap: () => _navigateToWorkApproval(),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                ],
+
+                const Divider(),
+
+                // Fundi Application Section (for customers only)
+                if (authProvider.isCustomer) ...[
+                  _buildDrawerSection(
+                    title: 'Become a Fundi',
+                    children: [
+                      _buildDrawerItem(
+                        icon: Icons.build_circle,
+                        title: 'Apply to Become Fundi',
+                        onTap: () => _navigateToFundiApplication(),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                ],
 
                 // Settings Section
                 _buildDrawerSection(
@@ -466,6 +522,29 @@ class _MainDashboardState extends State<MainDashboard>
       context,
       MaterialPageRoute(builder: (context) => const HelpScreen()),
     );
+  }
+
+  /// Navigate to fundi application screen
+  void _navigateToFundiApplication() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FundiApplicationScreen()),
+    );
+  }
+
+  /// Navigate to fundi feed screen
+  void _navigateToFundiFeed() {
+    Navigator.pushNamed(context, '/fundi-feed');
+  }
+
+  /// Navigate to job feed screen
+  void _navigateToJobFeed() {
+    Navigator.pushNamed(context, '/job-feed');
+  }
+
+  /// Navigate to work approval screen
+  void _navigateToWorkApproval() {
+    Navigator.pushNamed(context, '/work-approval');
   }
 
   /// Handle logout

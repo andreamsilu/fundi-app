@@ -4,7 +4,7 @@ class UserModel {
   final String id;
   final String phone; // Primary identifier (matches API)
   final String? password; // Hidden in API responses
-  final UserRole role; // 'fundi', 'customer', 'admin'
+  final List<UserRole> roles; // Multiple roles: ['customer', 'fundi', 'admin']
   final UserStatus status; // User status
   final String? nidaNumber; // National ID number
   final DateTime? createdAt;
@@ -20,7 +20,7 @@ class UserModel {
     required this.id,
     required this.phone,
     this.password,
-    required this.role,
+    required this.roles,
     required this.status,
     this.nidaNumber,
     this.createdAt,
@@ -49,13 +49,19 @@ class UserModel {
   }
 
   /// Check if user is a customer
-  bool get isCustomer => role == UserRole.customer;
+  bool get isCustomer => roles.contains(UserRole.customer);
 
   /// Check if user is a fundi (craftsman)
-  bool get isFundi => role == UserRole.fundi;
+  bool get isFundi => roles.contains(UserRole.fundi);
 
   /// Check if user is admin
-  bool get isAdmin => role == UserRole.admin;
+  bool get isAdmin => roles.contains(UserRole.admin);
+
+  /// Get primary role (first role in the list)
+  UserRole get primaryRole => roles.isNotEmpty ? roles.first : UserRole.customer;
+
+  /// Check if user has multiple roles
+  bool get hasMultipleRoles => roles.length > 1;
 
   /// Check if user is active
   bool get isActive => status == UserStatus.active;
@@ -63,8 +69,8 @@ class UserModel {
   /// Check if user is verified
   bool get isVerified => status == UserStatus.verified;
 
-  /// Get user type (alias for role)
-  String get userType => role.value;
+  /// Get user type (alias for primary role)
+  String get userType => primaryRole.value;
 
   /// Get first name from full name
   String? get firstName {
@@ -82,7 +88,9 @@ class UserModel {
           .toString(), // Convert to String to handle both int and String
       phone: json['phone'] as String,
       password: json['password'] as String?, // Usually hidden in API responses
-      role: UserRole.fromString(json['role'] as String),
+      roles: (json['roles'] as List<dynamic>?)
+          ?.map((role) => UserRole.fromString(role as String))
+          .toList() ?? [UserRole.customer],
       status: json['status'] != null
           ? UserStatus.fromString(json['status'] as String)
           : UserStatus.active, // Default to active if not provided
@@ -107,7 +115,7 @@ class UserModel {
       'id': id,
       'phone': phone,
       'password': password, // Usually not sent in API requests
-      'role': role.value,
+      'roles': roles.map((role) => role.value).toList(),
       'status': status.value,
       'nida_number': nidaNumber,
       'created_at': createdAt?.toIso8601String(),
@@ -124,7 +132,7 @@ class UserModel {
     String? id,
     String? phone,
     String? password,
-    UserRole? role,
+    List<UserRole>? roles,
     UserStatus? status,
     String? nidaNumber,
     DateTime? createdAt,
@@ -138,7 +146,7 @@ class UserModel {
       id: id ?? this.id,
       phone: phone ?? this.phone,
       password: password ?? this.password,
-      role: role ?? this.role,
+      roles: roles ?? this.roles,
       status: status ?? this.status,
       nidaNumber: nidaNumber ?? this.nidaNumber,
       createdAt: createdAt ?? this.createdAt,
@@ -161,7 +169,7 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, phone: $phone, fullName: $fullName, role: $role, status: $status)';
+    return 'UserModel(id: $id, phone: $phone, fullName: $fullName, roles: $roles, status: $status)';
   }
 }
 

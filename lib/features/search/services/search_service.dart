@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/constants/api_endpoints.dart';
 import '../models/search_model.dart';
 import '../../job/models/job_model.dart';
 import '../../portfolio/models/portfolio_model.dart';
@@ -20,27 +21,29 @@ class SearchService {
   }) async {
     try {
       final response = await _apiClient.post(
-        '/search',
-        data: {
-          'query': query,
-          'category': category,
-          'location': location,
-          'min_budget': minBudget,
-          'max_budget': maxBudget,
-          'page': page,
-          'limit': limit,
+        ApiEndpoints.search,
+        {
+          'query': query.toString(),
+          'category': category.toString(),
+          'location': location.toString(),
+          'min_budget': minBudget.toString(),
+          'max_budget': maxBudget.toString(),
+          'page': page.toString(),
+          'limit': limit.toString(),
         },
+        {},
+        fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
         final jobs =
-            (data['jobs'] as List?)
+            (data?['jobs'] as List?)
                 ?.map((job) => JobModel.fromJson(job))
                 .toList() ??
             [];
         final portfolios =
-            (data['portfolios'] as List?)
+            (data?['portfolios'] as List?)
                 ?.map((portfolio) => PortfolioModel.fromJson(portfolio))
                 .toList() ??
             [];
@@ -49,10 +52,10 @@ class SearchService {
           success: true,
           jobs: jobs,
           portfolios: portfolios,
-          totalJobs: data['total_jobs'] ?? 0,
-          totalPortfolios: data['total_portfolios'] ?? 0,
-          currentPage: data['current_page'] ?? 1,
-          totalPages: data['total_pages'] ?? 1,
+          totalJobs: data?['total_jobs'] ?? 0,
+          totalPortfolios: data?['total_portfolios'] ?? 0,
+          currentPage: data?['current_page'] ?? 1,
+          totalPages: data?['total_pages'] ?? 1,
         );
       } else {
         return JobPortfolioSearchResult(
@@ -72,13 +75,13 @@ class SearchService {
   Future<List<String>> getSuggestions(String query) async {
     try {
       final response = await _apiClient.get(
-        '/search/suggestions',
+        ApiEndpoints.searchSuggestions,
         queryParameters: {'q': query},
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
-        return (data['suggestions'] as List?)
+        return (data?['suggestions'] as List?)
                 ?.map((suggestion) => suggestion.toString())
                 .toList() ??
             [];
@@ -92,11 +95,11 @@ class SearchService {
   /// Get popular search terms
   Future<List<String>> getPopularSearches() async {
     try {
-      final response = await _apiClient.get('/search/popular');
+      final response = await _apiClient.get(ApiEndpoints.searchPopular);
 
       if (response.statusCode == 200) {
         final data = response.data;
-        return (data['popular_searches'] as List?)
+        return (data?['popular_searches'] as List?)
                 ?.map((term) => term.toString())
                 .toList() ??
             [];
@@ -110,7 +113,7 @@ class SearchService {
   /// Get search filters (categories, locations, etc.)
   Future<SearchFilters> getFilters() async {
     try {
-      final response = await _apiClient.get('/search/filters');
+      final response = await _apiClient.get(ApiEndpoints.searchFilters);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -125,7 +128,12 @@ class SearchService {
   /// Save search query for analytics
   Future<void> saveSearchQuery(String query) async {
     try {
-      await _apiClient.post('/search/analytics', data: {'query': query});
+      await _apiClient.post(
+        ApiEndpoints.searchAnalytics,
+        {'query': query.toString()},
+        {},
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
     } catch (e) {
       // Silently fail for analytics
     }

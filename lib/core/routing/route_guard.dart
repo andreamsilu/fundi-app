@@ -36,7 +36,7 @@ class RouteGuard extends StatelessWidget {
 
         // Check role-based access
         if (allowedRoles.isNotEmpty && authProvider.user != null) {
-          final userRole = authProvider.user!.role;
+          final userRole = authProvider.user!.primaryRole;
           if (!allowedRoles.contains(userRole.value)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.of(context).pushReplacementNamed(AppRouter.dashboard);

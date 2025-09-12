@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/constants/api_endpoints.dart';
 import '../models/dashboard_model.dart';
 import '../../../core/utils/logger.dart';
 
@@ -17,7 +18,7 @@ class DashboardService {
       Logger.userAction('Fetch dashboard stats');
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/dashboard/stats',
+        ApiEndpoints.dashboardStats,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -49,7 +50,7 @@ class DashboardService {
       Logger.userAction('Fetch recent activity');
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/dashboard/activity',
+        ApiEndpoints.dashboardActivity,
         queryParameters: {'limit': limit},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -84,7 +85,7 @@ class DashboardService {
       Logger.userAction('Fetch job categories');
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/jobs/categories',
+        ApiEndpoints.categories,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 

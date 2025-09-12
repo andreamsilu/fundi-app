@@ -1,3 +1,5 @@
+import 'package:fundi/core/constants/api_endpoints.dart';
+
 import '../models/profile_model.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
@@ -18,7 +20,7 @@ class ProfileService {
 
       // Use the correct endpoint - get current user profile
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/users/me',
+        ApiEndpoints.userMe,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -67,7 +69,8 @@ class ProfileService {
       if (preferences != null) data['preferences'] = preferences;
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/profiles/$userId',
+        ApiEndpoints.userProfileEndpoint(userId),
+        {},
         data: data,
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -107,8 +110,9 @@ class ProfileService {
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/profiles/$userId/image',
-        data: {'image_path': imagePath},
+        ApiEndpoints.userProfileImageEndpoint(userId),
+        {},
+        {'image_path': imagePath},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -147,7 +151,8 @@ class ProfileService {
       );
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/profiles/$userId/skills',
+        ApiEndpoints.userProfileSkillsEndpoint(userId),
+        {},
         data: {'skills': skills},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -187,7 +192,8 @@ class ProfileService {
       );
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/profiles/$userId/languages',
+        ApiEndpoints.userProfileLanguagesEndpoint(userId),
+        {},
         data: {'languages': languages},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -224,7 +230,8 @@ class ProfileService {
       Logger.userAction('Preferences update attempt', data: {'userId': userId});
 
       final response = await _apiClient.put<Map<String, dynamic>>(
-        '/profiles/$userId/preferences',
+        ApiEndpoints.userProfilePreferencesEndpoint(userId),
+        {},
         data: {'preferences': preferences},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -284,7 +291,7 @@ class ProfileService {
       queryParams['offset'] = offset;
 
       final response = await _apiClient.get<List<dynamic>>(
-        '/profiles/search',
+        ApiEndpoints.search,
         queryParameters: queryParams,
         fromJson: (data) => data as List<dynamic>,
       );

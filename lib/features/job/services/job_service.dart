@@ -32,22 +32,19 @@ class JobService {
         data: {'title': title, 'category': category},
       );
 
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        ApiEndpoints.createJob,
-        data: {
-          'title': title,
-          'description': description,
-          'category_id': category,
-          'budget': budget,
-          'deadline': deadline.toIso8601String(),
-          'location': location,
-          'location_lat': latitude,
-          'location_lng': longitude,
-          'required_skills': requiredSkills,
-          'image_urls': imageUrls,
-        },
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
+      final response = await _apiClient
+          .post<Map<String, dynamic>>(ApiEndpoints.createJob, {}, {
+            'title': title,
+            'description': description,
+            'category_id': category,
+            'budget': budget,
+            'deadline': deadline.toIso8601String(),
+            'location': location,
+            'location_lat': latitude,
+            'location_lng': longitude,
+            'required_skills': requiredSkills,
+            'image_urls': imageUrls,
+          }, fromJson: (data) => data as Map<String, dynamic>);
 
       if (response.success && response.data != null) {
         final job = JobModel.fromJson(response.data!);
@@ -206,7 +203,8 @@ class JobService {
 
       final response = await _apiClient.put<Map<String, dynamic>>(
         ApiEndpoints.getUpdateJobEndpoint(jobId),
-        data: data,
+        {},
+        data: data.map((key, value) => MapEntry(key, value.toString())),
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
@@ -277,7 +275,8 @@ class JobService {
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.getApplyToJobEndpoint(jobId),
-        data: {
+        {},
+        {
           'requirements': {'message': message, 'estimated_days': estimatedDays},
           'budget_breakdown': {
             'labor': proposedBudget * 0.7,

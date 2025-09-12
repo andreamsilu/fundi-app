@@ -127,7 +127,7 @@ class UserProfileCard extends StatelessWidget {
     Color backgroundColor;
     Color textColor;
 
-    switch (user.role) {
+    switch (user.primaryRole) {
       case UserRole.fundi:
         backgroundColor = Colors.blue[100]!;
         textColor = Colors.blue[800]!;
@@ -149,7 +149,7 @@ class UserProfileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        user.role.displayName,
+        user.primaryRole.displayName,
         style: TextStyle(
           color: textColor,
           fontSize: 12,
@@ -223,13 +223,13 @@ class UserProfileSummary extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getUserTypeColor(user.role).withOpacity(0.1),
+                  color: _getUserTypeColor(user.primaryRole).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  user.role.displayName,
+                  user.primaryRole.displayName,
                   style: TextStyle(
-                    color: _getUserTypeColor(user.role),
+                    color: _getUserTypeColor(user.primaryRole),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
