@@ -1,14 +1,118 @@
 import 'dart:io';
+import 'dart:async';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../models/portfolio_model.dart';
 
+/// Feed data model for categories, skills, and locations
+class FeedData {
+  final List<String> categories;
+  final List<String> skills;
+  final List<String> locations;
+
+  const FeedData({
+    required this.categories,
+    required this.skills,
+    required this.locations,
+  });
+
+  factory FeedData.fromJson(Map<String, dynamic> json) {
+    return FeedData(
+      categories: List<String>.from(json['categories'] ?? []),
+      skills: List<String>.from(json['skills'] ?? []),
+      locations: List<String>.from(json['locations'] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'categories': categories, 'skills': skills, 'locations': locations};
+  }
+
+  bool get isEmpty => categories.isEmpty && skills.isEmpty && locations.isEmpty;
+  bool get isNotEmpty => !isEmpty;
+}
+
+/// Feed data result wrapper
+class FeedDataResult {
+  final bool success;
+  final String message;
+  final FeedData? data;
+
+  FeedDataResult._({required this.success, required this.message, this.data});
+
+  factory FeedDataResult.success({
+    required List<String> categories,
+    required List<String> skills,
+    required List<String> locations,
+  }) {
+    return FeedDataResult._(
+      success: true,
+      message: 'Feed data loaded successfully',
+      data: FeedData(
+        categories: categories,
+        skills: skills,
+        locations: locations,
+      ),
+    );
+  }
+
+  factory FeedDataResult.failure({required String message}) {
+    return FeedDataResult._(success: false, message: message);
+  }
+}
+
+/// Feed data state for UI management
+class FeedDataState {
+  final bool isLoading;
+  final FeedData? data;
+  final String? error;
+  final DateTime? lastUpdated;
+
+  const FeedDataState({
+    this.isLoading = false,
+    this.data,
+    this.error,
+    this.lastUpdated,
+  });
+
+  FeedDataState copyWith({
+    bool? isLoading,
+    FeedData? data,
+    String? error,
+    DateTime? lastUpdated,
+  }) {
+    return FeedDataState(
+      isLoading: isLoading ?? this.isLoading,
+      data: data ?? this.data,
+      error: error ?? this.error,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+    );
+  }
+
+  bool get hasData => data != null && data!.isNotEmpty;
+  bool get hasError => error != null;
+  bool get isStale =>
+      lastUpdated != null &&
+      DateTime.now().difference(lastUpdated!).inMinutes > 5;
+}
+
 /// Portfolio service for managing fundi portfolios
 /// Handles CRUD operations for portfolio items
 class PortfolioService {
   final ApiClient _apiClient = ApiClient();
+
+  // FeedsService instance - you can inject this or create it as needed
+  dynamic _feedsService;
+
+  /// Initialize the feeds service
+  void initializeFeedsService(dynamic feedsService) {
+    _feedsService = feedsService;
+  }
+
+  /// Get feeds service instance
+  dynamic get feedsService => _feedsService;
 
   /// Get portfolios for a specific fundi
   Future<PortfolioResult> getPortfolios({
@@ -19,10 +123,10 @@ class PortfolioService {
     String? search,
   }) async {
     try {
-      Logger.apiRequest('GET', ApiEndpoints.portfolios);
+      Logger.apiRequest('GET', ApiEndpoints.myPortfolio);
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.portfolios,
+        ApiEndpoints.myPortfolio,
         queryParameters: {
           'page': page,
           'limit': limit,
@@ -34,7 +138,7 @@ class PortfolioService {
 
       Logger.apiResponse(
         'GET',
-        ApiEndpoints.portfolios,
+        ApiEndpoints.myPortfolio,
         response.statusCode,
         response: response.data,
       );
@@ -64,61 +168,13 @@ class PortfolioService {
         );
       }
     } catch (e) {
-      Logger.apiError('GET', ApiEndpoints.portfolios, e);
+      Logger.apiError('GET', ApiEndpoints.myPortfolio, e);
       return PortfolioResult(
         success: false,
         portfolios: [],
         totalCount: 0,
         totalPages: 0,
         message: 'Failed to load portfolios',
-      );
-    }
-  }
-
-  /// Get a specific portfolio by ID
-  Future<PortfolioDetailResult> getPortfolio(String portfolioId) async {
-    try {
-      Logger.apiRequest(
-        'GET',
-        ApiEndpoints.getPortfolioByIdEndpoint(portfolioId),
-      );
-
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.getPortfolioByIdEndpoint(portfolioId),
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
-
-      Logger.apiResponse(
-        'GET',
-        ApiEndpoints.getPortfolioByIdEndpoint(portfolioId),
-        response.statusCode,
-        response: response.data,
-      );
-
-      if (response.success && response.data != null) {
-        final portfolio = PortfolioModel.fromJson(response.data!);
-        return PortfolioDetailResult(
-          success: true,
-          portfolio: portfolio,
-          message: response.message,
-        );
-      } else {
-        return PortfolioDetailResult(
-          success: false,
-          portfolio: null,
-          message: response.message,
-        );
-      }
-    } catch (e) {
-      Logger.apiError(
-        'GET',
-        ApiEndpoints.getPortfolioByIdEndpoint(portfolioId),
-        e,
-      );
-      return PortfolioDetailResult(
-        success: false,
-        portfolio: null,
-        message: 'Failed to load portfolio',
       );
     }
   }
@@ -315,58 +371,6 @@ class PortfolioService {
     }
   }
 
-  /// Upload portfolio media files
-  Future<MediaUploadResult> uploadMedia({
-    required String portfolioId,
-    required List<String> filePaths,
-    required List<String> fileTypes, // 'image' or 'video'
-  }) async {
-    try {
-      Logger.apiRequest('POST', ApiEndpoints.uploadPortfolioMedia);
-
-      // This would typically involve uploading files to a storage service
-      // For now, we'll simulate the upload process
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        ApiEndpoints.uploadPortfolioMedia,
-        {},
-        {'file_paths': filePaths, 'file_types': fileTypes},
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
-
-      Logger.apiResponse(
-        'POST',
-        ApiEndpoints.uploadPortfolioMedia,
-        response.statusCode,
-        response: response.data,
-      );
-
-      if (response.success && response.data != null) {
-        final data = response.data!;
-        return MediaUploadResult(
-          success: true,
-          imageUrls: List<String>.from(data['image_urls'] ?? []),
-          videoUrls: List<String>.from(data['video_urls'] ?? []),
-          message: response.message,
-        );
-      } else {
-        return MediaUploadResult(
-          success: false,
-          imageUrls: [],
-          videoUrls: [],
-          message: response.message,
-        );
-      }
-    } catch (e) {
-      Logger.apiError('POST', ApiEndpoints.uploadPortfolioMedia, e);
-      return MediaUploadResult(
-        success: false,
-        imageUrls: [],
-        videoUrls: [],
-        message: 'Failed to upload media',
-      );
-    }
-  }
-
   /// Get portfolio categories
   Future<List<String>> getCategories() async {
     try {
@@ -393,6 +397,174 @@ class PortfolioService {
       Logger.apiError('GET', ApiEndpoints.categories, e);
       return PortfolioCategory.values.map((e) => e.value).toList();
     }
+  }
+
+  /// Load feed data (categories, skills, locations) with enhanced error handling
+  Future<FeedDataResult> loadFeedDataWithFallback() async {
+    try {
+      Logger.userAction('Loading feed data with fallback');
+
+      // Check if feeds service is initialized
+      if (_feedsService == null) {
+        Logger.warning('FeedsService not initialized, using fallback data');
+        return _getFallbackFeedData();
+      }
+
+      // Try to load from API first with parallel calls
+      final results =
+          await Future.wait<List<dynamic>>([
+            _feedsService!.getJobCategories(),
+            _feedsService!.getSkills(),
+            _feedsService!.getLocations(),
+          ]).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () =>
+                throw TimeoutException('Feed data loading timed out'),
+          );
+
+      // Process results with type safety
+      final categories = results[0] as List<String>;
+      final skills = results[1] as List<String>;
+      final locations = results[2] as List<String>;
+
+      // Validate data
+      if (categories.isEmpty && skills.isEmpty && locations.isEmpty) {
+        Logger.warning('Empty feed data received from API');
+        return _getFallbackFeedData();
+      }
+
+      Logger.userAction('Feed data loaded successfully from API');
+
+      return FeedDataResult.success(
+        categories: categories,
+        skills: skills,
+        locations: locations,
+      );
+    } catch (e) {
+      Logger.error('Failed to load feed data from API', error: e);
+
+      // Fallback to local data
+      return _getFallbackFeedData();
+    }
+  }
+
+  /// Get fallback feed data when API fails
+  FeedDataResult _getFallbackFeedData() {
+    Logger.userAction('Using fallback feed data');
+
+    return FeedDataResult.success(
+      categories: PortfolioCategory.values.map((e) => e.value).toList(),
+      skills: _getDefaultSkills(),
+      locations: _getDefaultLocations(),
+    );
+  }
+
+  /// Get default skills list
+  List<String> _getDefaultSkills() {
+    return [
+      'Plumbing',
+      'Electrical',
+      'Carpentry',
+      'Painting',
+      'Tiling',
+      'Roofing',
+      'Masonry',
+      'Welding',
+      'HVAC',
+      'Landscaping',
+      'Flooring',
+      'Insulation',
+      'Drywall',
+      'Concrete',
+      'Steel Work',
+    ];
+  }
+
+  /// Get default locations list
+  List<String> _getDefaultLocations() {
+    return [
+      'Dar es Salaam',
+      'Arusha',
+      'Mwanza',
+      'Dodoma',
+      'Tanga',
+      'Morogoro',
+      'Mbeya',
+      'Iringa',
+      'Tabora',
+      'Kigoma',
+      'Mtwara',
+      'Lindi',
+      'Ruvuma',
+      'Rukwa',
+      'Katavi',
+    ];
+  }
+
+  /// Load feed data with retry mechanism
+  Future<FeedDataResult> loadFeedDataWithRetry({int maxRetries = 3}) async {
+    int attempts = 0;
+
+    while (attempts < maxRetries) {
+      try {
+        final result = await loadFeedDataWithFallback();
+
+        if (result.success) {
+          return result;
+        }
+
+        attempts++;
+
+        if (attempts < maxRetries) {
+          Logger.warning(
+            'Feed data load attempt $attempts failed, retrying...',
+          );
+          await Future.delayed(
+            Duration(seconds: attempts * 2),
+          ); // Exponential backoff
+        }
+      } catch (e) {
+        attempts++;
+
+        if (attempts < maxRetries) {
+          Logger.warning(
+            'Feed data load attempt $attempts failed with error: $e',
+          );
+          await Future.delayed(Duration(seconds: attempts * 2));
+        } else {
+          Logger.error('All feed data load attempts failed', error: e);
+          return FeedDataResult.failure(
+            message: 'Failed to load feed data after $maxRetries attempts',
+          );
+        }
+      }
+    }
+
+    return FeedDataResult.failure(
+      message: 'Failed to load feed data after $maxRetries attempts',
+    );
+  }
+
+  /// Check if feed data needs refresh based on last update time
+  bool shouldRefreshFeedData(DateTime? lastUpdated) {
+    if (lastUpdated == null) return true;
+
+    final now = DateTime.now();
+    final difference = now.difference(lastUpdated);
+
+    // Refresh if data is older than 5 minutes
+    return difference.inMinutes > 5;
+  }
+
+  /// Get cached feed data if available and not stale
+  Future<FeedDataResult?> getCachedFeedData(DateTime? lastUpdated) async {
+    if (lastUpdated == null || shouldRefreshFeedData(lastUpdated)) {
+      return null;
+    }
+
+    // In a real implementation, you might want to cache this data
+    // For now, we'll always fetch fresh data
+    return null;
   }
 }
 
@@ -424,6 +596,42 @@ class PortfolioDetailResult {
     required this.portfolio,
     required this.message,
   });
+
+  /// Upload media files
+  Future<Map<String, dynamic>?> uploadMedia({
+    required List<String> filePaths,
+    required String type, // 'image', 'video', 'document'
+    String? description,
+  }) async {
+    try {
+      Logger.userAction(
+        'Uploading media files',
+        data: {'file_count': filePaths.length, 'type': type},
+      );
+
+      final apiClient = ApiClient();
+      final response = await apiClient.post<Map<String, dynamic>>(
+        '/portfolio/media/upload',
+        {'type': type, if (description != null) 'description': description},
+        {},
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
+
+      if (response.success && response.data != null) {
+        Logger.userAction('Media files uploaded successfully');
+        return response.data!;
+      } else {
+        Logger.warning('Failed to upload media files: ${response.message}');
+        return null;
+      }
+    } on ApiError catch (e) {
+      Logger.error('Upload media API error', error: e);
+      return null;
+    } catch (e) {
+      Logger.error('Upload media unexpected error', error: e);
+      return null;
+    }
+  }
 }
 
 /// Media upload result wrapper

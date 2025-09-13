@@ -39,11 +39,8 @@ class JobService {
             'category_id': category,
             'budget': budget,
             'deadline': deadline.toIso8601String(),
-            'location': location,
-            'location_lat': latitude,
-            'location_lng': longitude,
-            'required_skills': requiredSkills,
-            'image_urls': imageUrls,
+            if (latitude != null) 'location_lat': latitude,
+            if (longitude != null) 'location_lng': longitude,
           }, fromJson: (data) => data as Map<String, dynamic>);
 
       if (response.success && response.data != null) {
@@ -111,7 +108,7 @@ class JobService {
             )
             .toList();
 
-        // Pagination data is directly in the response, not nested under 'meta'
+        // Pagination data is in the response data object
         final totalCount = data['total'] as int;
         final totalPages = data['last_page'] as int;
         final currentPage = data['current_page'] as int;
@@ -191,15 +188,12 @@ class JobService {
       final data = <String, dynamic>{};
       if (title != null) data['title'] = title;
       if (description != null) data['description'] = description;
-      if (category != null) data['category'] = category;
-      if (location != null) data['location'] = location;
+      if (category != null) data['category_id'] = category;
       if (budget != null) data['budget'] = budget;
       if (budgetType != null) data['budget_type'] = budgetType;
       if (deadline != null) data['deadline'] = deadline.toIso8601String();
-      if (requiredSkills != null) data['required_skills'] = requiredSkills;
-      if (latitude != null) data['latitude'] = latitude;
-      if (longitude != null) data['longitude'] = longitude;
-      if (imageUrls != null) data['image_urls'] = imageUrls;
+      if (latitude != null) data['location_lat'] = latitude;
+      if (longitude != null) data['location_lng'] = longitude;
 
       final response = await _apiClient.put<Map<String, dynamic>>(
         ApiEndpoints.getUpdateJobEndpoint(jobId),

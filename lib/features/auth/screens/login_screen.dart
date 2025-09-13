@@ -6,6 +6,7 @@ import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/navigation_guard.dart';
+import '../../../core/helpers/fundi_navigation_helper.dart';
 
 /// Login screen for user authentication
 /// Features email/password login with validation and error handling

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/fundi_model.dart';
 import '../models/job_model.dart';
@@ -41,6 +42,8 @@ class FeedsProvider extends ChangeNotifier {
   List<String> _skills = [];
   List<String> _locations = [];
   bool _isLoadingMetadata = false;
+  String? _metadataError;
+  DateTime? _lastMetadataUpdate;
 
   FeedsProvider({FeedsService? feedsService})
     : _feedsService = feedsService ?? FeedsService();
@@ -76,6 +79,11 @@ class FeedsProvider extends ChangeNotifier {
   List<String> get skills => _skills;
   List<String> get locations => _locations;
   bool get isLoadingMetadata => _isLoadingMetadata;
+  String? get metadataError => _metadataError;
+  DateTime? get lastMetadataUpdate => _lastMetadataUpdate;
+  bool get hasMetadataError => _metadataError != null;
+  bool get isMetadataStale => _lastMetadataUpdate == null || 
+      DateTime.now().difference(_lastMetadataUpdate!).inMinutes > 5;
 
   /// Initialize feeds data
   Future<void> initialize() async {
@@ -83,7 +91,7 @@ class FeedsProvider extends ChangeNotifier {
   }
 
   /// Load fundis with current filters
-  Future<void> loadFundis({bool refresh = false}) async {
+  Future<void> loadFundis({bool refresh = false, int maxRetries = 3}) async {
     if (refresh) {
       _fundisCurrentPage = 1;
       _fundis.clear();
@@ -96,37 +104,52 @@ class FeedsProvider extends ChangeNotifier {
     _fundisError = null;
     notifyListeners();
 
-    try {
-      final result = await _feedsService.getFundis(
-        page: _fundisCurrentPage,
-        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
-        location: _selectedLocation,
-        skills: _selectedSkills.isNotEmpty ? _selectedSkills : null,
-        minRating: _minRating,
-        isAvailable: _isAvailable,
-        isVerified: _isVerified,
-      );
+    int attempts = 0;
+    while (attempts < maxRetries) {
+      try {
+        final result = await _feedsService.getFundis(
+          page: _fundisCurrentPage,
+          searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+          location: _selectedLocation,
+          skills: _selectedSkills.isNotEmpty ? _selectedSkills : null,
+          minRating: _minRating,
+          isAvailable: _isAvailable,
+          isVerified: _isVerified,
+        ).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw TimeoutException('Fundis loading timed out'),
+        );
 
-      if (result['success']) {
-        final newFundis = result['fundis'] as List<FundiModel>;
-        if (refresh) {
-          _fundis = newFundis;
+        if (result['success']) {
+          final newFundis = result['fundis'] as List<FundiModel>;
+          if (refresh) {
+            _fundis = newFundis;
+          } else {
+            _fundis.addAll(newFundis);
+          }
+
+          final pagination = result['pagination'] as Map<String, dynamic>;
+          _hasMoreFundis = pagination['hasNextPage'] ?? false;
+          _fundisCurrentPage++;
+          _fundisError = null;
+          break; // Success, exit retry loop
         } else {
-          _fundis.addAll(newFundis);
+          _fundisError = result['message'];
+          if (attempts < maxRetries - 1) {
+            await Future.delayed(Duration(seconds: (attempts + 1) * 2));
+          }
         }
-
-        final pagination = result['pagination'] as Map<String, dynamic>;
-        _hasMoreFundis = pagination['hasNextPage'] ?? false;
-        _fundisCurrentPage++;
-      } else {
-        _fundisError = result['message'];
+      } catch (e) {
+        _fundisError = 'Failed to load fundis: ${e.toString()}';
+        if (attempts < maxRetries - 1) {
+          await Future.delayed(Duration(seconds: (attempts + 1) * 2));
+        }
       }
-    } catch (e) {
-      _fundisError = 'Failed to load fundis: ${e.toString()}';
-    } finally {
-      _isLoadingFundis = false;
-      notifyListeners();
+      attempts++;
     }
+
+    _isLoadingFundis = false;
+    notifyListeners();
   }
 
   /// Load more fundis (pagination)
@@ -164,7 +187,7 @@ class FeedsProvider extends ChangeNotifier {
   }
 
   /// Load jobs with current filters
-  Future<void> loadJobs({bool refresh = false}) async {
+  Future<void> loadJobs({bool refresh = false, int maxRetries = 3}) async {
     if (refresh) {
       _jobsCurrentPage = 1;
       _jobs.clear();
@@ -177,37 +200,52 @@ class FeedsProvider extends ChangeNotifier {
     _jobsError = null;
     notifyListeners();
 
-    try {
-      final result = await _feedsService.getJobs(
-        page: _jobsCurrentPage,
-        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
-        category: _selectedCategory,
-        location: _selectedLocation,
-        minBudget: _minBudget,
-        maxBudget: _maxBudget,
-        isUrgent: _isUrgent,
-      );
+    int attempts = 0;
+    while (attempts < maxRetries) {
+      try {
+        final result = await _feedsService.getJobs(
+          page: _jobsCurrentPage,
+          searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+          category: _selectedCategory,
+          location: _selectedLocation,
+          minBudget: _minBudget,
+          maxBudget: _maxBudget,
+          isUrgent: _isUrgent,
+        ).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw TimeoutException('Jobs loading timed out'),
+        );
 
-      if (result['success']) {
-        final newJobs = result['jobs'] as List<JobModel>;
-        if (refresh) {
-          _jobs = newJobs;
+        if (result['success']) {
+          final newJobs = result['jobs'] as List<JobModel>;
+          if (refresh) {
+            _jobs = newJobs;
+          } else {
+            _jobs.addAll(newJobs);
+          }
+
+          final pagination = result['pagination'] as Map<String, dynamic>;
+          _hasMoreJobs = pagination['hasNextPage'] ?? false;
+          _jobsCurrentPage++;
+          _jobsError = null;
+          break; // Success, exit retry loop
         } else {
-          _jobs.addAll(newJobs);
+          _jobsError = result['message'];
+          if (attempts < maxRetries - 1) {
+            await Future.delayed(Duration(seconds: (attempts + 1) * 2));
+          }
         }
-
-        final pagination = result['pagination'] as Map<String, dynamic>;
-        _hasMoreJobs = pagination['hasNextPage'] ?? false;
-        _jobsCurrentPage++;
-      } else {
-        _jobsError = result['message'];
+      } catch (e) {
+        _jobsError = 'Failed to load jobs: ${e.toString()}';
+        if (attempts < maxRetries - 1) {
+          await Future.delayed(Duration(seconds: (attempts + 1) * 2));
+        }
       }
-    } catch (e) {
-      _jobsError = 'Failed to load jobs: ${e.toString()}';
-    } finally {
-      _isLoadingJobs = false;
-      notifyListeners();
+      attempts++;
     }
+
+    _isLoadingJobs = false;
+    notifyListeners();
   }
 
   /// Load more jobs (pagination)
@@ -245,8 +283,12 @@ class FeedsProvider extends ChangeNotifier {
   }
 
   /// Load metadata (categories, skills, locations)
-  Future<void> loadMetadata() async {
+  Future<void> loadMetadata({bool forceRefresh = false}) async {
+    // Skip if already loading or data is fresh and not forcing refresh
+    if (_isLoadingMetadata || (!forceRefresh && !isMetadataStale)) return;
+
     _isLoadingMetadata = true;
+    _metadataError = null;
     notifyListeners();
 
     try {
@@ -254,18 +296,46 @@ class FeedsProvider extends ChangeNotifier {
         _feedsService.getJobCategories(),
         _feedsService.getSkills(),
         _feedsService.getLocations(),
-      ]);
+      ]).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Metadata loading timed out'),
+      );
 
-      if (results[0]['success']) {
+      bool hasAnyData = false;
+      String? errorMessage;
+
+      // Process categories
+      if (results[0]['success'] && results[0]['categories'] != null) {
         _categories = List<String>.from(results[0]['categories']);
+        hasAnyData = true;
+      } else {
+        errorMessage = results[0]['message'] ?? 'Failed to load categories';
       }
-      if (results[1]['success']) {
+
+      // Process skills
+      if (results[1]['success'] && results[1]['skills'] != null) {
         _skills = List<String>.from(results[1]['skills']);
+        hasAnyData = true;
+      } else {
+        errorMessage = errorMessage ?? results[1]['message'] ?? 'Failed to load skills';
       }
-      if (results[2]['success']) {
+
+      // Process locations
+      if (results[2]['success'] && results[2]['locations'] != null) {
         _locations = List<String>.from(results[2]['locations']);
+        hasAnyData = true;
+      } else {
+        errorMessage = errorMessage ?? results[2]['message'] ?? 'Failed to load locations';
+      }
+
+      if (hasAnyData) {
+        _lastMetadataUpdate = DateTime.now();
+        _metadataError = null;
+      } else {
+        _metadataError = errorMessage ?? 'Failed to load metadata';
       }
     } catch (e) {
+      _metadataError = 'Error loading metadata: ${e.toString()}';
       debugPrint('Error loading metadata: ${e.toString()}');
     } finally {
       _isLoadingMetadata = false;
@@ -410,26 +480,21 @@ class FeedsProvider extends ChangeNotifier {
   }
 
   /// Request fundi for a job
+  /// Note: This method should be moved to a dedicated JobRequestService
   Future<Map<String, dynamic>> requestFundi({
     required String jobId,
     required String fundiId,
     required String message,
   }) async {
-    try {
-      return await _feedsService.requestFundi(
-        jobId: jobId,
-        fundiId: fundiId,
-        message: message,
-      );
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error sending fundi request: ${e.toString()}',
-      };
-    }
+    // TODO: Implement fundi request logic or move to JobRequestService
+    return {
+      'success': false,
+      'message': 'Fundi request functionality not implemented in FeedsService',
+    };
   }
 
   /// Apply to a job
+  /// Note: This method should be moved to a dedicated JobApplicationService
   Future<Map<String, dynamic>> applyToJob({
     required String jobId,
     required String coverLetter,
@@ -437,20 +502,11 @@ class FeedsProvider extends ChangeNotifier {
     required int estimatedDuration,
     required Map<String, dynamic> budgetBreakdown,
   }) async {
-    try {
-      return await _feedsService.applyToJob(
-        jobId: jobId,
-        coverLetter: coverLetter,
-        proposedBudget: proposedBudget,
-        estimatedDuration: estimatedDuration,
-        budgetBreakdown: budgetBreakdown,
-      );
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error submitting job application: ${e.toString()}',
-      };
-    }
+    // TODO: Implement job application logic or move to JobApplicationService
+    return {
+      'success': false,
+      'message': 'Job application functionality not implemented in FeedsService',
+    };
   }
 
   /// Reset pagination state
@@ -459,6 +515,59 @@ class FeedsProvider extends ChangeNotifier {
     _jobsCurrentPage = 1;
     _hasMoreFundis = true;
     _hasMoreJobs = true;
+  }
+
+  /// Retry failed operations
+  Future<void> retryFailedOperations() async {
+    final futures = <Future<void>>[];
+    
+    if (_fundisError != null) {
+      futures.add(loadFundis(refresh: true));
+    }
+    
+    if (_jobsError != null) {
+      futures.add(loadJobs(refresh: true));
+    }
+    
+    if (_metadataError != null) {
+      futures.add(loadMetadata(forceRefresh: true));
+    }
+    
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+  }
+
+  /// Clear all errors
+  void clearErrors() {
+    _fundisError = null;
+    _jobsError = null;
+    _metadataError = null;
+    notifyListeners();
+  }
+
+  /// Check if any data is loading
+  bool get isAnyLoading => _isLoadingFundis || _isLoadingJobs || _isLoadingMetadata;
+
+  /// Check if any data has errors
+  bool get hasAnyError => _fundisError != null || _jobsError != null || _metadataError != null;
+
+  /// Get all errors as a list
+  List<String> get allErrors {
+    final errors = <String>[];
+    if (_fundisError != null) errors.add('Fundis: $_fundisError');
+    if (_jobsError != null) errors.add('Jobs: $_jobsError');
+    if (_metadataError != null) errors.add('Metadata: $_metadataError');
+    return errors;
+  }
+
+  /// Refresh all data
+  Future<void> refreshAll() async {
+    await Future.wait([
+      loadFundis(refresh: true),
+      loadJobs(refresh: true),
+      loadMetadata(forceRefresh: true),
+    ]);
   }
 
   @override

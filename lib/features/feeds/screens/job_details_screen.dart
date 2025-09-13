@@ -65,15 +65,13 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     });
 
     try {
-      final result = await _feedsService.applyToJob(
-        jobId: widget.job['id'],
-        coverLetter: 'I am interested in this job and would like to apply.',
-        proposedBudget: 0.0, // To be discussed
-        estimatedDuration: 0, // To be discussed
-        budgetBreakdown: {}, // To be discussed
-      );
+      // TODO: Use JobApplicationService instead of FeedsService
+      final result = {
+        'success': false,
+        'message': 'Job application functionality not implemented',
+      };
 
-      if (result['success']) {
+      if (result['success'] as bool) {
         setState(() {
           _jobDetails['has_applied'] = true;
         });
@@ -87,7 +85,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Failed to apply for job'),
+            content: Text(result['message'] as String),
             backgroundColor: Colors.red,
           ),
         );

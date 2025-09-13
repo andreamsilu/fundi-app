@@ -11,24 +11,17 @@ class ApiEndpoints {
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
   static const String me = '/auth/me';
-  static const String tokenInfo = '/auth/token-info';
-  static const String authProfile = '/auth/profile';
   static const String authChangePassword = '/auth/change-password';
   static const String authForgotPassword = '/auth/forgot-password';
+  static const String authResetPassword = '/auth/reset-password';
   static const String authSendOtp = '/auth/send-otp';
   static const String authVerifyOtp = '/auth/verify-otp';
-  static const String authResetPassword = '/auth/reset-password';
 
   // User Management Endpoints
   static const String userMe = '/users/me';
+  static const String authProfile = '/users/me/profile';
   static const String updateFundiProfile = '/users/me/fundi-profile';
-  static const String getFundiProfile = '/fundi/{id}';
-  static const String userProfile = '/users/{id}/profile';
-  static const String userProfileImage = '/users/{id}/profile/image';
-  static const String userProfileSkills = '/users/{id}/profile/skills';
-  static const String userProfileLanguages = '/users/{id}/profile/languages';
-  static const String userProfilePreferences =
-      '/users/{id}/profile/preferences';
+  static const String getFundiProfile = '/users/fundi/{fundiId}';
 
   // Category Endpoints
   static const String categories = '/categories';
@@ -41,32 +34,94 @@ class ApiEndpoints {
   static const String deleteJob = '/jobs/{id}';
 
   // Job Application Endpoints
-  static const String applyToJob = '/jobs/{job_id}/apply';
-  static const String myApplications = '/my-applications';
-  static const String jobApplications = '/jobs/{job_id}/applications';
-  static const String updateApplicationStatus = '/applications/{id}/status';
-  static const String deleteApplication = '/applications/{id}';
+  static const String applyToJob = '/jobs/{jobId}/apply';
+  static const String myApplications = '/job-applications/my-applications';
+  static const String jobApplications = '/jobs/{jobId}/applications';
+  static const String updateApplicationStatus = '/job-applications/{id}/status';
+
+  // Helper method for update application status endpoint
+  static String getUpdateApplicationStatusEndpoint(String applicationId) {
+    return updateApplicationStatus.replaceAll('{id}', applicationId);
+  }
 
   // Portfolio Endpoints
-  static const String portfolios = '/portfolios';
-  static const String portfolioById = '/portfolios/{id}';
-  static const String fundiPortfolio = '/portfolio/{fundi_id}';
+  static const String myPortfolio = '/portfolio/my-portfolio';
+  static const String portfolioStatus = '/portfolio/status';
+  static const String fundiPortfolio = '/portfolio/{fundiId}';
   static const String createPortfolio = '/portfolio';
   static const String updatePortfolio = '/portfolio/{id}';
   static const String deletePortfolio = '/portfolio/{id}';
-  static const String uploadPortfolioMedia = '/portfolio-media';
 
   // Payment Endpoints
   static const String payments = '/payments';
-  static const String createPayment = '/payments';
-  static const String paymentRequirements = '/payments/requirements';
-  static const String checkPaymentRequired = '/payments/check-required';
-  static const String paymentVerification = '/payments/verify/{reference}';
+  static const String createPayment = '/payments/create';
+  static const String cancelPayment = '/payments/cancel';
+  static const String currentPlan = '/payments/current-plan';
+  static const String paymentPlans = '/payments/plans';
+  static const String subscribe = '/payments/subscribe';
+  static const String cancelSubscription = '/payments/cancel-subscription';
+  static const String paymentHistory = '/payments/history';
+  static const String checkPermission = '/payments/check-permission';
+  static const String payPerUse = '/payments/pay-per-use';
+  static const String userPayments = '/payments/user';
+  static const String paymentConfig = '/payments/config';
+  static const String paymentCallback = '/payments/callback';
+  static const String paymentStatus = '/payments/status';
+  static const String paymentRetry = '/payments/retry';
+
+  // Payment Gateways
+  static const String pesapalProcess = '/payments/pesapal/process';
+  static const String mpesaProcess = '/payments/mpesa/process';
+  static const String pesapalCallback = '/payments/pesapal/callback';
+  static const String mpesaCallback = '/payments/mpesa/callback';
+  static const String verifyPayment = '/payments/verify/{transactionId}';
 
   // Notification Endpoints
   static const String notifications = '/notifications';
   static const String markNotificationAsRead = '/notifications/{id}/read';
   static const String deleteNotification = '/notifications/{id}';
+
+  // Messaging Endpoints
+  static const String chats = '/chats';
+  static const String messageUpload = '/messages/upload';
+  static String getChatMessagesEndpoint(String chatId) =>
+      '/chats/$chatId/messages';
+  static String getChatMessagesReadEndpoint(String chatId) =>
+      '/chats/$chatId/messages/read';
+  static String getChatMessageEndpoint(String chatId, String messageId) =>
+      '/chats/$chatId/messages/$messageId';
+
+  // Search Endpoints
+  static const String search = '/search';
+  static const String searchSuggestions = '/search/suggestions';
+  static const String searchPopular = '/search/popular';
+  static const String searchFilters = '/search/filters';
+  static const String searchAnalytics = '/search/analytics';
+
+  // Profile Endpoints
+  static String userProfileEndpoint(String userId) => '/users/$userId/profile';
+  static String userProfileImageEndpoint(String userId) =>
+      '/users/$userId/profile/image';
+  static String userProfileSkillsEndpoint(String userId) =>
+      '/users/$userId/profile/skills';
+  static String userProfileLanguagesEndpoint(String userId) =>
+      '/users/$userId/profile/languages';
+  static String userProfilePreferencesEndpoint(String userId) =>
+      '/users/$userId/profile/preferences';
+
+  // Work Approval Endpoints
+  static const String workApprovalStatistics = '/work-approval/statistics';
+  static String getWorkApprovalSubmissionsRequestRevisionEndpoint(
+    String submissionId,
+  ) => '/work-approval/submissions/$submissionId/request-revision';
+  static String getWorkApprovalPortfolioEndpoint(String itemId) =>
+      '/work-approval/portfolio/$itemId';
+  static String getWorkApprovalSubmissionsEndpoint(String submissionId) =>
+      '/work-approval/submissions/$submissionId';
+
+  // Dashboard Endpoints
+  static const String dashboardStats = '/dashboard/stats';
+  static const String dashboardActivity = '/dashboard/activity';
   static const String markAllNotificationsAsRead = '/notifications/read-all';
   static const String clearAllNotifications = '/notifications/clear-all';
   static const String notificationSettings = '/notifications/settings';
@@ -87,43 +142,21 @@ class ApiEndpoints {
       '/work-approval/portfolio-pending';
   static const String workApprovalSubmissionsPending =
       '/work-approval/submissions-pending';
-  static const String workApprovalPortfolio = '/work-approval/portfolio/{id}';
   static const String workApprovalPortfolioApprove =
       '/work-approval/portfolio/{id}/approve';
   static const String workApprovalPortfolioReject =
       '/work-approval/portfolio/{id}/reject';
-  static const String workApprovalSubmissions =
-      '/work-approval/submissions/{id}';
   static const String workApprovalSubmissionsApprove =
       '/work-approval/submissions/{id}/approve';
   static const String workApprovalSubmissionsReject =
       '/work-approval/submissions/{id}/reject';
-  static const String workApprovalSubmissionsRequestRevision =
-      '/work-approval/submissions/{id}/request-revision';
-  static const String workApprovalStatistics = '/work-approval/statistics';
 
   // Feeds Endpoints
-  static const String apiFundis = '/api/fundis';
-  static const String apiJobs = '/api/jobs';
-  static const String apiJobsCategories = '/api/jobs/categories';
-  static const String apiSkills = '/api/skills';
-  static const String apiLocations = '/api/locations';
-  static const String apiJobsRequestFundi = '/api/jobs/request-fundi';
-  static const String apiJobsApply = '/api/jobs/apply';
-
-  // Search Endpoints
-  static const String search = '/search';
-  static const String searchSuggestions = '/search/suggestions';
-  static const String searchPopular = '/search/popular';
-  static const String searchFilters = '/search/filters';
-  static const String searchAnalytics = '/search/analytics';
-
-  // Messaging/Chat Endpoints
-  static const String chats = '/chats';
-  static const String chatMessages = '/chats/{id}/messages';
-  static const String chatMessagesRead = '/chats/{id}/messages/read';
-  static const String chatMessage = '/chats/{id}/messages/{messageId}';
-  static const String messageUpload = '/messages/upload';
+  static const String feedsFundis = '/feeds/fundis';
+  static const String feedsJobs = '/feeds/jobs';
+  static const String feedsFundiById = '/feeds/fundis/{id}';
+  static const String feedsJobById = '/feeds/jobs/{id}';
+  static const String feedsNearbyFundis = '/feeds/nearby-fundis';
 
   // Rating and Review Endpoints
   static const String createRating = '/ratings';
@@ -132,52 +165,28 @@ class ApiEndpoints {
   static const String updateRating = '/ratings/{id}';
   static const String deleteRating = '/ratings/{id}';
 
-  // File Upload Endpoints
-  static const String uploadPortfolioMediaFile = '/upload/portfolio-media';
-  static const String uploadJobMediaFile = '/upload/job-media';
-  static const String uploadProfileDocument = '/upload/profile-document';
-  static const String deleteMedia = '/upload/media/{id}';
-  static const String getMediaUrl = '/upload/media/{id}/url';
-
   // Fundi Application Endpoints
   static const String fundiApplications = '/fundi-applications';
   static const String fundiApplicationStatus = '/fundi-applications/status';
   static const String fundiApplicationById = '/fundi-applications/{id}';
   static const String fundiApplicationStatusById =
       '/fundi-applications/{id}/status';
-
-  // Dashboard Endpoints
-  static const String dashboardStats = '/dashboard/stats';
-  static const String dashboardActivity = '/dashboard/activity';
+  static const String fundiApplicationRequirements =
+      '/fundi-applications/requirements';
+  static const String fundiApplicationProgress = '/fundi-applications/progress';
+  static const String fundiApplicationSections =
+      '/fundi-applications/sections/{sectionName}';
+  static const String fundiApplicationSubmitSection =
+      '/fundi-applications/sections';
+  static const String fundiApplicationSubmit = '/fundi-applications/submit';
 
   // Helper methods for dynamic endpoints
   static String getFundiProfileEndpoint(String fundiId) {
-    return getFundiProfile.replaceAll('{id}', fundiId);
-  }
-
-  // Profile helper methods
-  static String userProfileEndpoint(String userId) {
-    return userProfile.replaceAll('{id}', userId);
-  }
-
-  static String userProfileImageEndpoint(String userId) {
-    return userProfileImage.replaceAll('{id}', userId);
-  }
-
-  static String userProfileSkillsEndpoint(String userId) {
-    return userProfileSkills.replaceAll('{id}', userId);
-  }
-
-  static String userProfileLanguagesEndpoint(String userId) {
-    return userProfileLanguages.replaceAll('{id}', userId);
-  }
-
-  static String userProfilePreferencesEndpoint(String userId) {
-    return userProfilePreferences.replaceAll('{id}', userId);
+    return getFundiProfile.replaceAll('{fundiId}', fundiId);
   }
 
   static String getFundiPortfolioEndpoint(String fundiId) {
-    return fundiPortfolio.replaceAll('{fundi_id}', fundiId);
+    return fundiPortfolio.replaceAll('{fundiId}', fundiId);
   }
 
   static String getJobByIdEndpoint(String jobId) {
@@ -193,19 +202,11 @@ class ApiEndpoints {
   }
 
   static String getApplyToJobEndpoint(String jobId) {
-    return applyToJob.replaceAll('{job_id}', jobId);
+    return applyToJob.replaceAll('{jobId}', jobId);
   }
 
   static String getJobApplicationsEndpoint(String jobId) {
-    return jobApplications.replaceAll('{job_id}', jobId);
-  }
-
-  static String getUpdateApplicationStatusEndpoint(String applicationId) {
-    return updateApplicationStatus.replaceAll('{id}', applicationId);
-  }
-
-  static String getDeleteApplicationEndpoint(String applicationId) {
-    return deleteApplication.replaceAll('{id}', applicationId);
+    return jobApplications.replaceAll('{jobId}', jobId);
   }
 
   static String getUpdatePortfolioEndpoint(String portfolioId) {
@@ -236,29 +237,13 @@ class ApiEndpoints {
     return deleteRating.replaceAll('{id}', ratingId);
   }
 
-  static String getDeleteMediaEndpoint(String mediaId) {
-    return deleteMedia.replaceAll('{id}', mediaId);
-  }
-
-  static String getMediaUrlEndpoint(String mediaId) {
-    return getMediaUrl.replaceAll('{id}', mediaId);
-  }
-
   // Work Approval helper methods
-  static String getWorkApprovalPortfolioEndpoint(String portfolioId) {
-    return workApprovalPortfolio.replaceAll('{id}', portfolioId);
-  }
-
   static String getWorkApprovalPortfolioApproveEndpoint(String portfolioId) {
     return workApprovalPortfolioApprove.replaceAll('{id}', portfolioId);
   }
 
   static String getWorkApprovalPortfolioRejectEndpoint(String portfolioId) {
     return workApprovalPortfolioReject.replaceAll('{id}', portfolioId);
-  }
-
-  static String getWorkApprovalSubmissionsEndpoint(String submissionId) {
-    return workApprovalSubmissions.replaceAll('{id}', submissionId);
   }
 
   static String getWorkApprovalSubmissionsApproveEndpoint(String submissionId) {
@@ -269,47 +254,13 @@ class ApiEndpoints {
     return workApprovalSubmissionsReject.replaceAll('{id}', submissionId);
   }
 
-  static String getWorkApprovalSubmissionsRequestRevisionEndpoint(
-    String submissionId,
-  ) {
-    return workApprovalSubmissionsRequestRevision.replaceAll(
-      '{id}',
-      submissionId,
-    );
-  }
-
   // Feeds helper methods
-  static String getFundiEndpoint(String fundiId) {
-    return '$apiFundis/$fundiId';
+  static String getFeedsFundiEndpoint(String fundiId) {
+    return feedsFundiById.replaceAll('{id}', fundiId);
   }
 
-  static String getJobEndpoint(String jobId) {
-    return '$apiJobs/$jobId';
-  }
-
-  // Messaging helper methods
-  static String getChatMessagesEndpoint(String chatId) {
-    return chatMessages.replaceAll('{id}', chatId);
-  }
-
-  static String getChatMessagesReadEndpoint(String chatId) {
-    return chatMessagesRead.replaceAll('{id}', chatId);
-  }
-
-  static String getChatMessageEndpoint(String chatId, String messageId) {
-    return chatMessage
-        .replaceAll('{id}', chatId)
-        .replaceAll('{messageId}', messageId);
-  }
-
-  // Portfolio helper methods
-  static String getPortfolioByIdEndpoint(String portfolioId) {
-    return portfolioById.replaceAll('{id}', portfolioId);
-  }
-
-  // Payment helper methods
-  static String getPaymentVerificationEndpoint(String reference) {
-    return paymentVerification.replaceAll('{reference}', reference);
+  static String getFeedsJobEndpoint(String jobId) {
+    return feedsJobById.replaceAll('{id}', jobId);
   }
 
   // Fundi Application helper methods
@@ -321,8 +272,38 @@ class ApiEndpoints {
     return fundiApplicationStatusById.replaceAll('{id}', applicationId);
   }
 
+  static String getFundiApplicationSectionsEndpoint(String sectionName) {
+    return fundiApplicationSections.replaceAll('{sectionName}', sectionName);
+  }
+
   // Settings helper methods
   static String getSettingsByKeyEndpoint(String key) {
     return '${settings}/$key';
+  }
+
+  // Payment Configuration Helper Methods
+  /// Get payment configuration endpoint
+  static String getPaymentConfigEndpoint() {
+    return paymentConfig;
+  }
+
+  /// Get payment callback endpoint
+  static String getPaymentCallbackEndpoint() {
+    return paymentCallback;
+  }
+
+  /// Get payment verification endpoint
+  static String getVerifyPaymentEndpoint(String transactionId) {
+    return verifyPayment.replaceAll('{transactionId}', transactionId);
+  }
+
+  /// Get payment by ID endpoint
+  static String getPaymentByIdEndpoint(String paymentId) {
+    return '$payments/$paymentId';
+  }
+
+  /// Get payment status endpoint
+  static String getPaymentStatusEndpoint(String paymentId) {
+    return '$payments/$paymentId/status';
   }
 }

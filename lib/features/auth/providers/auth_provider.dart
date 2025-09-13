@@ -99,7 +99,6 @@ class AuthProvider extends ChangeNotifier {
       final result = await _authService.register(
         phoneNumber: phoneNumber,
         password: password,
-        role: role,
       );
 
       if (result.success && result.user != null) {

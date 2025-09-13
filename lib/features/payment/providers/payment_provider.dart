@@ -1,122 +1,139 @@
-import 'package:flutter/material.dart';
-import '../models/payment_model.dart';
+import 'package:flutter/foundation.dart';
+import '../models/payment_transaction_model.dart';
 import '../services/payment_service.dart';
-import '../../../core/utils/logger.dart';
+import '../../../core/config/payment_config.dart';
+import '../../../core/utils/payment_logger.dart';
 
-/// Payment provider for state management
+/// Provider for managing payment state and operations
 class PaymentProvider extends ChangeNotifier {
   final PaymentService _paymentService = PaymentService();
 
-  List<PaymentModel> _payments = [];
-  PaymentRequirementsModel? _paymentRequirements;
+  // State variables
+  List<PaymentTransactionModel> _transactions = [];
+  Map<String, PaymentAction> _availableActions = {};
   bool _isLoading = false;
   String? _errorMessage;
+  PaymentTransactionModel? _currentTransaction;
 
-  /// Get payments list
-  List<PaymentModel> get payments => _payments;
-
-  /// Get payment requirements
-  PaymentRequirementsModel? get paymentRequirements => _paymentRequirements;
-
-  /// Check if loading
+  // Getters
+  List<PaymentTransactionModel> get transactions => _transactions;
+  Map<String, PaymentAction> get availableActions => _availableActions;
   bool get isLoading => _isLoading;
-
-  /// Get error message
   String? get errorMessage => _errorMessage;
+  PaymentTransactionModel? get currentTransaction => _currentTransaction;
 
-  /// Check if payments are enabled
-  bool get paymentsEnabled => _paymentRequirements?.paymentsEnabled ?? false;
+  // Payment actions by category
+  List<PaymentAction> getActionsByCategory(String category) {
+    return _availableActions.values
+        .where((action) => action.category == category)
+        .toList();
+  }
 
-  /// Check if platform is in free mode
-  bool get isFreeMode => _paymentRequirements?.isFreeMode ?? true;
+  // Recent transactions
+  List<PaymentTransactionModel> get recentTransactions {
+    return _transactions.where((txn) => txn.age.inDays <= 7).toList();
+  }
 
-  /// Check if user has active subscription
-  bool get hasActiveSubscription => _paymentRequirements?.hasActiveSubscription ?? false;
+  // Pending transactions
+  List<PaymentTransactionModel> get pendingTransactions {
+    return _transactions.where((txn) => txn.isInProgress).toList();
+  }
+
+  // Failed transactions
+  List<PaymentTransactionModel> get failedTransactions {
+    return _transactions.where((txn) => txn.canRetry).toList();
+  }
 
   /// Initialize payment provider
   Future<void> initialize() async {
-    _setLoading(true);
+    await Future.wait([loadPaymentActions(), loadPaymentHistory()]);
+  }
+
+  /// Load available payment actions
+  Future<void> loadPaymentActions() async {
     try {
-      await loadPaymentRequirements();
-      await loadPayments();
-      Logger.info('Payment provider initialized');
+      _setLoading(true);
+      _clearError();
+
+      PaymentLogger.logPaymentEvent(
+        event: 'load_payment_actions',
+        transactionId: 'provider_init',
+      );
+
+      // For now, use static configuration
+      // In the future, this could fetch from backend
+      _availableActions = Map.from(PaymentConfig.actions);
+
+      PaymentLogger.logPaymentEvent(
+        event: 'payment_actions_loaded',
+        transactionId: 'provider_init',
+        data: {'action_count': _availableActions.length},
+      );
+
+      notifyListeners();
     } catch (e) {
-      Logger.error('Payment provider initialization error', error: e);
-      _setError('Failed to initialize payment system');
+      _setError('Failed to load payment actions: ${e.toString()}');
+      PaymentLogger.logPaymentError(
+        error: 'Load payment actions failed',
+        transactionId: 'provider_init',
+        exception: e,
+      );
     } finally {
       _setLoading(false);
     }
   }
 
-  /// Load user payments
-  Future<void> loadPayments({int page = 1, int limit = 15}) async {
-    _setLoading(true);
-    _clearError();
-
+  /// Load payment history
+  Future<void> loadPaymentHistory() async {
     try {
-      final response = await _paymentService.getUserPayments(
-        page: page,
-        limit: limit,
+      _setLoading(true);
+      _clearError();
+
+      PaymentLogger.logPaymentEvent(
+        event: 'load_payment_history',
+        transactionId: 'provider_init',
       );
 
-      if (response.success && response.data != null) {
-        if (page == 1) {
-          _payments = response.data!;
-        } else {
-          _payments.addAll(response.data!);
-        }
-        notifyListeners();
-        Logger.info('Payments loaded successfully');
+      final result = await _paymentService.getPaymentHistory();
+
+      if (result.success) {
+        _transactions = result.transactions ?? [];
+
+        PaymentLogger.logPaymentEvent(
+          event: 'payment_history_loaded',
+          transactionId: 'provider_init',
+          data: {'transaction_count': _transactions.length},
+        );
       } else {
-        _setError(response.message);
+        _setError(result.message);
+        PaymentLogger.logPaymentError(
+          error: 'Load payment history failed',
+          transactionId: 'provider_init',
+          context: {'message': result.message},
+        );
       }
+
+      notifyListeners();
     } catch (e) {
-      Logger.error('Load payments error', error: e);
-      _setError('An error occurred while loading payments');
+      _setError('Failed to load payment history: ${e.toString()}');
+      PaymentLogger.logPaymentError(
+        error: 'Load payment history failed',
+        transactionId: 'provider_init',
+        exception: e,
+      );
     } finally {
       _setLoading(false);
     }
   }
 
-  /// Load payment requirements
-  Future<void> loadPaymentRequirements() async {
-    try {
-      final response = await _paymentService.getPaymentRequirements();
-
-      if (response.success && response.data != null) {
-        _paymentRequirements = response.data!;
-        notifyListeners();
-        Logger.info('Payment requirements loaded successfully');
-      } else {
-        Logger.warning('Failed to load payment requirements: ${response.message}');
-      }
-    } catch (e) {
-      Logger.error('Load payment requirements error', error: e);
-    }
+  /// Load payments (alias for loadPaymentHistory)
+  Future<void> loadPayments({int page = 1}) async {
+    await loadPaymentHistory();
   }
 
-  /// Check if payment is required for specific action
-  Future<PaymentValidationModel?> checkPaymentRequired({
-    required String action,
-    String? jobId,
-  }) async {
-    try {
-      final response = await _paymentService.checkPaymentRequired(
-        action: action,
-        jobId: jobId,
-      );
-
-      if (response.success && response.data != null) {
-        return response.data!;
-      } else {
-        _setError(response.message);
-        return null;
-      }
-    } catch (e) {
-      Logger.error('Check payment required error', error: e);
-      _setError('An error occurred while checking payment requirements');
-      return null;
-    }
+  /// Refresh payments (alias for refresh)
+  Future<void> refreshPayments() async {
+    await refresh();
   }
 
   /// Process payment
@@ -127,124 +144,196 @@ class PaymentProvider extends ChangeNotifier {
     required String email,
     String? description,
   }) async {
-    _setLoading(true);
-    _clearError();
-
     try {
-      final response = await _paymentService.processPesapalPayment(
-        amount: amount,
-        paymentType: paymentType,
-        phoneNumber: phoneNumber,
-        email: email,
-        description: description,
+      _setLoading(true);
+      _clearError();
+
+      final result = await _paymentService.createPayment(
+        action: paymentType,
+        metadata: {
+          'phone_number': phoneNumber,
+          'email': email,
+          'description': description,
+        },
       );
 
-      if (response.success && response.data != null) {
-        // Reload payments to include the new payment
-        await loadPayments();
-        Logger.info('Payment processed successfully');
-        return response.data!;
+      if (result.success && result.transaction != null) {
+        _currentTransaction = result.transaction;
+        _transactions.insert(0, result.transaction!);
+
+        notifyListeners();
+
+        return {
+          'pesapal_reference': result.transaction!.gatewayReference ?? 'N/A',
+          'amount': result.transaction!.amount,
+          'transaction_id': result.transaction!.id,
+        };
       } else {
-        _setError(response.message);
+        _setError(result.message);
+        notifyListeners();
         return null;
       }
     } catch (e) {
-      Logger.error('Process payment error', error: e);
-      _setError('An error occurred while processing payment');
+      _setError('Failed to process payment: ${e.toString()}');
+      notifyListeners();
       return null;
     } finally {
       _setLoading(false);
     }
   }
 
-  /// Verify payment status
-  Future<PaymentModel?> verifyPaymentStatus({
-    required String pesapalReference,
+  // Getters for payment list screen
+  List<PaymentTransactionModel> get payments => _transactions;
+  List<PaymentTransactionModel> get completedPayments =>
+      _transactions.where((txn) => txn.isCompleted).toList();
+  List<PaymentTransactionModel> get pendingPayments =>
+      _transactions.where((txn) => txn.isInProgress).toList();
+  List<PaymentTransactionModel> get failedPayments =>
+      _transactions.where((txn) => txn.canRetry).toList();
+  double get totalAmountPaid => _transactions
+      .where((txn) => txn.isCompleted)
+      .fold(0.0, (sum, txn) => sum + txn.amount);
+
+  /// Create a new payment
+  Future<TransactionResult> createPayment({
+    required String action,
+    String? referenceId,
+    Map<String, dynamic>? metadata,
   }) async {
     try {
-      final response = await _paymentService.verifyPaymentStatus(
-        pesapalReference: pesapalReference,
+      _setLoading(true);
+      _clearError();
+
+      PaymentLogger.logPaymentEvent(
+        event: 'create_payment_started',
+        transactionId: 'pending',
+        data: {'action': action, 'reference_id': referenceId},
       );
 
-      if (response.success && response.data != null) {
-        // Update the payment in the list
-        final index = _payments.indexWhere((p) => p.pesapalReference == pesapalReference);
-        if (index != -1) {
-          _payments[index] = response.data!;
-          notifyListeners();
-        }
-        Logger.info('Payment status verified successfully');
-        return response.data!;
+      final result = await _paymentService.createPayment(
+        action: action,
+        referenceId: referenceId,
+        metadata: metadata,
+      );
+
+      if (result.success && result.transaction != null) {
+        _currentTransaction = result.transaction;
+        _transactions.insert(0, result.transaction!);
+
+        PaymentLogger.logPaymentSuccess(
+          transactionId: result.transaction!.id.toString(),
+          action: action,
+          amount: result.transaction!.amount,
+        );
       } else {
-        _setError(response.message);
-        return null;
+        _setError(result.message);
+        PaymentLogger.logPaymentError(
+          error: 'Create payment failed',
+          transactionId: 'pending',
+          context: {'message': result.message},
+        );
       }
+
+      notifyListeners();
+      return result;
     } catch (e) {
-      Logger.error('Verify payment status error', error: e);
-      _setError('An error occurred while verifying payment');
-      return null;
+      final error = 'Failed to create payment: ${e.toString()}';
+      _setError(error);
+      PaymentLogger.logPaymentError(
+        error: 'Create payment failed',
+        transactionId: 'pending',
+        exception: e,
+      );
+
+      notifyListeners();
+      return TransactionResult.failure(message: error);
+    } finally {
+      _setLoading(false);
     }
   }
 
-  /// Get payment by ID
-  PaymentModel? getPaymentById(String id) {
+  /// Retry a failed payment
+  Future<TransactionResult> retryPayment(String transactionId) async {
     try {
-      return _payments.firstWhere((payment) => payment.id == id);
+      _setLoading(true);
+      _clearError();
+
+      PaymentLogger.logPaymentRetry(
+        transactionId: transactionId,
+        attemptNumber: 1,
+        reason: 'user_requested',
+      );
+
+      final result = await _paymentService.retryPayment(transactionId);
+
+      if (result.success && result.transaction != null) {
+        // Update transaction in list
+        final index = _transactions.indexWhere(
+          (txn) => txn.id.toString() == transactionId,
+        );
+        if (index != -1) {
+          _transactions[index] = result.transaction!;
+        }
+
+        PaymentLogger.logPaymentSuccess(
+          transactionId: transactionId,
+          action: result.transaction!.transactionType,
+          amount: result.transaction!.amount,
+        );
+      } else {
+        _setError(result.message);
+        PaymentLogger.logPaymentError(
+          error: 'Retry payment failed',
+          transactionId: transactionId,
+          context: {'message': result.message},
+        );
+      }
+
+      notifyListeners();
+      return result;
     } catch (e) {
-      return null;
+      final error = 'Failed to retry payment: ${e.toString()}';
+      _setError(error);
+      PaymentLogger.logPaymentError(
+        error: 'Retry payment failed',
+        transactionId: transactionId,
+        exception: e,
+      );
+
+      notifyListeners();
+      return TransactionResult.failure(message: error);
+    } finally {
+      _setLoading(false);
     }
   }
 
-  /// Get payments by type
-  List<PaymentModel> getPaymentsByType(String paymentType) {
-    return _payments.where((payment) => payment.paymentType == paymentType).toList();
+  /// Refresh payment data
+  Future<void> refresh() async {
+    await Future.wait([loadPaymentActions(), loadPaymentHistory()]);
   }
 
-  /// Get completed payments
-  List<PaymentModel> get completedPayments {
-    return _payments.where((payment) => payment.isCompleted).toList();
-  }
-
-  /// Get pending payments
-  List<PaymentModel> get pendingPayments {
-    return _payments.where((payment) => payment.isPending).toList();
-  }
-
-  /// Get failed payments
-  List<PaymentModel> get failedPayments {
-    return _payments.where((payment) => payment.isFailed).toList();
-  }
-
-  /// Get total amount paid
-  double get totalAmountPaid {
-    return completedPayments.fold(0.0, (sum, payment) => sum + payment.amount);
-  }
-
-  /// Refresh payments
-  Future<void> refreshPayments() async {
-    await loadPayments();
-  }
-
-  /// Set loading state
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  /// Set error message
-  void _setError(String error) {
-    _errorMessage = error;
+  /// Clear current transaction
+  void clearCurrentTransaction() {
+    _currentTransaction = null;
     notifyListeners();
   }
 
   /// Clear error message
-  void _clearError() {
-    _errorMessage = null;
+  void clearError() {
+    _clearError();
     notifyListeners();
   }
 
-  /// Clear error manually
-  void clearError() {
-    _clearError();
+  // Private helper methods
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+  }
+
+  void _setError(String error) {
+    _errorMessage = error;
+  }
+
+  void _clearError() {
+    _errorMessage = null;
   }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import 'otp_verification_screen.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/helpers/fundi_navigation_helper.dart';
 
 /// Registration screen for user authentication
 /// Features phone/password registration with role selection
@@ -32,8 +32,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
-  // All users are created as customers by default
-  final UserRole _selectedRole = UserRole.customer;
 
   @override
   void initState() {
@@ -103,13 +101,15 @@ class _RegisterScreenState extends State<RegisterScreen>
             final registerResult = await AuthService().register(
               phoneNumber: _phoneController.text.trim(),
               password: _passwordController.text,
-              role: _selectedRole,
             );
 
             if (registerResult.success && registerResult.user != null) {
-              // All new users are customers, navigate to dashboard
+              // Navigate to appropriate home page based on user roles
               if (mounted) {
-                Navigator.pushReplacementNamed(context, '/dashboard');
+                FundiNavigationHelper.navigateAfterLogin(
+                  context, 
+                  registerResult.user!.roles.map((role) => role.value).toList(),
+                );
               }
             } else {
               setState(() {

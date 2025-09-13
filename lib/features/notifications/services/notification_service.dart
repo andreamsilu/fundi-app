@@ -25,28 +25,27 @@ class NotificationService {
         },
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final notifications =
-            (data['notifications'] as List?)
-                ?.map(
-                  (notification) => NotificationModel.fromJson(notification),
-                )
-                .toList() ??
-            [];
+      if (response.success && response.data != null) {
+        final data = response.data!;
+        final notificationsData = data['data'] as List<dynamic>? ?? [];
+        final notifications = notificationsData
+            .map(
+              (notification) => NotificationModel.fromJson(notification),
+            )
+            .toList();
 
         return NotificationResult(
           success: true,
           notifications: notifications,
-          totalCount: data['total_count'] ?? 0,
+          totalCount: data['total'] ?? 0,
           unreadCount: data['unread_count'] ?? 0,
           currentPage: data['current_page'] ?? 1,
-          totalPages: data['total_pages'] ?? 1,
+          totalPages: data['last_page'] ?? 1,
         );
       } else {
         return NotificationResult(
           success: false,
-          message: 'Failed to load notifications. Please try again.',
+          message: response.message ?? 'Failed to load notifications. Please try again.',
         );
       }
     } catch (e) {
@@ -64,12 +63,12 @@ class NotificationService {
         ApiEndpoints.getMarkNotificationAsReadEndpoint(notificationId),
       );
 
-      if (response.statusCode == 200) {
+      if (response.success) {
         return ServiceResult(success: true);
       } else {
         return ServiceResult(
           success: false,
-          message: 'Failed to mark notification as read.',
+          message: response.message ?? 'Failed to mark notification as read.',
         );
       }
     } catch (e) {
@@ -89,12 +88,12 @@ class NotificationService {
         data: null,
       );
 
-      if (response.statusCode == 200) {
+      if (response.success) {
         return ServiceResult(success: true);
       } else {
         return ServiceResult(
           success: false,
-          message: 'Failed to mark all notifications as read.',
+          message: response.message ?? 'Failed to mark all notifications as read.',
         );
       }
     } catch (e) {
@@ -112,12 +111,12 @@ class NotificationService {
         ApiEndpoints.getDeleteNotificationEndpoint(notificationId),
       );
 
-      if (response.statusCode == 200) {
+      if (response.success) {
         return ServiceResult(success: true);
       } else {
         return ServiceResult(
           success: false,
-          message: 'Failed to delete notification.',
+          message: response.message ?? 'Failed to delete notification.',
         );
       }
     } catch (e) {
@@ -135,12 +134,12 @@ class NotificationService {
         ApiEndpoints.clearAllNotifications,
       );
 
-      if (response.statusCode == 200) {
+      if (response.success) {
         return ServiceResult(success: true);
       } else {
         return ServiceResult(
           success: false,
-          message: 'Failed to clear all notifications.',
+          message: response.message ?? 'Failed to clear all notifications.',
         );
       }
     } catch (e) {
@@ -156,8 +155,8 @@ class NotificationService {
     try {
       final response = await _apiClient.get(ApiEndpoints.notificationSettings);
 
-      if (response.statusCode == 200) {
-        final data = response.data;
+      if (response.success && response.data != null) {
+        final data = response.data!;
         return NotificationSettingsResult(
           success: true,
           settings: NotificationSettings.fromJson(data),
@@ -165,7 +164,7 @@ class NotificationService {
       } else {
         return NotificationSettingsResult(
           success: false,
-          message: 'Failed to load notification settings.',
+          message: response.message ?? 'Failed to load notification settings.',
         );
       }
     } catch (e) {
@@ -187,12 +186,12 @@ class NotificationService {
         data: settings.toJson(),
       );
 
-      if (response.statusCode == 200) {
+      if (response.success) {
         return ServiceResult(success: true);
       } else {
         return ServiceResult(
           success: false,
-          message: 'Failed to update notification settings.',
+          message: response.message ?? 'Failed to update notification settings.',
         );
       }
     } catch (e) {
@@ -212,12 +211,12 @@ class NotificationService {
         {},
       );
 
-      if (response.statusCode == 200) {
+      if (response.success) {
         return ServiceResult(success: true);
       } else {
         return ServiceResult(
           success: false,
-          message: 'Failed to send test notification.',
+          message: response.message ?? 'Failed to send test notification.',
         );
       }
     } catch (e) {

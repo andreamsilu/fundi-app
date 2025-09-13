@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/payment_provider.dart';
-import '../models/payment_model.dart';
-import '../widgets/payment_card.dart';
+import '../models/payment_transaction_model.dart';
+import '../widgets/payment_transaction_details.dart';
 
 /// Payment list screen showing user's payment history
 class PaymentListScreen extends StatefulWidget {
@@ -140,7 +140,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
             child: Column(
               children: [
                 // Payment summary
-                PaymentSummaryCard(
+                _buildPaymentSummary(
                   totalAmount: paymentProvider.totalAmountPaid,
                   completedPayments: paymentProvider.completedPayments.length,
                   pendingPayments: paymentProvider.pendingPayments.length,
@@ -164,7 +164,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                       }
 
                       final payment = paymentProvider.payments[index];
-                      return PaymentCard(
+                      return _buildPaymentCard(
                         payment: payment,
                         onTap: () => _showPaymentDetails(context, payment),
                       );
@@ -179,18 +179,140 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
     );
   }
 
-  void _showPaymentDetails(BuildContext context, PaymentModel payment) {
+  void _showPaymentDetails(BuildContext context, PaymentTransactionModel payment) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => PaymentDetailsSheet(payment: payment),
     );
   }
+
+  Widget _buildPaymentSummary({
+    required double totalAmount,
+    required int completedPayments,
+    required int pendingPayments,
+    required int failedPayments,
+  }) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Payment Summary',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryItem('Total Paid', _formatAmount(totalAmount), Colors.green),
+              ),
+              Expanded(
+                child: _buildSummaryItem('Completed', completedPayments.toString(), Colors.green),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryItem('Pending', pendingPayments.toString(), Colors.orange),
+              ),
+              Expanded(
+                child: _buildSummaryItem('Failed', failedPayments.toString(), Colors.red),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentCard({
+    required PaymentTransactionModel payment,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: payment.paymentStatus.color.withOpacity(0.1),
+          child: Icon(
+            Icons.payment,
+            color: payment.paymentStatus.color,
+          ),
+        ),
+        title: Text(payment.typeDisplay),
+        subtitle: Text(payment.description ?? 'No description'),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              payment.formattedAmount,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              payment.statusDisplay,
+              style: TextStyle(
+                fontSize: 12,
+                color: payment.paymentStatus.color,
+              ),
+            ),
+          ],
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  String _formatAmount(double amount) {
+    if (amount >= 1000000) {
+      return 'TZS ${(amount / 1000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000) {
+      return 'TZS ${(amount / 1000).toStringAsFixed(1)}K';
+    } else {
+      return 'TZS ${amount.toStringAsFixed(0)}';
+    }
+  }
 }
 
 /// Payment details bottom sheet
 class PaymentDetailsSheet extends StatelessWidget {
-  final PaymentModel payment;
+  final PaymentTransactionModel payment;
 
   const PaymentDetailsSheet({
     super.key,
@@ -229,9 +351,9 @@ class PaymentDetailsSheet extends StatelessWidget {
           const SizedBox(height: 16),
           
           _buildDetailRow('Amount', payment.formattedAmount),
-          _buildDetailRow('Type', payment.paymentType),
-          _buildDetailRow('Status', payment.status.displayName),
-          _buildDetailRow('Reference', payment.pesapalReference ?? 'N/A'),
+          _buildDetailRow('Type', payment.typeDisplay),
+          _buildDetailRow('Status', payment.statusDisplay),
+          _buildDetailRow('Reference', payment.gatewayReference ?? 'N/A'),
           _buildDetailRow('Date', _formatDate(payment.createdAt)),
           
           const SizedBox(height: 24),
@@ -245,7 +367,7 @@ class PaymentDetailsSheet extends StatelessWidget {
                   child: const Text('Close'),
                 ),
               ),
-              if (payment.isPending) ...[
+              if (payment.isInProgress) ...[
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(

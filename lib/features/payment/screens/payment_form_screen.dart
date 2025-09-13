@@ -34,7 +34,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     // Pre-fill with user data if available
     final authProvider = context.read<AuthProvider>();
     if (authProvider.user != null) {
-      _phoneController.text = authProvider.user!.phone ?? '';
+      _phoneController.text = authProvider.user!.phone;
       _emailController.text = authProvider.user!.email ?? '';
     }
   }
@@ -300,6 +300,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     final result = await paymentProvider.processPayment(
       amount: widget.amount,
       paymentType: widget.paymentType,
+      
       phoneNumber: _phoneController.text.trim(),
       email: _emailController.text.trim(),
       description: _descriptionController.text.trim().isNotEmpty

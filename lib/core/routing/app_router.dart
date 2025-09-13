@@ -27,6 +27,7 @@ import '../../features/feeds/screens/job_feed_screen.dart';
 import '../../features/feeds/screens/fundi_profile_screen.dart';
 import '../../features/feeds/screens/job_details_screen.dart' hide JobDetailsScreen;
 import '../../features/work_approval/screens/work_approval_screen.dart';
+import '../../features/home/screens/role_based_home_screen.dart';
 
 /// Centralized routing configuration for the Fundi App
 /// Handles route definitions, navigation, and route guards
@@ -54,6 +55,8 @@ class AppRouter {
   static const String fundiProfile = '/fundi-profile';
   static const String workApproval = '/work-approval';
   static const String home = '/';
+  static const String customerHome = '/customer-home';
+  static const String fundiHome = '/fundi-home';
 
   /// Route generation function for named routes
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -98,6 +101,10 @@ class AppRouter {
 
       case '/dashboard':
         return _buildRoute(const MainDashboard(), settings);
+
+      case '/customer-home':
+      case '/fundi-home':
+        return _buildRoute(const RoleBasedHomeScreen(), settings);
 
       case '/profile':
         return _buildRoute(

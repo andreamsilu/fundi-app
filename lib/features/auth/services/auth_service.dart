@@ -63,20 +63,23 @@ class AuthService {
   }
 
   /// User registration with phone and password only
+  /// Role defaults to 'customer' on the server
   Future<AuthResult> register({
     required String phoneNumber,
     required String password,
-    required UserRole role,
   }) async {
     try {
       Logger.userAction(
         'Registration attempt',
-        data: {'phoneNumber': phoneNumber, 'role': role.value},
+        data: {'phoneNumber': phoneNumber},
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.register,
-        {'phone': phoneNumber, 'password': password, 'role': role.value},
+        {
+          'phone': phoneNumber, 
+          'password': password
+        },
         {},
         fromJson: (data) => data as Map<String, dynamic>,
       );

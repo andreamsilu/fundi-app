@@ -282,20 +282,26 @@ class PortfolioProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final result = await _portfolioService.uploadMedia(
-        portfolioId: portfolioId,
-        filePaths: filePaths,
-        fileTypes: fileTypes,
+      // Create a temporary PortfolioDetailResult to use its uploadMedia method
+      final tempResult = PortfolioDetailResult(
+        success: false,
+        portfolio: null,
+        message: '',
       );
 
-      if (result.success) {
+      final result = await tempResult.uploadMedia(
+        filePaths: filePaths,
+        type: fileTypes.isNotEmpty ? fileTypes.first : 'image',
+      );
+
+      if (result != null) {
         Logger.info(
           'Media uploaded successfully',
           data: {'portfolioId': portfolioId},
         );
         return true;
       } else {
-        _setError(result.message);
+        _setError('Failed to upload media');
         return false;
       }
     } catch (e) {

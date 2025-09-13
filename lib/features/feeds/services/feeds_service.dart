@@ -55,7 +55,7 @@ class FeedsService {
       }
 
       final response = await _apiClient.get(
-        ApiEndpoints.apiFundis,
+        ApiEndpoints.feedsFundis,
         queryParameters: queryParams,
       );
 
@@ -139,7 +139,7 @@ class FeedsService {
       }
 
       final response = await _apiClient.get(
-        ApiEndpoints.apiJobs,
+        ApiEndpoints.feedsJobs,
         queryParameters: queryParams,
       );
 
@@ -175,7 +175,7 @@ class FeedsService {
   Future<Map<String, dynamic>> getFundiProfile(String fundiId) async {
     try {
       final response = await _apiClient.get(
-        ApiEndpoints.getFundiEndpoint(fundiId),
+        ApiEndpoints.getFeedsFundiEndpoint(fundiId),
       );
 
       if (response.success && response.data != null) {
@@ -200,7 +200,9 @@ class FeedsService {
   /// Get detailed job information by ID
   Future<Map<String, dynamic>> getJobDetails(String jobId) async {
     try {
-      final response = await _apiClient.get(ApiEndpoints.getJobEndpoint(jobId));
+      final response = await _apiClient.get(
+        ApiEndpoints.getFeedsJobEndpoint(jobId),
+      );
 
       if (response.success && response.data != null) {
         final job = JobModel.fromJson(response.data);
@@ -221,10 +223,10 @@ class FeedsService {
     }
   }
 
-  /// Get available job categories
+  /// Get job categories
   Future<Map<String, dynamic>> getJobCategories() async {
     try {
-      final response = await _apiClient.get(ApiEndpoints.apiJobsCategories);
+      final response = await _apiClient.get(ApiEndpoints.categories);
 
       if (response.success && response.data != null) {
         return {
@@ -235,23 +237,23 @@ class FeedsService {
       } else {
         return {
           'success': false,
-          'categories': <String>[],
+          'categories': [],
           'message': response.message,
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'categories': <String>[],
+        'categories': [],
         'message': 'Error fetching categories: ${e.toString()}',
       };
     }
   }
 
-  /// Get available skills list
+  /// Get available skills
   Future<Map<String, dynamic>> getSkills() async {
     try {
-      final response = await _apiClient.get(ApiEndpoints.apiSkills);
+      final response = await _apiClient.get(ApiEndpoints.categories);
 
       if (response.success && response.data != null) {
         return {
@@ -260,16 +262,12 @@ class FeedsService {
           'message': 'Skills fetched successfully',
         };
       } else {
-        return {
-          'success': false,
-          'skills': <String>[],
-          'message': response.message,
-        };
+        return {'success': false, 'skills': [], 'message': response.message};
       }
     } catch (e) {
       return {
         'success': false,
-        'skills': <String>[],
+        'skills': [],
         'message': 'Error fetching skills: ${e.toString()}',
       };
     }
@@ -278,7 +276,7 @@ class FeedsService {
   /// Get available locations
   Future<Map<String, dynamic>> getLocations() async {
     try {
-      final response = await _apiClient.get(ApiEndpoints.apiLocations);
+      final response = await _apiClient.get(ApiEndpoints.categories);
 
       if (response.success && response.data != null) {
         return {
@@ -287,85 +285,13 @@ class FeedsService {
           'message': 'Locations fetched successfully',
         };
       } else {
-        return {
-          'success': false,
-          'locations': <String>[],
-          'message': response.message,
-        };
+        return {'success': false, 'locations': [], 'message': response.message};
       }
     } catch (e) {
       return {
         'success': false,
-        'locations': <String>[],
+        'locations': [],
         'message': 'Error fetching locations: ${e.toString()}',
-      };
-    }
-  }
-
-  /// Request fundi for a job (customer action)
-  Future<Map<String, dynamic>> requestFundi({
-    required String jobId,
-    required String fundiId,
-    required String message,
-  }) async {
-    try {
-      final requestData = {
-        'jobId': jobId,
-        'fundiId': fundiId,
-        'message': message,
-      };
-
-      final response = await _apiClient.post(
-        ApiEndpoints.apiJobsRequestFundi,
-        {},
-        requestData,
-      );
-
-      if (response.success) {
-        return {'success': true, 'message': response.message};
-      } else {
-        return {'success': false, 'message': response.message};
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error sending fundi request: ${e.toString()}',
-      };
-    }
-  }
-
-  /// Apply to a job (fundi action)
-  Future<Map<String, dynamic>> applyToJob({
-    required String jobId,
-    required String coverLetter,
-    required double proposedBudget,
-    required int estimatedDuration,
-    required Map<String, dynamic> budgetBreakdown,
-  }) async {
-    try {
-      final applicationData = {
-        'jobId': jobId,
-        'coverLetter': coverLetter,
-        'proposedBudget': proposedBudget,
-        'estimatedDuration': estimatedDuration,
-        'budgetBreakdown': budgetBreakdown,
-      };
-
-      final response = await _apiClient.post(
-        ApiEndpoints.apiJobsApply,
-        {},
-        applicationData,
-      );
-
-      if (response.success) {
-        return {'success': true, 'message': response.message};
-      } else {
-        return {'success': false, 'message': response.message};
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error submitting job application: ${e.toString()}',
       };
     }
   }
