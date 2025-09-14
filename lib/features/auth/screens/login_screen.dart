@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import '../services/auth_service.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/navigation_guard.dart';
-import '../../../core/helpers/fundi_navigation_helper.dart';
+import '../../../core/app/app_initialization_service.dart';
 
 /// Login screen for user authentication
 /// Features email/password login with validation and error handling
@@ -75,13 +74,27 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final success = await authProvider.login(
+      // Check if API client is initialized
+      if (!AppInitializationService.isInitialized) {
+        setState(() {
+          _errorMessage =
+              'App is still loading. Please wait a moment and try again.';
+        });
+        return;
+      }
+
+      // Use AuthService directly for login
+      final authService = AuthService();
+
+      // Ensure service is initialized
+      await authService.initialize();
+
+      final result = await authService.login(
         phoneNumber: _phoneController.text.trim(),
         password: _passwordController.text,
       );
 
-      if (success) {
+      if (result.success) {
         // Navigate to dashboard - MainDashboard will handle role-based UI
         if (mounted) {
           await NavigationGuard().safePushReplacementNamed(
@@ -91,13 +104,15 @@ class _LoginScreenState extends State<LoginScreen>
         }
       } else {
         setState(() {
-          _errorMessage = authProvider.errorMessage ?? 'Login failed';
+          _errorMessage = result.message;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
+        _errorMessage =
+            'Connection error. Please check your internet and try again.';
       });
+      debugPrint('Login error: $e');
     } finally {
       if (mounted) {
         setState(() {

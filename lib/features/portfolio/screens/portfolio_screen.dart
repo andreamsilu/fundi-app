@@ -45,11 +45,16 @@ class _PortfolioScreenState extends State<PortfolioScreen>
   }
 
   Future<void> _loadPortfolios() async {
-    final portfolioProvider = Provider.of<PortfolioProvider>(
-      context,
-      listen: false,
-    );
-    await portfolioProvider.loadPortfolios();
+    try {
+      final portfolioProvider = Provider.of<PortfolioProvider>(
+        context,
+        listen: false,
+      );
+      await portfolioProvider.loadPortfolios();
+    } catch (e) {
+      print('PortfolioProvider not available: $e');
+      // Provider will be handled in build method
+    }
   }
 
   @override
@@ -62,6 +67,55 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
+        child: _buildPortfolioBody(),
+      ),
+    );
+  }
+
+  Widget _buildPortfolioBody() {
+    // Try to get the existing provider, if not available create a new one
+    try {
+      Provider.of<PortfolioProvider>(context, listen: false);
+      return Consumer<PortfolioProvider>(
+        builder: (context, portfolioProvider, child) {
+          if (portfolioProvider.isLoading) {
+            return const Center(
+              child: LoadingWidget(message: 'Loading portfolios...', size: 50),
+            );
+          }
+
+          if (portfolioProvider.errorMessage != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ErrorBanner(
+                    message: portfolioProvider.errorMessage!,
+                    onDismiss: () {
+                      portfolioProvider.clearError();
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadPortfolios,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (portfolioProvider.portfolios.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return _buildPortfolioGrid(portfolioProvider.portfolios);
+        },
+      );
+    } catch (e) {
+      // Provider not available, create a new one
+      return ChangeNotifierProvider(
+        create: (_) => PortfolioProvider()..loadPortfolios(),
         child: Consumer<PortfolioProvider>(
           builder: (context, portfolioProvider, child) {
             if (portfolioProvider.isLoading) {
@@ -101,8 +155,8 @@ class _PortfolioScreenState extends State<PortfolioScreen>
             return _buildPortfolioGrid(portfolioProvider.portfolios);
           },
         ),
-      ),
-    );
+      );
+    }
   }
 
   Widget _buildEmptyState() {

@@ -16,12 +16,13 @@ class JobService {
   Future<JobResult> createJob({
     required String title,
     required String description,
-    required String category,
+    required int categoryId,
     required String location,
     required double budget,
     required String budgetType,
     required DateTime deadline,
-    required List<String> requiredSkills,
+    String urgency = 'medium',
+    List<String>? requiredSkills,
     double? latitude,
     double? longitude,
     List<String>? imageUrls,
@@ -29,19 +30,29 @@ class JobService {
     try {
       Logger.userAction(
         'Create job attempt',
-        data: {'title': title, 'category': category},
+        data: {'title': title, 'categoryId': categoryId, 'urgency': urgency},
       );
 
-      final response = await _apiClient
-          .post<Map<String, dynamic>>(ApiEndpoints.createJob, {}, {
-            'title': title,
-            'description': description,
-            'category_id': category,
-            'budget': budget,
-            'deadline': deadline.toIso8601String(),
-            if (latitude != null) 'location_lat': latitude,
-            if (longitude != null) 'location_lng': longitude,
-          }, fromJson: (data) => data as Map<String, dynamic>);
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiEndpoints.createJob,
+        {},
+        {
+          'title': title,
+          'description': description,
+          'location': location,
+          'budget': budget,
+          'category_id': categoryId,
+          'urgency': urgency,
+          'deadline': deadline.toIso8601String().split(
+            'T',
+          )[0], // Format as YYYY-MM-DD
+          if (latitude != null) 'location_lat': latitude,
+          if (longitude != null) 'location_lng': longitude,
+          if (requiredSkills != null) 'required_skills': requiredSkills,
+          if (imageUrls != null) 'image_urls': imageUrls,
+        },
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
 
       if (response.success && response.data != null) {
         final job = JobModel.fromJson(response.data!);

@@ -145,7 +145,7 @@ class _JobCreationScreenState extends State<JobCreationScreen>
       final result = await JobService().createJob(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        category: _selectedCategory,
+        categoryId: int.parse(_selectedCategory),
         budget: double.tryParse(_budgetController.text.trim()) ?? 0.0,
         budgetType: 'fixed',
         location: _locationController.text.trim(),

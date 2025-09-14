@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/notification_model.dart';
-import '../services/notification_service.dart';
+import '../providers/notification_provider.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// Notifications screen showing all user notifications
+/// Notifications screen showing all user notifications using NotificationProvider
 /// Allows managing and interacting with notifications
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -19,11 +20,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  bool _isLoading = false;
-  String? _errorMessage;
-  List<NotificationModel> _notifications = [];
   String _selectedFilter = 'All';
-
   final List<String> _filters = ['All', 'Unread', 'Jobs', 'Messages', 'System'];
 
   @override
@@ -53,80 +50,15 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Future<void> _loadNotifications() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
     try {
-      final result = await NotificationService().getNotifications();
-
-      if (result.success) {
-        setState(() {
-          _notifications = result.notifications;
-        });
-      } else {
-        setState(() {
-          _errorMessage = result.message;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load notifications. Please try again.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _markAsRead(NotificationModel notification) async {
-    if (notification.isRead) return;
-
-    try {
-      final result = await NotificationService().markAsRead(notification.id);
-      if (result.success) {
-        setState(() {
-          final index = _notifications.indexWhere(
-            (n) => n.id == notification.id,
-          );
-          if (index != -1) {
-            _notifications[index] = notification.copyWith(isRead: true);
-          }
-        });
-      }
-    } catch (e) {
-      // Handle error silently
-    }
-  }
-
-  Future<void> _deleteNotification(NotificationModel notification) async {
-    try {
-      final result = await NotificationService().deleteNotification(
-        notification.id,
+      final notificationProvider = Provider.of<NotificationProvider>(
+        context,
+        listen: false,
       );
-      if (result.success) {
-        setState(() {
-          _notifications.removeWhere((n) => n.id == notification.id);
-        });
-      }
+      await notificationProvider.loadNotifications();
     } catch (e) {
-      // Handle error silently
+      print('NotificationProvider not available: $e');
     }
-  }
-
-  List<NotificationModel> get _filteredNotifications {
-    if (_selectedFilter == 'All') return _notifications;
-    if (_selectedFilter == 'Unread')
-      return _notifications.where((n) => !n.isRead).toList();
-    return _notifications
-        .where(
-          (n) => n.type.toLowerCase() == _selectedFilter.toLowerCase(),
-        )
-        .toList();
   }
 
   @override
@@ -176,7 +108,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           children: [
             // Filter Tabs
             _buildFilterTabs(),
-
             // Content
             Expanded(child: _buildContent()),
           ],
@@ -195,54 +126,19 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         itemBuilder: (context, index) {
           final filter = _filters[index];
           final isSelected = _selectedFilter == filter;
-          final count = _getFilterCount(filter);
 
           return Container(
             margin: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(filter),
-                  if (count > 0) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.white : context.primaryColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        count.toString(),
-                        style: TextStyle(
-                          color: isSelected
-                              ? context.primaryColor
-                              : Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              label: Text(filter),
               selected: isSelected,
               onSelected: (selected) {
-                if (selected) {
-                  setState(() {
-                    _selectedFilter = filter;
-                  });
-                }
+                setState(() {
+                  _selectedFilter = filter;
+                });
               },
-              selectedColor: context.primaryColor.withValues(alpha: 0.1),
-              checkmarkColor: context.primaryColor,
-              labelStyle: TextStyle(
-                color: isSelected ? context.primaryColor : AppTheme.mediumGray,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
+              selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+              checkmarkColor: Theme.of(context).primaryColor,
             ),
           );
         },
@@ -250,50 +146,173 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  int _getFilterCount(String filter) {
-    if (filter == 'All') return _notifications.length;
-    if (filter == 'Unread')
-      return _notifications.where((n) => !n.isRead).length;
-    return _notifications
-        .where((n) => n.type.toLowerCase() == filter.toLowerCase())
-        .length;
+  Widget _buildContent() {
+    // Try to get the existing provider, if not available create a new one
+    try {
+      Provider.of<NotificationProvider>(context, listen: false);
+      return Consumer<NotificationProvider>(
+        builder: (context, notificationProvider, child) {
+          return _buildNotificationList(notificationProvider);
+        },
+      );
+    } catch (e) {
+      // Provider not available, create a new one
+      return ChangeNotifierProvider(
+        create: (_) => NotificationProvider()..loadNotifications(),
+        child: Consumer<NotificationProvider>(
+          builder: (context, notificationProvider, child) {
+            return _buildNotificationList(notificationProvider);
+          },
+        ),
+      );
+    }
   }
 
-  Widget _buildContent() {
-    if (_isLoading) {
+  Widget _buildNotificationList(NotificationProvider notificationProvider) {
+    if (notificationProvider.isLoading &&
+        notificationProvider.notifications.isEmpty) {
       return const Center(
         child: LoadingWidget(message: 'Loading notifications...', size: 50),
       );
     }
 
-    if (_errorMessage != null) {
+    if (notificationProvider.errorMessage != null &&
+        notificationProvider.notifications.isEmpty) {
       return Center(
         child: ErrorBanner(
-          message: _errorMessage!,
+          message: notificationProvider.errorMessage!,
           onDismiss: () {
-            setState(() {
-              _errorMessage = null;
-            });
+            notificationProvider.clearError();
           },
         ),
       );
     }
 
-    final filteredNotifications = _filteredNotifications;
+    final filteredNotifications = _getFilteredNotifications(
+      notificationProvider,
+    );
     if (filteredNotifications.isEmpty) {
       return _buildEmptyState();
     }
 
     return RefreshIndicator(
-      onRefresh: _loadNotifications,
+      onRefresh: () async {
+        await notificationProvider.loadNotifications(refresh: true);
+      },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: filteredNotifications.length,
         itemBuilder: (context, index) {
-          return _buildNotificationCard(filteredNotifications[index]);
+          final notification = filteredNotifications[index];
+          return _buildNotificationItem(notification, notificationProvider);
         },
       ),
     );
+  }
+
+  List<NotificationModel> _getFilteredNotifications(
+    NotificationProvider notificationProvider,
+  ) {
+    if (_selectedFilter == 'All') {
+      return notificationProvider.notifications;
+    } else if (_selectedFilter == 'Unread') {
+      return notificationProvider.notifications
+          .where((n) => !n.isRead)
+          .toList();
+    } else {
+      return notificationProvider.notifications
+          .where((n) => n.type.toLowerCase() == _selectedFilter.toLowerCase())
+          .toList();
+    }
+  }
+
+  Widget _buildNotificationItem(
+    NotificationModel notification,
+    NotificationProvider notificationProvider,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: notification.isRead
+              ? Colors.grey
+              : Theme.of(context).primaryColor,
+          child: Icon(
+            _getNotificationIcon(notification.type),
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          notification.title,
+          style: TextStyle(
+            fontWeight: notification.isRead
+                ? FontWeight.normal
+                : FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(notification.message),
+        trailing: notification.isRead
+            ? null
+            : Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+        onTap: () => _onNotificationTap(notification, notificationProvider),
+      ),
+    );
+  }
+
+  IconData _getNotificationIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'job':
+        return Icons.work;
+      case 'message':
+        return Icons.message;
+      case 'system':
+        return Icons.settings;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  void _onNotificationTap(
+    NotificationModel notification,
+    NotificationProvider notificationProvider,
+  ) {
+    if (!notification.isRead) {
+      notificationProvider.markAsRead(notification.id);
+    }
+    // Handle navigation based on notification type
+    // This would typically navigate to the relevant screen
+  }
+
+  void _markAllAsRead() {
+    try {
+      final notificationProvider = Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      );
+      notificationProvider.markAllAsRead();
+    } catch (e) {
+      print('Error marking all notifications as read: $e');
+    }
+  }
+
+  void _clearAllNotifications() {
+    try {
+      final notificationProvider = Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      );
+      notificationProvider.clearAllNotifications();
+    } catch (e) {
+      print('Error clearing all notifications: $e');
+    }
   }
 
   Widget _buildEmptyState() {
@@ -319,162 +338,5 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         ],
       ),
     );
-  }
-
-  Widget _buildNotificationCard(NotificationModel notification) {
-    return Dismissible(
-      key: Key(notification.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (direction) {
-        _deleteNotification(notification);
-      },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: _getNotificationColor(notification.type).withValues(alpha: 0.1),
-            child: Icon(_getNotificationIcon(notification.type), color: _getNotificationColor(notification.type)),
-          ),
-          title: Text(
-            notification.title,
-            style: TextStyle(
-              fontWeight: notification.isRead
-                  ? FontWeight.normal
-                  : FontWeight.w600,
-            ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                notification.message,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                notification.formattedTime,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppTheme.mediumGray),
-              ),
-            ],
-          ),
-          trailing: notification.isRead
-              ? null
-              : Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: context.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-          onTap: () {
-            _markAsRead(notification);
-            _handleNotificationTap(notification);
-          },
-        ),
-      ),
-    );
-  }
-
-  void _handleNotificationTap(NotificationModel notification) {
-    // TODO: Navigate to relevant screen based on notification type
-    switch (notification.type.toLowerCase()) {
-      case 'job_application':
-      case 'job_approved':
-      case 'job_rejected':
-      case 'job_completed':
-        // Navigate to job details
-        break;
-      case 'message_received':
-        // Navigate to chat
-        break;
-      case 'payment_received':
-      case 'verification':
-        // Navigate to relevant details
-        break;
-      case 'system':
-      case 'promotion':
-        // Show system message
-        break;
-    }
-  }
-
-  Future<void> _markAllAsRead() async {
-    try {
-      final result = await NotificationService().markAllAsRead();
-      if (result.success) {
-        setState(() {
-          _notifications = _notifications
-              .map((n) => n.copyWith(isRead: true))
-              .toList();
-        });
-      }
-    } catch (e) {
-      // Handle error silently
-    }
-  }
-
-  Future<void> _clearAllNotifications() async {
-    try {
-      final result = await NotificationService().clearAllNotifications();
-      if (result.success) {
-        setState(() {
-          _notifications.clear();
-        });
-      }
-    } catch (e) {
-      // Handle error silently
-    }
-  }
-
-  Color _getNotificationColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'job_application':
-        return Colors.blue;
-      case 'job_approved':
-        return Colors.green;
-      case 'job_rejected':
-        return Colors.red;
-      case 'payment_received':
-        return Colors.orange;
-      case 'rating_received':
-        return Colors.amber;
-      case 'message_received':
-        return Colors.purple;
-      case 'system':
-        return Colors.grey;
-      default:
-        return Colors.blue;
-    }
-  }
-
-  IconData _getNotificationIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'job_application':
-        return Icons.work;
-      case 'job_approved':
-        return Icons.check_circle;
-      case 'job_rejected':
-        return Icons.cancel;
-      case 'payment_received':
-        return Icons.payment;
-      case 'rating_received':
-        return Icons.star;
-      case 'message_received':
-        return Icons.message;
-      case 'system':
-        return Icons.info;
-      default:
-        return Icons.notifications;
-    }
   }
 }

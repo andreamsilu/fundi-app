@@ -79,15 +79,50 @@ class DashboardService {
     }
   }
 
+  // Static variable to prevent concurrent category fetching
+  static Future<CategoryResult>? _categoryFetchFuture;
+
   /// Get job categories for filtering
   Future<CategoryResult> getJobCategories() async {
+    // If there's already a category fetch in progress, return that future
+    if (_categoryFetchFuture != null) {
+      Logger.info(
+        'Category fetch already in progress, returning existing future',
+      );
+      return _categoryFetchFuture!;
+    }
+
+    _categoryFetchFuture = _fetchJobCategories();
+
+    try {
+      final result = await _categoryFetchFuture!;
+      return result;
+    } finally {
+      // Clear the future when done
+      _categoryFetchFuture = null;
+    }
+  }
+
+  /// Internal method to fetch job categories
+  Future<CategoryResult> _fetchJobCategories() async {
     try {
       Logger.userAction('Fetch job categories');
 
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.categories,
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
+      final response = await _apiClient
+          .get<Map<String, dynamic>>(
+            ApiEndpoints.categories,
+            fromJson: (data) => data as Map<String, dynamic>,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw ApiError(
+                message: 'Request timeout - categories fetch took too long',
+                code: 'TIMEOUT',
+                statusCode: 408,
+              );
+            },
+          );
 
       if (response.success && response.data != null) {
         final categories = (response.data!['categories'] as List<dynamic>)
@@ -109,7 +144,24 @@ class DashboardService {
       return CategoryResult.failure(message: e.message);
     } catch (e) {
       Logger.error('Job categories unexpected error', error: e);
-      return CategoryResult.failure(message: 'Failed to load job categories');
+
+      // Return fallback categories if API fails
+      final fallbackCategories = [
+        const JobCategory(id: 'plumbing', name: 'Plumbing'),
+        const JobCategory(id: 'electrical', name: 'Electrical'),
+        const JobCategory(id: 'carpentry', name: 'Carpentry'),
+        const JobCategory(id: 'painting', name: 'Painting'),
+        const JobCategory(id: 'cleaning', name: 'Cleaning'),
+        const JobCategory(id: 'gardening', name: 'Gardening'),
+        const JobCategory(id: 'repair', name: 'Repair'),
+        const JobCategory(id: 'installation', name: 'Installation'),
+        const JobCategory(id: 'other', name: 'Other'),
+      ];
+
+      return CategoryResult.success(
+        categories: fallbackCategories,
+        message: 'Using fallback categories due to API error',
+      );
     }
   }
 }

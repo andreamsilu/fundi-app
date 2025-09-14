@@ -80,47 +80,69 @@ class _AnimatedCardState extends State<AnimatedCard>
 
   @override
   void dispose() {
-    _animationController.dispose();
+    try {
+      _animationController.dispose();
+    } catch (e) {
+      print('Error disposing animation controller: $e');
+    }
     super.dispose();
   }
 
   void _onTapDown(TapDownDetails details) {
-    if (widget.enableTapEffect && widget.onTap != null) {
-      setState(() {
-        _isPressed = true;
-      });
+    if (mounted && widget.enableTapEffect && widget.onTap != null) {
+      try {
+        setState(() {
+          _isPressed = true;
+        });
+      } catch (e) {
+        print('Error in _onTapDown: $e');
+      }
     }
   }
 
   void _onTapUp(TapUpDetails details) {
-    if (widget.enableTapEffect && widget.onTap != null) {
-      setState(() {
-        _isPressed = false;
-      });
+    if (mounted && widget.enableTapEffect && widget.onTap != null) {
+      try {
+        setState(() {
+          _isPressed = false;
+        });
+      } catch (e) {
+        print('Error in _onTapUp: $e');
+      }
     }
   }
 
   void _onTapCancel() {
-    if (widget.enableTapEffect && widget.onTap != null) {
-      setState(() {
-        _isPressed = false;
-      });
+    if (mounted && widget.enableTapEffect && widget.onTap != null) {
+      try {
+        setState(() {
+          _isPressed = false;
+        });
+      } catch (e) {
+        print('Error in _onTapCancel: $e');
+      }
     }
   }
 
   void _onHoverEnter(PointerEnterEvent event) {
-    if (widget.enableHoverEffect) {
-      setState(() {
-      });
-      _animationController.forward();
+    if (mounted && widget.enableHoverEffect) {
+      try {
+        setState(() {});
+        _animationController.forward();
+      } catch (e) {
+        print('Error in _onHoverEnter: $e');
+      }
     }
   }
 
   void _onHoverExit(PointerExitEvent event) {
-    if (widget.enableHoverEffect) {
-      setState(() {
-      });
-      _animationController.reverse();
+    if (mounted && widget.enableHoverEffect) {
+      try {
+        setState(() {});
+        _animationController.reverse();
+      } catch (e) {
+        print('Error in _onHoverExit: $e');
+      }
     }
   }
 

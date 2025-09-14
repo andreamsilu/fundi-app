@@ -72,10 +72,7 @@ class AppErrorWidget extends StatelessWidget {
   }
 
   /// Create not found error widget
-  factory AppErrorWidget.notFound({
-    VoidCallback? onRetry,
-    String? retryText,
-  }) {
+  factory AppErrorWidget.notFound({VoidCallback? onRetry, String? retryText}) {
     return AppErrorWidget(
       message: 'The requested content was not found',
       onRetry: onRetry,
@@ -106,17 +103,17 @@ class AppErrorWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Error message
             Text(
               message,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppTheme.darkGray,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppTheme.darkGray),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            
+
             // Retry button
             if (onRetry != null)
               ElevatedButton.icon(
@@ -176,11 +173,7 @@ class ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.error_outline,
-            color: textColor ?? Colors.white,
-            size: 20,
-          ),
+          Icon(Icons.error_outline, color: textColor ?? Colors.white, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -341,11 +334,7 @@ class InfoBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: textColor ?? Colors.white,
-            size: 20,
-          ),
+          Icon(Icons.info_outline, color: textColor ?? Colors.white, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -390,63 +379,63 @@ class EmptyStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Empty state icon
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.lightGray,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon ?? Icons.inbox_outlined,
-                size: 48,
-                color: AppTheme.mediumGray,
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Title
-            Text(
-              title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppTheme.darkGray,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            
-            // Message
-            Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.mediumGray,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            
-            // Action button
-            if (onAction != null && actionText != null)
-              ElevatedButton.icon(
-                onPressed: onAction,
-                icon: const Icon(Icons.add),
-                label: Text(actionText!),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.accentColor,
-                  foregroundColor: Colors.white,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Empty state icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.lightGray,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon ?? Icons.inbox_outlined,
+                  size: 48,
+                  color: AppTheme.mediumGray,
                 ),
               ),
-          ],
+              const SizedBox(height: 24),
+
+              // Title
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: AppTheme.darkGray),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+
+              // Message
+              Text(
+                message,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+
+              // Action button
+              if (onAction != null && actionText != null)
+                ElevatedButton.icon(
+                  onPressed: onAction,
+                  icon: const Icon(Icons.add),
+                  label: Text(actionText!),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.accentColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
-
-

@@ -136,7 +136,9 @@ class JobModel {
       locationLng: json['location_lng'] != null
           ? JobModel.parseDouble(json['location_lng'])
           : null,
-      status: json['status'] as String,
+      status:
+          json['status'] as String? ??
+          'open', // Default to 'open' if not provided
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,

@@ -6,6 +6,7 @@ import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/helpers/fundi_navigation_helper.dart';
+import '../../../core/app/app_initialization_service.dart';
 
 /// Registration screen for user authentication
 /// Features phone/password registration with role selection
@@ -77,6 +78,15 @@ class _RegisterScreenState extends State<RegisterScreen>
     });
 
     try {
+      // Check if API client is initialized
+      if (!AppInitializationService.isInitialized) {
+        setState(() {
+          _errorMessage =
+              'App is still loading. Please wait a moment and try again.';
+        });
+        return;
+      }
+
       // First, send OTP for verification
       final otpResult = await AuthService().sendOtp(
         phoneNumber: _phoneController.text.trim(),
@@ -107,7 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               // Navigate to appropriate home page based on user roles
               if (mounted) {
                 FundiNavigationHelper.navigateAfterLogin(
-                  context, 
+                  context,
                   registerResult.user!.roles.map((role) => role.value).toList(),
                 );
               }
@@ -125,8 +135,10 @@ class _RegisterScreenState extends State<RegisterScreen>
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
+        _errorMessage =
+            'Connection error. Please check your internet and try again.';
       });
+      debugPrint('Registration error: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -397,5 +409,4 @@ class _RegisterScreenState extends State<RegisterScreen>
       ],
     );
   }
-
 }

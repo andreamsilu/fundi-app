@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/profile_model.dart';
 import '../services/profile_service.dart';
 import 'profile_edit_screen.dart';
 import '../../fundi_application/screens/fundi_application_screen.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../auth/services/auth_service.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
@@ -15,8 +14,9 @@ import '../../../core/theme/app_theme.dart';
 class ProfileScreen extends StatefulWidget {
   final String?
   userId; // Make userId optional since we get current user profile
+  final bool showAppBar; // Control whether to show AppBar
 
-  const ProfileScreen({super.key, this.userId});
+  const ProfileScreen({super.key, this.userId, this.showAppBar = true});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -78,7 +78,48 @@ class _ProfileScreenState extends State<ProfileScreen>
       });
 
       print('ProfileScreen: Loading current user profile');
-      final profile = await ProfileService().getProfile(widget.userId ?? '');
+
+      // First try to get profile from ProfileService
+      ProfileModel? profile = await ProfileService().getProfile(
+        widget.userId ?? '',
+      );
+
+      // If that fails, try to get current user from AuthService
+      if (profile == null) {
+        print('ProfileScreen: ProfileService failed, trying AuthService');
+        final authService = AuthService();
+        final currentUser = authService.currentUser;
+
+        if (currentUser != null) {
+          // Create a basic profile from current user data
+          final fullName = currentUser.fullName ?? '';
+          final nameParts = fullName.split(' ');
+          final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+          final lastName = nameParts.length > 1
+              ? nameParts.sublist(1).join(' ')
+              : '';
+
+          profile = ProfileModel(
+            id: currentUser.id,
+            firstName: firstName,
+            lastName: lastName,
+            email: currentUser.email ?? '',
+            phoneNumber: currentUser.phone,
+            role: currentUser.roles.isNotEmpty
+                ? currentUser.roles.first as UserRole
+                : UserRole.customer,
+            status: UserStatus.active,
+            profileImageUrl: currentUser.profileImageUrl,
+            bio: null, // Will be filled from profile service
+            location: null, // Will be filled from profile service
+            skills: [], // Will be filled from profile service
+            languages: [], // Will be filled from profile service
+            createdAt: currentUser.createdAt ?? DateTime.now(),
+            updatedAt: currentUser.updatedAt ?? DateTime.now(),
+          );
+        }
+      }
+
       print(
         'ProfileScreen: Profile loaded: ${profile != null ? 'Success' : 'Failed'}',
       );
@@ -87,9 +128,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           _profile = profile;
           _isLoading = false;
+          if (profile == null) {
+            _errorMessage = 'Unable to load profile. Please try again.';
+          }
         });
       }
     } catch (e) {
+      print('ProfileScreen: Profile loading error: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load profile. Please try again.';
@@ -126,9 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _navigateToFundiApplication() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const FundiApplicationScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const FundiApplicationScreen()),
     );
   }
 
@@ -145,18 +188,14 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: AppTheme.mediumGray,
-            size: 20,
-          ),
+          Icon(Icons.info_outline, color: AppTheme.mediumGray, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Apply to become a fundi and start earning from your skills',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.mediumGray,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.mediumGray),
             ),
           ),
         ],
@@ -166,27 +205,32 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Profile'),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            actions: [
-              IconButton(onPressed: _editProfile, icon: const Icon(Icons.edit)),
-            ],
-          ),
-          body: FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(position: _slideAnimation, child: _buildBody(authProvider)),
-          ),
-        );
-      },
+    final authService = AuthService();
+    return Scaffold(
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: const Text('Profile'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              actions: [
+                IconButton(
+                  onPressed: _editProfile,
+                  icon: const Icon(Icons.edit),
+                ),
+              ],
+            )
+          : null,
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: _buildBody(authService),
+        ),
+      ),
     );
   }
 
-  Widget _buildBody(AuthProvider authProvider) {
+  Widget _buildBody(AuthService authService) {
     if (_isLoading) {
       return const Center(child: LoadingWidget(message: 'Loading profile...'));
     }
@@ -349,7 +393,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 16),
 
               // Become Fundi Button (only for customers)
-              if (authProvider.isCustomer) ...[
+              if (authService.currentUser?.isCustomer ?? false) ...[
                 AppButton(
                   text: 'Become a Fundi',
                   onPressed: _navigateToFundiApplication,
@@ -362,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
 
               // Fundi Application Status (for customers who applied)
-              if (authProvider.isCustomer) ...[
+              if (authService.currentUser?.isCustomer ?? false) ...[
                 _buildFundiApplicationStatus(),
                 const SizedBox(height: 16),
               ],

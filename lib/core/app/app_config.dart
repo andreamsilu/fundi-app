@@ -14,14 +14,14 @@ import '../../features/settings/providers/settings_provider.dart';
 /// Application configuration and setup
 /// Centralizes app initialization, providers, and theme configuration
 class AppConfig {
-  /// Initialize the application with all necessary services
-  static Future<void> initialize() async {
-    // Initialize environment variables
+  /// Initialize the application with lightweight configuration only
+  /// Heavy initialization is handled by AppInitializationService
+  static void initialize() {
+    // Initialize environment variables (lightweight, synchronous)
     EnvConfig.initialize();
 
-    // Initialize API client
-    // Note: ApiClient initialization is handled in main.dart
-    // This could be moved here if needed
+    // Note: Heavy initialization (API client, services) is now handled
+    // asynchronously by AppInitializationService to avoid blocking startup
   }
 
   /// Get the list of providers for the app

@@ -1,31 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'core/network/api_client.dart';
 import 'core/app/app_config.dart';
 import 'core/app/app_initializer.dart';
+import 'core/app/app_initialization_service.dart';
+import 'core/providers/lazy_provider_manager.dart';
 import 'core/routing/app_router.dart';
+import 'core/utils/startup_performance.dart';
 import 'features/auth/providers/auth_provider.dart';
-import 'features/job/providers/job_provider.dart';
-import 'features/portfolio/providers/portfolio_provider.dart';
-import 'features/messaging/providers/messaging_provider.dart';
-import 'features/search/providers/search_provider.dart';
-import 'features/notifications/providers/notification_provider.dart';
-import 'features/settings/providers/settings_provider.dart';
-import 'features/feeds/providers/feeds_provider.dart';
-import 'features/work_approval/providers/work_approval_provider.dart';
 
 /// Main entry point of the Fundi App
-/// Initializes the app with proper theme, providers, and routing
+/// Optimized for fast startup with minimal blocking operations
 void main() async {
+  // Mark startup milestone
+  StartupPerformance.markMilestone('app_start');
+
+  // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
+  StartupPerformance.markMilestone('flutter_binding_initialized');
 
-  // Initialize app configuration
-  await AppConfig.initialize();
+  // Initialize only lightweight configuration
+  AppConfig.initialize();
+  StartupPerformance.markMilestone('app_config_initialized');
 
-  // Initialize API client
-  await ApiClient().initialize();
+  // Start background initialization (non-blocking)
+  AppInitializationService.initializeAsync();
+  StartupPerformance.markMilestone('background_init_started');
 
+  // Run app immediately with splash screen
   runApp(const FundiApp());
+  StartupPerformance.markMilestone('runapp_called');
+
+  // Calculate and log startup performance
+  StartupPerformance.calculateDuration('app_start', 'runapp_called');
+  StartupPerformance.logPerformanceSummary();
 }
 
 class FundiApp extends StatelessWidget {
@@ -33,65 +40,8 @@ class FundiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Creating MultiProvider with providers
-
-    // Create providers directly for debugging
-    final providers = [
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating AuthProvider instance
-          return AuthProvider();
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating JobProvider instance
-          return JobProvider();
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating PortfolioProvider instance
-          return PortfolioProvider();
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating MessagingProvider instance
-          return MessagingProvider();
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating SearchProvider instance
-          return SearchProvider();
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating NotificationProvider instance
-          return NotificationProvider();
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating SettingsProvider instance
-          return SettingsProvider();
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating FeedsProvider instance
-          return FeedsProvider();
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (_) {
-          // Creating WorkApprovalProvider instance
-          return WorkApprovalProvider();
-        },
-      ),
-    ];
+    // Use all providers but with lazy loading for performance
+    final providers = LazyProviderManager.getProviders();
 
     return MultiProvider(
       providers: providers,

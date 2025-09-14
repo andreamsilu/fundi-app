@@ -4,6 +4,7 @@ import 'dart:async';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/constants/api_endpoints.dart';
+import '../../../core/constants/hardcoded_data.dart';
 import '../models/portfolio_model.dart';
 
 /// Feed data model for categories, skills, and locations
@@ -461,44 +462,12 @@ class PortfolioService {
 
   /// Get default skills list
   List<String> _getDefaultSkills() {
-    return [
-      'Plumbing',
-      'Electrical',
-      'Carpentry',
-      'Painting',
-      'Tiling',
-      'Roofing',
-      'Masonry',
-      'Welding',
-      'HVAC',
-      'Landscaping',
-      'Flooring',
-      'Insulation',
-      'Drywall',
-      'Concrete',
-      'Steel Work',
-    ];
+    return HardcodedData.portfolioSkills;
   }
 
   /// Get default locations list
   List<String> _getDefaultLocations() {
-    return [
-      'Dar es Salaam',
-      'Arusha',
-      'Mwanza',
-      'Dodoma',
-      'Tanga',
-      'Morogoro',
-      'Mbeya',
-      'Iringa',
-      'Tabora',
-      'Kigoma',
-      'Mtwara',
-      'Lindi',
-      'Ruvuma',
-      'Rukwa',
-      'Katavi',
-    ];
+    return HardcodedData.tanzaniaLocations;
   }
 
   /// Load feed data with retry mechanism

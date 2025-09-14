@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../auth/services/auth_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/animated_card.dart';
 import '../../../shared/widgets/loading_widget.dart';
@@ -12,8 +12,11 @@ import '../../profile/screens/profile_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../help/screens/help_screen.dart';
 import '../../fundi_application/screens/fundi_application_screen.dart';
+import '../../feeds/screens/fundi_feed_screen.dart';
+import '../../feeds/providers/feeds_provider.dart';
 import '../services/dashboard_service.dart';
 import '../models/dashboard_model.dart';
+import 'placeholder_screen.dart';
 
 /// Main dashboard screen with role-based navigation
 /// Provides different views for customers, fundis, and admins
@@ -40,73 +43,90 @@ class _MainDashboardState extends State<MainDashboard>
 
   @override
   void dispose() {
-    _fabAnimationController.dispose();
+    try {
+      _fabAnimationController.dispose();
+    } catch (e) {
+      print('Error disposing fab animation controller: $e');
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        return Scaffold(
-          drawer: _buildDrawer(authProvider),
-          appBar: _buildAppBar(authProvider),
-          body: IndexedStack(
-            index: _currentIndex,
-            children: _getScreens(authProvider),
-          ),
-          bottomNavigationBar: _buildBottomNavigationBar(authProvider),
-          floatingActionButton: _buildFloatingActionButton(authProvider),
-          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        );
-      },
+    final authService = AuthService();
+    return Scaffold(
+      drawer: _buildDrawer(authService),
+      appBar: _buildAppBar(authService),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _getScreens(authService),
+      ),
+      bottomNavigationBar: _buildBottomNavigationBar(authService),
+      floatingActionButton: _buildFloatingActionButton(authService),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   /// Get screens based on user role (customers and fundis only)
-  List<Widget> _getScreens(AuthProvider authProvider) {
-    if (authProvider.isCustomer) {
+  List<Widget> _getScreens(AuthService authService) {
+    if (authService.currentUser?.isCustomer ?? false) {
       return [
-        const JobListScreen(title: 'Available Jobs'), // Home - Available jobs
+        const JobListScreen(
+          title: 'Available Jobs',
+          showAppBar: false,
+        ), // Home - Available jobs
+        const FundiFeedScreen(), // Find Fundis
         const JobListScreen(
           title: 'My Jobs',
           showFilterButton: false,
+          showAppBar: false,
         ), // My Jobs - Posted jobs
-        const ProfileScreen(), // Profile
+        const ProfileScreen(showAppBar: false), // Profile
       ];
     } else {
       // Fundi
       return [
-        const JobListScreen(title: 'Find Jobs'), // Home - Available jobs
+        const JobListScreen(
+          title: 'Find Jobs',
+          showAppBar: false,
+        ), // Home - Available jobs
         const JobListScreen(
           title: 'Applied Jobs',
           showFilterButton: false,
+          showAppBar: false,
         ), // Applied Jobs - Applied jobs
-        const ProfileScreen(), // Profile
+        const ProfileScreen(showAppBar: false), // Profile
       ];
     }
   }
 
   /// Build dynamic AppBar based on current page
-  PreferredSizeWidget _buildAppBar(AuthProvider authProvider) {
+  PreferredSizeWidget _buildAppBar(AuthService authService) {
     String title;
 
     switch (_currentIndex) {
       case 0:
-        if (authProvider.isCustomer) {
+        if (authService.currentUser?.isCustomer ?? false) {
           title = 'Available Jobs';
         } else {
           title = 'Find Jobs';
         }
         break;
       case 1:
-        if (authProvider.isCustomer) {
-          title = 'My Jobs';
+        if (authService.currentUser?.isCustomer ?? false) {
+          title = 'Find Fundis';
         } else {
           title = 'Applied Jobs';
         }
         break;
       case 2:
+        if (authService.currentUser?.isCustomer ?? false) {
+          title = 'My Jobs';
+        } else {
+          title = 'Profile';
+        }
+        break;
+      case 3:
         title = 'Profile';
         break;
       default:
@@ -134,7 +154,7 @@ class _MainDashboardState extends State<MainDashboard>
   }
 
   /// Build bottom navigation bar
-  Widget _buildBottomNavigationBar(AuthProvider authProvider) {
+  Widget _buildBottomNavigationBar(AuthService authService) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.white,
@@ -159,19 +179,24 @@ class _MainDashboardState extends State<MainDashboard>
         unselectedItemColor: AppTheme.mediumGray,
         selectedFontSize: 12,
         unselectedFontSize: 12,
-        items: _getBottomNavItems(authProvider),
+        items: _getBottomNavItems(authService),
       ),
     );
   }
 
   /// Get bottom navigation items based on user role
-  List<BottomNavigationBarItem> _getBottomNavItems(AuthProvider authProvider) {
-    if (authProvider.isCustomer) {
+  List<BottomNavigationBarItem> _getBottomNavItems(AuthService authService) {
+    if (authService.currentUser?.isCustomer ?? false) {
       return [
         const BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
           activeIcon: Icon(Icons.home),
           label: 'Home',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.people_outline),
+          activeIcon: Icon(Icons.people),
+          label: 'Find Fundis',
         ),
         const BottomNavigationBarItem(
           icon: Icon(Icons.work_outline),
@@ -207,12 +232,12 @@ class _MainDashboardState extends State<MainDashboard>
   }
 
   /// Build drawer menu with additional options
-  Widget _buildDrawer(AuthProvider authProvider) {
+  Widget _buildDrawer(AuthService authService) {
     return Drawer(
       child: Column(
         children: [
           // Drawer Header
-          _buildDrawerHeader(authProvider),
+          _buildDrawerHeader(authService),
 
           // Drawer Items
           Expanded(
@@ -228,7 +253,7 @@ class _MainDashboardState extends State<MainDashboard>
                       title: 'View Portfolio',
                       onTap: () => _navigateToPortfolio(),
                     ),
-                    if (authProvider.isFundi) ...[
+                    if (authService.currentUser?.isFundi ?? false) ...[
                       _buildDrawerItem(
                         icon: Icons.add_circle_outline,
                         title: 'Add Portfolio',
@@ -244,14 +269,14 @@ class _MainDashboardState extends State<MainDashboard>
                 _buildDrawerSection(
                   title: 'Discover',
                   children: [
-                    if (authProvider.isCustomer) ...[
+                    if (authService.currentUser?.isCustomer ?? false) ...[
                       _buildDrawerItem(
                         icon: Icons.people_outline,
                         title: 'Find Fundis',
                         onTap: () => _navigateToFundiFeed(),
                       ),
                     ],
-                    if (authProvider.isFundi) ...[
+                    if (authService.currentUser?.isFundi ?? false) ...[
                       _buildDrawerItem(
                         icon: Icons.work_outline,
                         title: 'Find Jobs',
@@ -283,7 +308,7 @@ class _MainDashboardState extends State<MainDashboard>
                 const Divider(),
 
                 // Work Approval Section (for customers only)
-                if (authProvider.isCustomer) ...[
+                if (authService.currentUser?.isCustomer ?? false) ...[
                   _buildDrawerSection(
                     title: 'Work Management',
                     children: [
@@ -300,7 +325,7 @@ class _MainDashboardState extends State<MainDashboard>
                 const Divider(),
 
                 // Fundi Application Section (for customers only)
-                if (authProvider.isCustomer) ...[
+                if (authService.currentUser?.isCustomer ?? false) ...[
                   _buildDrawerSection(
                     title: 'Become a Fundi',
                     children: [
@@ -337,7 +362,7 @@ class _MainDashboardState extends State<MainDashboard>
                 _buildDrawerItem(
                   icon: Icons.logout,
                   title: 'Logout',
-                  onTap: () => _handleLogout(authProvider),
+                  onTap: () => _handleLogout(authService),
                   isDestructive: true,
                 ),
               ],
@@ -349,8 +374,8 @@ class _MainDashboardState extends State<MainDashboard>
   }
 
   /// Build drawer header with user info
-  Widget _buildDrawerHeader(AuthProvider authProvider) {
-    final user = authProvider.user;
+  Widget _buildDrawerHeader(AuthService authService) {
+    final user = authService.currentUser;
     return UserAccountsDrawerHeader(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -440,8 +465,8 @@ class _MainDashboardState extends State<MainDashboard>
   }
 
   /// Build floating action button based on user role
-  Widget? _buildFloatingActionButton(AuthProvider authProvider) {
-    if (authProvider.isCustomer) {
+  Widget? _buildFloatingActionButton(AuthService authService) {
+    if (authService.currentUser?.isCustomer ?? false) {
       return FloatingActionButton(
         heroTag: "main_dashboard_fab_customer",
         onPressed: () {
@@ -489,66 +514,228 @@ class _MainDashboardState extends State<MainDashboard>
 
   /// Navigate to portfolio screen
   void _navigateToPortfolio() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const PortfolioScreen()),
-    );
+    try {
+      print('MainDashboard: Navigating to portfolio screen');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PortfolioScreen()),
+      );
+      print('MainDashboard: Portfolio navigation successful');
+    } catch (e) {
+      print('MainDashboard: Portfolio navigation error: $e');
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Portfolio',
+            message:
+                'Portfolio feature is coming soon! You\'ll be able to view and manage your work portfolio here.',
+            icon: Icons.work_outline,
+          ),
+        ),
+      );
+    }
   }
 
   /// Navigate to messages screen
   void _navigateToMessages() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ChatListScreen()),
-    );
+    try {
+      print('MainDashboard: Navigating to messages screen');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ChatListScreen()),
+      );
+      print('MainDashboard: Messages navigation successful');
+    } catch (e) {
+      print('MainDashboard: Messages navigation error: $e');
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Messages',
+            message:
+                'Messaging feature is coming soon! You\'ll be able to chat with fundis and customers here.',
+            icon: Icons.message_outlined,
+          ),
+        ),
+      );
+    }
   }
 
   /// Navigate to notifications screen
   void _navigateToNotifications() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-    );
+    try {
+      print('MainDashboard: Navigating to notifications screen');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+      );
+      print('MainDashboard: Notifications navigation successful');
+    } catch (e) {
+      print('MainDashboard: Notifications navigation error: $e');
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Notifications',
+            message:
+                'Notifications feature is coming soon! You\'ll receive updates about jobs and messages here.',
+            icon: Icons.notifications_outlined,
+          ),
+        ),
+      );
+    }
   }
 
   /// Navigate to settings screen
   void _navigateToSettings() {
-    Navigator.pushNamed(context, '/settings');
+    try {
+      print('MainDashboard: Navigating to settings screen');
+      Navigator.pushNamed(context, '/settings');
+      print('MainDashboard: Settings navigation successful');
+    } catch (e) {
+      print('MainDashboard: Settings navigation error: $e');
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Settings',
+            message:
+                'Settings feature is coming soon! You\'ll be able to customize your app preferences here.',
+            icon: Icons.settings_outlined,
+          ),
+        ),
+      );
+    }
   }
 
   /// Navigate to help screen
   void _navigateToHelp() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const HelpScreen()),
-    );
+    try {
+      print('MainDashboard: Navigating to help screen');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const HelpScreen()),
+      );
+      print('MainDashboard: Help navigation successful');
+    } catch (e) {
+      print('MainDashboard: Help navigation error: $e');
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Help & Support',
+            message:
+                'Help feature is coming soon! You\'ll find FAQs and support options here.',
+            icon: Icons.help_outline,
+          ),
+        ),
+      );
+    }
   }
 
   /// Navigate to fundi application screen
   void _navigateToFundiApplication() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const FundiApplicationScreen()),
-    );
+    try {
+      print('MainDashboard: Navigating to fundi application screen');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const FundiApplicationScreen()),
+      );
+      print('MainDashboard: Fundi application navigation successful');
+    } catch (e) {
+      print('MainDashboard: Fundi application navigation error: $e');
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Become a Fundi',
+            message:
+                'Fundi application feature is coming soon! You\'ll be able to apply to become a fundi here.',
+            icon: Icons.build_circle,
+          ),
+        ),
+      );
+    }
   }
 
   /// Navigate to fundi feed screen
   void _navigateToFundiFeed() {
-    Navigator.pushNamed(context, '/fundi-feed');
+    try {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const FundiFeedScreen()),
+      );
+    } catch (e) {
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Find Fundis',
+            message:
+                'Fundi discovery feature is coming soon! You\'ll be able to browse and find skilled fundis here.',
+            icon: Icons.people_outline,
+          ),
+        ),
+      );
+    }
   }
 
   /// Navigate to job feed screen
   void _navigateToJobFeed() {
-    Navigator.pushNamed(context, '/job-feed');
+    try {
+      print('MainDashboard: Navigating to job feed screen');
+      Navigator.pushNamed(context, '/job-feed');
+      print('MainDashboard: Job feed navigation successful');
+    } catch (e) {
+      print('MainDashboard: Job feed navigation error: $e');
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Job Feed',
+            message:
+                'Job feed feature is coming soon! You\'ll be able to browse available jobs here.',
+            icon: Icons.work_outline,
+          ),
+        ),
+      );
+    }
   }
 
   /// Navigate to work approval screen
   void _navigateToWorkApproval() {
-    Navigator.pushNamed(context, '/work-approval');
+    try {
+      print('MainDashboard: Navigating to work approval screen');
+      Navigator.pushNamed(context, '/work-approval');
+      print('MainDashboard: Work approval navigation successful');
+    } catch (e) {
+      print('MainDashboard: Work approval navigation error: $e');
+      // Show placeholder screen instead of error
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PlaceholderScreen(
+            title: 'Work Approval',
+            message:
+                'Work approval feature is coming soon! You\'ll be able to approve completed work here.',
+            icon: Icons.approval,
+          ),
+        ),
+      );
+    }
   }
 
   /// Handle logout
-  void _handleLogout(AuthProvider authProvider) {
+  void _handleLogout(AuthService authService) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -563,7 +750,7 @@ class _MainDashboardState extends State<MainDashboard>
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                await authProvider.logout();
+                await authService.logout();
                 if (mounted) {
                   Navigator.of(context).pushReplacementNamed('/login');
                 }
@@ -615,7 +802,11 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    try {
+      _fadeController.dispose();
+    } catch (e) {
+      print('Error disposing fade controller: $e');
+    }
     super.dispose();
   }
 
@@ -662,35 +853,14 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Dashboard'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationsScreen(),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          body: FadeTransition(
-            opacity: _fadeAnimation,
-            child: _buildBody(context, authProvider),
-          ),
-        );
-      },
+    final authService = AuthService();
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: _buildBody(context, authService),
     );
   }
 
-  Widget _buildBody(BuildContext context, AuthProvider authProvider) {
+  Widget _buildBody(BuildContext context, AuthService authService) {
     if (_isLoading) {
       return const Center(
         child: LoadingWidget(message: 'Loading dashboard...', size: 50),
@@ -727,18 +897,18 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildQuickStats(context, authProvider),
+            _buildQuickStats(context, authService),
             const SizedBox(height: 24),
-            _buildQuickActions(context, authProvider),
+            _buildQuickActions(context, authService),
             const SizedBox(height: 24),
-            _buildRecentActivity(context, authProvider),
+            _buildRecentActivity(context, authService),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQuickStats(BuildContext context, AuthProvider authProvider) {
+  Widget _buildQuickStats(BuildContext context, AuthService authService) {
     final dashboard = _dashboardData ?? DashboardModel.empty();
 
     return AnimatedCard(
@@ -846,7 +1016,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, AuthProvider authProvider) {
+  Widget _buildQuickActions(BuildContext context, AuthService authService) {
     return AnimatedCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -856,7 +1026,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 16),
-          if (authProvider.isCustomer) ...[
+          if (authService.currentUser?.isCustomer ?? false) ...[
             _buildActionButton(
               context,
               'Post New Job',
@@ -876,7 +1046,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
                 // TODO: Navigate to fundi search
               },
             ),
-          ] else if (authProvider.isFundi) ...[
+          ] else if (authService.currentUser?.isFundi ?? false) ...[
             _buildActionButton(
               context,
               'Find Jobs',
@@ -943,7 +1113,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
     );
   }
 
-  Widget _buildRecentActivity(BuildContext context, AuthProvider authProvider) {
+  Widget _buildRecentActivity(BuildContext context, AuthService authService) {
     return AnimatedCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -42,9 +42,17 @@ class AuthService {
         final token = userData['token'] as String;
         final user = UserModel.fromJson(userData);
 
+        print('AuthService: Login successful, saving token and user data');
+        print('AuthService: Token length: ${token.length}');
+        print('AuthService: User ID: ${user.id}');
+
         // Save session with token and user data
         await _sessionManager.saveToken(token);
         await _sessionManager.saveUser(user);
+
+        // Verify the session was saved
+        final isAuthenticated = _sessionManager.isAuthenticated;
+        print('AuthService: Session saved - isAuthenticated: $isAuthenticated');
 
         Logger.userAction('Login successful', data: {'userId': user.id});
 
@@ -76,10 +84,7 @@ class AuthService {
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.register,
-        {
-          'phone': phoneNumber, 
-          'password': password
-        },
+        {'phone': phoneNumber, 'password': password},
         {},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -297,12 +302,16 @@ class AuthService {
         data: {'phoneNumber': phoneNumber, 'type': type.name},
       );
 
-      final response = await _apiClient
-          .post<Map<String, dynamic>>(ApiEndpoints.authSendOtp, {
-            'phone_number': phoneNumber,
-            'type': type.name,
-            if (userId != null) 'user_id': userId.toString(),
-          }, {}, fromJson: (data) => data as Map<String, dynamic>);
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiEndpoints.authSendOtp,
+        {
+          'phone_number': phoneNumber,
+          'type': type.name,
+          if (userId != null) 'user_id': userId.toString(),
+        },
+        {},
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
 
       if (response.success) {
         Logger.userAction('OTP sent successfully');
@@ -333,13 +342,17 @@ class AuthService {
         data: {'phoneNumber': phoneNumber, 'type': type.name},
       );
 
-      final response = await _apiClient
-          .post<Map<String, dynamic>>(ApiEndpoints.authVerifyOtp, {
-            'phone_number': phoneNumber,
-            'otp': otp,
-            'type': type.name,
-            if (userId != null) 'user_id': userId.toString(),
-          }, {}, fromJson: (data) => data as Map<String, dynamic>);
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiEndpoints.authVerifyOtp,
+        {
+          'phone_number': phoneNumber,
+          'otp': otp,
+          'type': type.name,
+          if (userId != null) 'user_id': userId.toString(),
+        },
+        {},
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
 
       if (response.success && response.data != null) {
         // For registration, save session
@@ -391,11 +404,10 @@ class AuthService {
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.authResetPassword,
-        {
-          'phone_number': phoneNumber,
-          'otp': otp,
-            'new_password': newPassword,
-          }, {},  fromJson: (data) => data as Map<String, dynamic>);
+        {'phone_number': phoneNumber, 'otp': otp, 'new_password': newPassword},
+        {},
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
 
       if (response.success) {
         Logger.userAction('Password reset successful');

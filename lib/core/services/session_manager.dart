@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../utils/logger.dart';
@@ -23,7 +24,7 @@ class SessionManager {
     try {
       _prefs = await SharedPreferences.getInstance();
       _authToken = _prefs?.getString(AppConstants.tokenKey);
-      
+
       final userDataString = _prefs?.getString(AppConstants.userKey);
       if (userDataString != null) {
         final userData = jsonDecode(userDataString) as Map<String, dynamic>;
@@ -31,12 +32,20 @@ class SessionManager {
       }
 
       _isInitialized = true;
-      Logger.info('Session manager initialized', data: {
-        'hasToken': _authToken != null,
-        'hasUser': _currentUser != null,
-      });
+      Logger.info(
+        'Session manager initialized',
+        data: {
+          'hasToken': _authToken != null,
+          'hasUser': _currentUser != null,
+          'isAuthenticated': isAuthenticated,
+        },
+      );
+      debugPrint(
+        'SessionManager: Initialized - hasToken: ${_authToken != null}, hasUser: ${_currentUser != null}, isAuthenticated: $isAuthenticated',
+      );
     } catch (e) {
       Logger.error('Failed to initialize session manager', error: e);
+      debugPrint('SessionManager: Initialization failed - $e');
       _isInitialized = false;
     }
   }
@@ -58,9 +67,17 @@ class SessionManager {
     try {
       _authToken = token;
       await _prefs?.setString(AppConstants.tokenKey, token);
-      Logger.auth('Token saved successfully');
+      Logger.auth(
+        'Token saved successfully',
+        data: {
+          'tokenLength': token.length,
+          'tokenPreview': token.substring(0, 10) + '...',
+        },
+      );
+      debugPrint('SessionManager: Token saved - length: ${token.length}');
     } catch (e) {
       Logger.error('Failed to save token', error: e);
+      debugPrint('SessionManager: Failed to save token - $e');
       throw Exception('Failed to save authentication token');
     }
   }
@@ -71,10 +88,10 @@ class SessionManager {
       _currentUser = user;
       final userJson = jsonEncode(user.toJson());
       await _prefs?.setString(AppConstants.userKey, userJson);
-      Logger.auth('User data saved successfully', data: {
-        'userId': user.id,
-        'userType': user.userType,
-      });
+      Logger.auth(
+        'User data saved successfully',
+        data: {'userId': user.id, 'userType': user.userType},
+      );
     } catch (e) {
       Logger.error('Failed to save user data', error: e);
       throw Exception('Failed to save user data');
@@ -82,20 +99,22 @@ class SessionManager {
   }
 
   /// Save session (token and user data)
-  Future<void> saveSession({required String token, required UserModel user}) async {
+  Future<void> saveSession({
+    required String token,
+    required UserModel user,
+  }) async {
     try {
       await saveToken(token);
       await saveUser(user);
-      Logger.auth('Session saved successfully', data: {
-        'userId': user.id,
-        'userType': user.userType,
-      });
+      Logger.auth(
+        'Session saved successfully',
+        data: {'userId': user.id, 'userType': user.userType},
+      );
     } catch (e) {
       Logger.error('Failed to save session', error: e);
       throw Exception('Failed to save session');
     }
   }
-
 
   /// Update user data
   Future<void> updateUser(UserModel user) async {
@@ -103,10 +122,10 @@ class SessionManager {
       _currentUser = user;
       final userJson = jsonEncode(user.toJson());
       await _prefs?.setString(AppConstants.userKey, userJson);
-      Logger.auth('User data updated successfully', data: {
-        'userId': user.id,
-        'userType': user.userType,
-      });
+      Logger.auth(
+        'User data updated successfully',
+        data: {'userId': user.id, 'userType': user.userType},
+      );
     } catch (e) {
       Logger.error('Failed to update user data', error: e);
       throw Exception('Failed to update user data');
@@ -134,11 +153,6 @@ class SessionManager {
     // Implementation depends on your navigation setup
   }
 
-
-
-
-
-
   /// Get token information for debugging
   Map<String, dynamic> getTokenInfo() {
     try {
@@ -151,7 +165,6 @@ class SessionManager {
       return {'error': e.toString()};
     }
   }
-
 
   /// Get stored theme mode
   String? getThemeMode() {
@@ -185,10 +198,7 @@ class SessionManager {
 
   /// Get user preferences
   Map<String, dynamic> getUserPreferences() {
-    return {
-      'theme': getThemeMode(),
-      'language': getLanguage(),
-    };
+    return {'theme': getThemeMode(), 'language': getLanguage()};
   }
 
   /// Save user preferences

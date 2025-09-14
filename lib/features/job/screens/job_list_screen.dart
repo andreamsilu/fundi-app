@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/job_model.dart';
-import '../services/job_service.dart';
+import '../providers/job_provider.dart';
 import '../../dashboard/services/dashboard_service.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../auth/services/auth_service.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/hardcoded_data.dart';
 import '../widgets/job_card.dart';
 
 /// Screen displaying a list of available jobs
@@ -16,8 +17,14 @@ import '../widgets/job_card.dart';
 class JobListScreen extends StatefulWidget {
   final String? title;
   final bool showFilterButton;
+  final bool showAppBar;
 
-  const JobListScreen({super.key, this.title, this.showFilterButton = true});
+  const JobListScreen({
+    super.key,
+    this.title,
+    this.showFilterButton = true,
+    this.showAppBar = true,
+  });
 
   @override
   State<JobListScreen> createState() => _JobListScreenState();
@@ -88,6 +95,10 @@ class _JobListScreenState extends State<JobListScreen>
     });
 
     try {
+      print(
+        'JobListScreen: Loading jobs - page: $_currentPage, category: $_selectedCategory, location: $_selectedLocation',
+      );
+
       final result = await JobService().getJobs(
         page: _currentPage,
         category: _selectedCategory,
@@ -95,6 +106,10 @@ class _JobListScreenState extends State<JobListScreen>
         search: _searchController.text.isNotEmpty
             ? _searchController.text
             : null,
+      );
+
+      print(
+        'JobListScreen: Jobs loaded - success: ${result.success}, count: ${result.jobs.length}',
       );
 
       if (result.success) {
@@ -107,14 +122,23 @@ class _JobListScreenState extends State<JobListScreen>
           _totalPages = result.totalPages;
           _errorMessage = null;
         });
+
+        // If no jobs found and this is the first page, show a helpful message
+        if (result.jobs.isEmpty && _currentPage == 1) {
+          print('JobListScreen: No jobs found on first page');
+        }
       } else {
+        print('JobListScreen: Job loading failed: ${result.message}');
         setState(() {
-          _errorMessage = result.message;
+          _errorMessage =
+              result.message ?? 'Failed to load jobs. Please try again.';
         });
       }
     } catch (e) {
+      print('JobListScreen: Job loading error: $e');
       setState(() {
-        _errorMessage = 'Failed to load jobs. Please try again.';
+        _errorMessage =
+            'Failed to load jobs. Please check your connection and try again.';
       });
     } finally {
       setState(() {
@@ -132,6 +156,8 @@ class _JobListScreenState extends State<JobListScreen>
 
     try {
       _currentPage++;
+      print('JobListScreen: Loading more jobs - page: $_currentPage');
+
       final result = await JobService().getJobs(
         page: _currentPage,
         category: _selectedCategory,
@@ -142,11 +168,16 @@ class _JobListScreenState extends State<JobListScreen>
       );
 
       if (result.success) {
+        print('JobListScreen: More jobs loaded - count: ${result.jobs.length}');
         setState(() {
           _jobs.addAll(result.jobs);
         });
+      } else {
+        print('JobListScreen: Load more jobs failed: ${result.message}');
+        _currentPage--; // Revert page increment on error
       }
     } catch (e) {
+      print('JobListScreen: Load more jobs error: $e');
       _currentPage--; // Revert page increment on error
     } finally {
       setState(() {
@@ -168,17 +199,9 @@ class _JobListScreenState extends State<JobListScreen>
     // Use hardcoded categories for now to ensure they always load
     if (mounted) {
       setState(() {
-        _categories = [
-          const JobCategory(id: 'plumbing', name: 'Plumbing'),
-          const JobCategory(id: 'electrical', name: 'Electrical'),
-          const JobCategory(id: 'carpentry', name: 'Carpentry'),
-          const JobCategory(id: 'painting', name: 'Painting'),
-          const JobCategory(id: 'cleaning', name: 'Cleaning'),
-          const JobCategory(id: 'gardening', name: 'Gardening'),
-          const JobCategory(id: 'repair', name: 'Repair'),
-          const JobCategory(id: 'installation', name: 'Installation'),
-          const JobCategory(id: 'other', name: 'Other'),
-        ];
+        _categories = HardcodedData.jobCategories
+            .map((cat) => JobCategory(id: cat['id']!, name: cat['name']!))
+            .toList();
         _isLoadingCategories = false;
         print('Loaded hardcoded categories: ${_categories.length}');
       });
@@ -234,8 +257,8 @@ class _JobListScreenState extends State<JobListScreen>
   }
 
   Future<void> _applyForJob(JobModel job) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isFundi) {
+    final authService = AuthService();
+    if (!(authService.currentUser?.isFundi ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Only fundis can apply for jobs'),
@@ -246,7 +269,10 @@ class _JobListScreenState extends State<JobListScreen>
     }
 
     // Check if user has already applied for this job
-    if (await _hasUserAppliedForJob(job.id, authProvider.user!.id)) {
+    if (await _hasUserAppliedForJob(
+      job.id,
+      authService.currentUser?.id ?? '',
+    )) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('You have already applied for this job'),
@@ -280,7 +306,7 @@ class _JobListScreenState extends State<JobListScreen>
 
       try {
         final applicationResult = await JobService().applyForJob(
-          authProvider.user!.id,
+          authService.currentUser?.id ?? '',
           jobId: job.id,
           message: result['message'],
           proposedBudget: result['proposedBudget'],
@@ -363,16 +389,18 @@ class _JobListScreenState extends State<JobListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title ?? 'Available Jobs'),
-        actions: [
-          IconButton(
-            onPressed: _showLocationFilterDialog,
-            icon: const Icon(Icons.location_on_outlined),
-            tooltip: 'Filter by Location',
-          ),
-        ],
-      ),
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: Text(widget.title ?? 'Available Jobs'),
+              actions: [
+                IconButton(
+                  onPressed: _showLocationFilterDialog,
+                  icon: const Icon(Icons.location_on_outlined),
+                  tooltip: 'Filter by Location',
+                ),
+              ],
+            )
+          : null,
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: Column(
@@ -577,10 +605,12 @@ class _JobListScreenState extends State<JobListScreen>
           final job = _jobs[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Consumer<AuthProvider>(
-              builder: (context, authProvider, child) {
+            child: Builder(
+              builder: (context) {
+                final authService = AuthService();
                 final shouldShowApplyButton =
-                    authProvider.isFundi && job.status.toLowerCase() == 'open';
+                    (authService.currentUser?.isFundi ?? false) &&
+                    job.status.toLowerCase() == 'open';
 
                 return JobCard(
                   job: job,
@@ -647,17 +677,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
             _categories = result.categories!;
           } else {
             // Fallback to hardcoded categories if API fails
-            _categories = [
-              const JobCategory(id: 'plumbing', name: 'Plumbing'),
-              const JobCategory(id: 'electrical', name: 'Electrical'),
-              const JobCategory(id: 'carpentry', name: 'Carpentry'),
-              const JobCategory(id: 'painting', name: 'Painting'),
-              const JobCategory(id: 'cleaning', name: 'Cleaning'),
-              const JobCategory(id: 'gardening', name: 'Gardening'),
-              const JobCategory(id: 'repair', name: 'Repair'),
-              const JobCategory(id: 'installation', name: 'Installation'),
-              const JobCategory(id: 'other', name: 'Other'),
-            ];
+            _categories = HardcodedData.jobCategories
+                .map((cat) => JobCategory(id: cat['id']!, name: cat['name']!))
+                .toList();
           }
           _isLoadingCategories = false;
         });
@@ -666,17 +688,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
       if (mounted) {
         setState(() {
           // Fallback to hardcoded categories
-          _categories = [
-            const JobCategory(id: 'plumbing', name: 'Plumbing'),
-            const JobCategory(id: 'electrical', name: 'Electrical'),
-            const JobCategory(id: 'carpentry', name: 'Carpentry'),
-            const JobCategory(id: 'painting', name: 'Painting'),
-            const JobCategory(id: 'cleaning', name: 'Cleaning'),
-            const JobCategory(id: 'gardening', name: 'Gardening'),
-            const JobCategory(id: 'repair', name: 'Repair'),
-            const JobCategory(id: 'installation', name: 'Installation'),
-            const JobCategory(id: 'other', name: 'Other'),
-          ];
+          _categories = HardcodedData.jobCategories
+              .map((cat) => JobCategory(id: cat['id']!, name: cat['name']!))
+              .toList();
           _isLoadingCategories = false;
         });
       }

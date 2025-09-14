@@ -82,7 +82,8 @@ class FeedsProvider extends ChangeNotifier {
   String? get metadataError => _metadataError;
   DateTime? get lastMetadataUpdate => _lastMetadataUpdate;
   bool get hasMetadataError => _metadataError != null;
-  bool get isMetadataStale => _lastMetadataUpdate == null || 
+  bool get isMetadataStale =>
+      _lastMetadataUpdate == null ||
       DateTime.now().difference(_lastMetadataUpdate!).inMinutes > 5;
 
   /// Initialize feeds data
@@ -107,28 +108,36 @@ class FeedsProvider extends ChangeNotifier {
     int attempts = 0;
     while (attempts < maxRetries) {
       try {
-        final result = await _feedsService.getFundis(
-          page: _fundisCurrentPage,
-          searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
-          location: _selectedLocation,
-          skills: _selectedSkills.isNotEmpty ? _selectedSkills : null,
-          minRating: _minRating,
-          isAvailable: _isAvailable,
-          isVerified: _isVerified,
-        ).timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => throw TimeoutException('Fundis loading timed out'),
-        );
+        final result = await _feedsService
+            .getFundis(
+              page: _fundisCurrentPage,
+              searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+              location: _selectedLocation,
+              skills: _selectedSkills.isNotEmpty ? _selectedSkills : null,
+              minRating: _minRating,
+              isAvailable: _isAvailable,
+              isVerified: _isVerified,
+            )
+            .timeout(
+              const Duration(seconds: 30),
+              onTimeout: () =>
+                  throw TimeoutException('Fundis loading timed out'),
+            );
 
         if (result['success']) {
-          final newFundis = result['fundis'] as List<FundiModel>;
+          final fundisData = result['fundis'] as List<dynamic>;
+          final newFundis = fundisData
+              .map((json) => FundiModel.fromJson(json as Map<String, dynamic>))
+              .toList();
+
           if (refresh) {
             _fundis = newFundis;
           } else {
             _fundis.addAll(newFundis);
           }
 
-          final pagination = result['pagination'] as Map<String, dynamic>;
+          final paginationData = result['pagination'] as Map<dynamic, dynamic>;
+          final pagination = Map<String, dynamic>.from(paginationData);
           _hasMoreFundis = pagination['hasNextPage'] ?? false;
           _fundisCurrentPage++;
           _fundisError = null;
@@ -171,10 +180,14 @@ class FeedsProvider extends ChangeNotifier {
       );
 
       if (result['success']) {
-        final newFundis = result['fundis'] as List<FundiModel>;
+        final fundisData = result['fundis'] as List<dynamic>;
+        final newFundis = fundisData
+            .map((json) => FundiModel.fromJson(json as Map<String, dynamic>))
+            .toList();
         _fundis.addAll(newFundis);
 
-        final pagination = result['pagination'] as Map<String, dynamic>;
+        final paginationData = result['pagination'] as Map<dynamic, dynamic>;
+        final pagination = Map<String, dynamic>.from(paginationData);
         _hasMoreFundis = pagination['hasNextPage'] ?? false;
         _fundisCurrentPage++;
       }
@@ -203,28 +216,35 @@ class FeedsProvider extends ChangeNotifier {
     int attempts = 0;
     while (attempts < maxRetries) {
       try {
-        final result = await _feedsService.getJobs(
-          page: _jobsCurrentPage,
-          searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
-          category: _selectedCategory,
-          location: _selectedLocation,
-          minBudget: _minBudget,
-          maxBudget: _maxBudget,
-          isUrgent: _isUrgent,
-        ).timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => throw TimeoutException('Jobs loading timed out'),
-        );
+        final result = await _feedsService
+            .getJobs(
+              page: _jobsCurrentPage,
+              searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+              category: _selectedCategory,
+              location: _selectedLocation,
+              minBudget: _minBudget,
+              maxBudget: _maxBudget,
+              isUrgent: _isUrgent,
+            )
+            .timeout(
+              const Duration(seconds: 30),
+              onTimeout: () => throw TimeoutException('Jobs loading timed out'),
+            );
 
         if (result['success']) {
-          final newJobs = result['jobs'] as List<JobModel>;
+          final jobsData = result['jobs'] as List<dynamic>;
+          final newJobs = jobsData
+              .map((json) => JobModel.fromJson(json as Map<String, dynamic>))
+              .toList();
+
           if (refresh) {
             _jobs = newJobs;
           } else {
             _jobs.addAll(newJobs);
           }
 
-          final pagination = result['pagination'] as Map<String, dynamic>;
+          final paginationData = result['pagination'] as Map<dynamic, dynamic>;
+          final pagination = Map<String, dynamic>.from(paginationData);
           _hasMoreJobs = pagination['hasNextPage'] ?? false;
           _jobsCurrentPage++;
           _jobsError = null;
@@ -267,10 +287,14 @@ class FeedsProvider extends ChangeNotifier {
       );
 
       if (result['success']) {
-        final newJobs = result['jobs'] as List<JobModel>;
+        final jobsData = result['jobs'] as List<dynamic>;
+        final newJobs = jobsData
+            .map((json) => JobModel.fromJson(json as Map<String, dynamic>))
+            .toList();
         _jobs.addAll(newJobs);
 
-        final pagination = result['pagination'] as Map<String, dynamic>;
+        final paginationData = result['pagination'] as Map<dynamic, dynamic>;
+        final pagination = Map<String, dynamic>.from(paginationData);
         _hasMoreJobs = pagination['hasNextPage'] ?? false;
         _jobsCurrentPage++;
       }
@@ -292,14 +316,16 @@ class FeedsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final results = await Future.wait([
-        _feedsService.getJobCategories(),
-        _feedsService.getSkills(),
-        _feedsService.getLocations(),
-      ]).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException('Metadata loading timed out'),
-      );
+      final results =
+          await Future.wait([
+            _feedsService.getJobCategories(),
+            _feedsService.getSkills(),
+            _feedsService.getLocations(),
+          ]).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () =>
+                throw TimeoutException('Metadata loading timed out'),
+          );
 
       bool hasAnyData = false;
       String? errorMessage;
@@ -317,7 +343,8 @@ class FeedsProvider extends ChangeNotifier {
         _skills = List<String>.from(results[1]['skills']);
         hasAnyData = true;
       } else {
-        errorMessage = errorMessage ?? results[1]['message'] ?? 'Failed to load skills';
+        errorMessage =
+            errorMessage ?? results[1]['message'] ?? 'Failed to load skills';
       }
 
       // Process locations
@@ -325,7 +352,8 @@ class FeedsProvider extends ChangeNotifier {
         _locations = List<String>.from(results[2]['locations']);
         hasAnyData = true;
       } else {
-        errorMessage = errorMessage ?? results[2]['message'] ?? 'Failed to load locations';
+        errorMessage =
+            errorMessage ?? results[2]['message'] ?? 'Failed to load locations';
       }
 
       if (hasAnyData) {
@@ -505,7 +533,8 @@ class FeedsProvider extends ChangeNotifier {
     // TODO: Implement job application logic or move to JobApplicationService
     return {
       'success': false,
-      'message': 'Job application functionality not implemented in FeedsService',
+      'message':
+          'Job application functionality not implemented in FeedsService',
     };
   }
 
@@ -520,19 +549,19 @@ class FeedsProvider extends ChangeNotifier {
   /// Retry failed operations
   Future<void> retryFailedOperations() async {
     final futures = <Future<void>>[];
-    
+
     if (_fundisError != null) {
       futures.add(loadFundis(refresh: true));
     }
-    
+
     if (_jobsError != null) {
       futures.add(loadJobs(refresh: true));
     }
-    
+
     if (_metadataError != null) {
       futures.add(loadMetadata(forceRefresh: true));
     }
-    
+
     if (futures.isNotEmpty) {
       await Future.wait(futures);
     }
@@ -547,10 +576,12 @@ class FeedsProvider extends ChangeNotifier {
   }
 
   /// Check if any data is loading
-  bool get isAnyLoading => _isLoadingFundis || _isLoadingJobs || _isLoadingMetadata;
+  bool get isAnyLoading =>
+      _isLoadingFundis || _isLoadingJobs || _isLoadingMetadata;
 
   /// Check if any data has errors
-  bool get hasAnyError => _fundisError != null || _jobsError != null || _metadataError != null;
+  bool get hasAnyError =>
+      _fundisError != null || _jobsError != null || _metadataError != null;
 
   /// Get all errors as a list
   List<String> get allErrors {

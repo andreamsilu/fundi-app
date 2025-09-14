@@ -21,11 +21,26 @@ class ProfileService {
       // Use the correct endpoint - get current user profile
       final response = await _apiClient.get<Map<String, dynamic>>(
         ApiEndpoints.userMe,
-        fromJson: (data) => data as Map<String, dynamic>,
+        fromJson: (data) {
+          // Handle different response structures
+          if (data is Map<String, dynamic>) {
+            return data;
+          } else if (data is List && data.isNotEmpty) {
+            // If it's a list, take the first item
+            return data.first as Map<String, dynamic>;
+          } else {
+            throw Exception('Unexpected response format: ${data.runtimeType}');
+          }
+        },
       );
 
       if (response.success && response.data != null) {
-        return ProfileModel.fromJson(response.data!);
+        try {
+          return ProfileModel.fromJson(response.data!);
+        } catch (parseError) {
+          Logger.error('Profile parsing error', error: parseError);
+          return null;
+        }
       }
 
       return null;
