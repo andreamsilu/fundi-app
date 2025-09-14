@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fundi/features/job/services/job_service.dart';
 import 'package:provider/provider.dart';
 import '../models/job_model.dart';
 import '../providers/job_provider.dart';
