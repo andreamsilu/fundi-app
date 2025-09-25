@@ -137,3 +137,4 @@ flutter run --profile --verbose
 - **80% fewer skipped frames**
 - **60% less memory usage at startup**
 
+

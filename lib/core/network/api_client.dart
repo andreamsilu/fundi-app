@@ -37,6 +37,22 @@ class ApiClient {
     _dio.interceptors.add(_createAuthInterceptor());
     _dio.interceptors.add(_createLoggingInterceptor());
     _dio.interceptors.add(_createErrorInterceptor());
+    // Console network logs (requests/responses/bodies)
+    _dio.interceptors.add(
+      LogInterceptor(
+        request: true,
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: false,
+        responseBody: true,
+        error: true,
+        logPrint: (obj) {
+          // Ensure logs show in console
+          // ignore: avoid_print
+          print(obj);
+        },
+      ),
+    );
 
     // Initialize session manager
     await _sessionManager.initialize();
@@ -236,7 +252,8 @@ class ApiClient {
     try {
       final response = await _dio.post(
         path,
-        data: map,
+        // Prefer requestData if provided; fall back to map for backwards compat
+        data: (requestData.isNotEmpty) ? requestData : map,
         queryParameters: queryParameters,
         options: options,
       );

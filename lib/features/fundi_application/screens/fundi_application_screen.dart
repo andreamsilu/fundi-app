@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/fundi_application_model.dart';
 import '../services/fundi_application_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../shared/widgets/button_widget.dart';
@@ -78,7 +77,10 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
   void initState() {
     super.initState();
     _setupAnimations();
-    _loadUserData();
+    // Defer until after first frame to ensure providers are in scope
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserDataSafe();
+    });
   }
 
   void _setupAnimations() {
@@ -95,12 +97,10 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     _fadeController.forward();
     _slideController.forward();
@@ -120,14 +120,21 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
     super.dispose();
   }
 
-  void _loadUserData() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
-
-    if (user != null) {
-      _fullNameController.text = user.fullName ?? '';
-      _phoneController.text = user.phone;
-      _emailController.text = user.email ?? '';
+  void _loadUserDataSafe() {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.user;
+      if (user != null) {
+        _fullNameController.text = user.fullName ?? '';
+        _phoneController.text = user.phone;
+        _emailController.text = user.email ?? '';
+      }
+    } catch (e) {
+      // AuthProvider not found in scope; proceed with empty fields
+      Logger.info(
+        'AuthProvider not available for FundiApplicationScreen',
+        data: {'error': e.toString()},
+      );
     }
   }
 
@@ -231,10 +238,7 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: _buildBody(),
-        ),
+        child: SlideTransition(position: _slideAnimation, child: _buildBody()),
       ),
     );
   }
@@ -311,7 +315,9 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email address';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Please enter a valid email address';
                     }
                     return null;
@@ -392,9 +398,9 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
               children: [
                 Text(
                   'Select your skills (at least one required)',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.mediumGray,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
                 ),
                 const SizedBox(height: 16),
                 _buildChipSelection(
@@ -417,9 +423,9 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
               children: [
                 Text(
                   'Select languages you speak (at least one required)',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.mediumGray,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
                 ),
                 const SizedBox(height: 16),
                 _buildChipSelection(
@@ -442,9 +448,9 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
               children: [
                 Text(
                   'Upload images of your work (optional)',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.mediumGray,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
                 ),
                 const SizedBox(height: 16),
                 _buildPortfolioUpload(),
@@ -492,11 +498,7 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.build_circle,
-            size: 64,
-            color: Colors.white,
-          ),
+          Icon(Icons.build_circle, size: 64, color: Colors.white),
           const SizedBox(height: 16),
           Text(
             'Become a Fundi',
@@ -508,9 +510,9 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
           const SizedBox(height: 8),
           Text(
             'Join our community of skilled craftsmen and start earning',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white70,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
             textAlign: TextAlign.center,
           ),
         ],
@@ -556,9 +558,7 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppTheme.lightGray),
@@ -631,9 +631,9 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
             const SizedBox(height: 8),
             Text(
               'Tap to add portfolio images',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.mediumGray,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
             ),
             Text(
               'Coming soon',

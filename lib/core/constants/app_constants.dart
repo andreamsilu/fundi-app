@@ -6,7 +6,7 @@ class AppConstants {
   // API Configuration
   static String get baseUrl => EnvConfig.get(
     'API_BASE_URL',
-    defaultValue: 'http://88.223.92.135:8002/api',
+    defaultValue: 'http://185.213.27.206:8081/api',
   );
   static String get apiVersion =>
       EnvConfig.get('API_VERSION', defaultValue: 'v1');

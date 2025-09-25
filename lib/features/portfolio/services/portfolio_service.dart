@@ -126,7 +126,9 @@ class PortfolioService {
     try {
       Logger.apiRequest('GET', ApiEndpoints.myPortfolio);
 
-      final response = await _apiClient.get<Map<String, dynamic>>(
+      // The API returns { success, message, data: List, portfolio_count, ... }
+      // ApiClient extracts only `data` into response.data, which may be a List
+      final response = await _apiClient.get<dynamic>(
         ApiEndpoints.myPortfolio,
         queryParameters: {
           'page': page,
@@ -134,7 +136,6 @@ class PortfolioService {
           if (category != null) 'category': category,
           if (search != null) 'search': search,
         },
-        fromJson: (data) => data as Map<String, dynamic>,
       );
 
       Logger.apiResponse(
@@ -144,19 +145,46 @@ class PortfolioService {
         response: response.data,
       );
 
-      if (response.success && response.data != null) {
-        final data = response.data!;
-        final portfolios = (data['portfolios'] as List)
-            .map(
-              (json) => PortfolioModel.fromJson(json as Map<String, dynamic>),
-            )
-            .toList();
+      if (response.success) {
+        final dynamic data = response.data;
+        // When ApiClient extracts `data` as a List
+        if (data is List) {
+          final portfolios = data
+              .whereType<Map<String, dynamic>>()
+              .map((json) => PortfolioModel.fromJson(json))
+              .toList();
 
+          return PortfolioResult(
+            success: true,
+            portfolios: portfolios,
+            totalCount: portfolios.length,
+            totalPages: 1,
+            message: response.message,
+          );
+        }
+
+        // When `data` is a Map with nested portfolios and counts
+        if (data is Map<String, dynamic>) {
+          final portfolios = (data['portfolios'] as List? ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .map((json) => PortfolioModel.fromJson(json))
+              .toList();
+
+          return PortfolioResult(
+            success: true,
+            portfolios: portfolios,
+            totalCount: (data['total_count'] as int?) ?? portfolios.length,
+            totalPages: (data['total_pages'] as int?) ?? 1,
+            message: response.message,
+          );
+        }
+
+        // Unknown shape, return empty success
         return PortfolioResult(
           success: true,
-          portfolios: portfolios,
-          totalCount: data['total_count'] as int,
-          totalPages: data['total_pages'] as int,
+          portfolios: const [],
+          totalCount: 0,
+          totalPages: 1,
           message: response.message,
         );
       } else {

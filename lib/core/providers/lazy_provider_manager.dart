@@ -54,7 +54,7 @@ class LazyProviderManager {
 
     _providers[PortfolioProvider] = ChangeNotifierProvider(
       create: (_) => PortfolioProvider(),
-      lazy: true,
+      lazy: false, // Ensure Portfolio screens always find provider
     );
 
     _providers[MessagingProvider] = ChangeNotifierProvider(
@@ -79,7 +79,7 @@ class LazyProviderManager {
 
     _providers[FeedsProvider] = ChangeNotifierProvider(
       create: (_) => FeedsProvider(),
-      lazy: true,
+      lazy: false, // Ensure Find Fundis tab has provider immediately
     );
 
     _providers[WorkApprovalProvider] = ChangeNotifierProvider(

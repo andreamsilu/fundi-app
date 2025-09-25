@@ -14,7 +14,7 @@ class EnvConfig {
 
     // Set default values for development
     if (!_config.containsKey('API_BASE_URL')) {
-      _config['API_BASE_URL'] = 'http://88.223.92.135:8002/api';
+      _config['API_BASE_URL'] = 'http://185.213.27.206:8081/api';
     }
     if (!_config.containsKey('API_VERSION')) {
       _config['API_VERSION'] = 'v1';
@@ -120,7 +120,7 @@ class EnvConfig {
 
   /// Get API base URL
   static String get apiBaseUrl {
-    return get('API_BASE_URL', defaultValue: 'http://88.223.92.135:8002/api');
+    return get('API_BASE_URL', defaultValue: 'http://185.213.27.206:8081/api');
   }
 
   /// Get API version

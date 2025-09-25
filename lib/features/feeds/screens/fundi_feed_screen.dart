@@ -6,7 +6,9 @@ import '../widgets/fundi_feed_filters.dart';
 import 'fundi_profile_screen.dart';
 
 class FundiFeedScreen extends StatefulWidget {
-  const FundiFeedScreen({Key? key}) : super(key: key);
+  final bool showAppBar;
+
+  const FundiFeedScreen({Key? key, this.showAppBar = false}) : super(key: key);
 
   @override
   State<FundiFeedScreen> createState() => _FundiFeedScreenState();
@@ -48,7 +50,12 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
   }
 
   Future<void> _refreshFeed() async {
-    await context.read<FeedsProvider>().loadFundis(refresh: true);
+    try {
+      final provider = Provider.of<FeedsProvider>(context, listen: false);
+      await provider.loadFundis(refresh: true);
+    } catch (_) {
+      // Provider not found at this context; ignore to avoid crash
+    }
   }
 
   void _applyFilters(Map<String, dynamic> filters) {
@@ -74,17 +81,17 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Find Fundis'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () => _showFilters(),
-          ),
-        ],
-      ),
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: const Text('Find Fundis'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  onPressed: () => _showFilters(),
+                ),
+              ],
+            )
+          : null,
       body: _buildBody(),
     );
   }
@@ -114,67 +121,101 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // If there's an error and no data, show the error explicitly
     if (feedsProvider.fundisError != null && feedsProvider.fundis.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      return RefreshIndicator(
+        onRefresh: () => feedsProvider.loadFundis(refresh: true),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24),
           children: [
-            Text(
-              feedsProvider.fundisError!,
-              style: const TextStyle(color: Colors.red),
-            ),
-            ElevatedButton(
-              onPressed: () => feedsProvider.loadFundis(refresh: true),
-              child: const Text('Retry'),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, color: Colors.red[400], size: 42),
+                const SizedBox(height: 12),
+                Text(
+                  feedsProvider.fundisError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red, fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => feedsProvider.loadFundis(refresh: true),
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
           ],
         ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _refreshFeed,
-      child: Column(
-        children: [
-          if (feedsProvider.searchQuery.isNotEmpty ||
-              feedsProvider.selectedSkills.isNotEmpty ||
-              feedsProvider.minRating != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Wrap(
-                spacing: 8,
-                children: [
-                  if (feedsProvider.searchQuery.isNotEmpty)
-                    Chip(
-                      label: Text('Search: ${feedsProvider.searchQuery}'),
-                      onDeleted: () {
-                        feedsProvider.updateSearchQuery('');
-                        feedsProvider.applyFilters();
-                      },
-                    ),
-                  if (feedsProvider.selectedSkills.isNotEmpty)
-                    Chip(
-                      label: Text(
-                        'Skills: ${feedsProvider.selectedSkills.length}',
-                      ),
-                      onDeleted: () {
-                        feedsProvider.updateSkills([]);
-                        feedsProvider.applyFilters();
-                      },
-                    ),
-                  if (feedsProvider.minRating != null)
-                    Chip(
-                      label: Text('Rating: ${feedsProvider.minRating!}+'),
-                      onDeleted: () {
-                        feedsProvider.updateMinRating(null);
-                        feedsProvider.applyFilters();
-                      },
-                    ),
-                ],
-              ),
+    // If no error but list is empty after load, show friendly empty state
+    if (!feedsProvider.isLoadingFundis && feedsProvider.fundis.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () => feedsProvider.loadFundis(refresh: true),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24),
+          children: const [
+            SizedBox(height: 80),
+            Icon(Icons.handyman_outlined, size: 42, color: Colors.grey),
+            SizedBox(height: 12),
+            Text(
+              'No fundis found. Try adjusting filters or pull to refresh.',
+              textAlign: TextAlign.center,
             ),
-          Expanded(
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        if (feedsProvider.searchQuery.isNotEmpty ||
+            feedsProvider.selectedSkills.isNotEmpty ||
+            feedsProvider.minRating != null)
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Wrap(
+              spacing: 8,
+              children: [
+                if (feedsProvider.searchQuery.isNotEmpty)
+                  Chip(
+                    label: Text('Search: ${feedsProvider.searchQuery}'),
+                    onDeleted: () {
+                      feedsProvider.updateSearchQuery('');
+                      feedsProvider.applyFilters();
+                    },
+                  ),
+                if (feedsProvider.selectedSkills.isNotEmpty)
+                  Chip(
+                    label: Text(
+                      'Skills: ${feedsProvider.selectedSkills.length}',
+                    ),
+                    onDeleted: () {
+                      feedsProvider.updateSkills([]);
+                      feedsProvider.applyFilters();
+                    },
+                  ),
+                if (feedsProvider.minRating != null)
+                  Chip(
+                    label: Text('Rating: ${feedsProvider.minRating!}+'),
+                    onDeleted: () {
+                      feedsProvider.updateMinRating(null);
+                      feedsProvider.applyFilters();
+                    },
+                  ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => feedsProvider.loadFundis(refresh: true),
             child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
               itemCount:
@@ -198,8 +239,8 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
               },
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

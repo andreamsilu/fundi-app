@@ -141,6 +141,14 @@ class ProfileModel {
 
   /// Create ProfileModel from JSON
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
+    // Derive role safely from either 'roles' array or fallback 'role' string
+    final List<String> rolesList =
+        (json['roles'] as List?)?.map((role) => role.toString()).toList() ??
+        const <String>[];
+    final String derivedRole = rolesList.isNotEmpty
+        ? rolesList.first
+        : (json['role'] as String? ?? 'customer');
+
     return ProfileModel(
       id: json['id'].toString(),
       email: json['email'] as String? ?? '',
@@ -149,7 +157,7 @@ class ProfileModel {
       lastName: json['last_name'] as String? ?? '',
       phoneNumber: json['phone_number'] as String? ?? json['phone'] as String?,
       profileImageUrl: json['profile_image_url'] as String?,
-      role: UserRole.fromString(json['role'] as String),
+      role: UserRole.fromString(derivedRole),
       status: UserStatus.fromString(json['status'] as String? ?? 'active'),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)

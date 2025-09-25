@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../auth/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../../portfolio/providers/portfolio_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/animated_card.dart';
 import '../../../shared/widgets/loading_widget.dart';
@@ -13,7 +14,6 @@ import '../../notifications/screens/notifications_screen.dart';
 import '../../help/screens/help_screen.dart';
 import '../../fundi_application/screens/fundi_application_screen.dart';
 import '../../feeds/screens/fundi_feed_screen.dart';
-import '../../feeds/providers/feeds_provider.dart';
 import '../services/dashboard_service.dart';
 import '../models/dashboard_model.dart';
 import 'placeholder_screen.dart';
@@ -276,13 +276,7 @@ class _MainDashboardState extends State<MainDashboard>
                         onTap: () => _navigateToFundiFeed(),
                       ),
                     ],
-                    if (authService.currentUser?.isFundi ?? false) ...[
-                      _buildDrawerItem(
-                        icon: Icons.work_outline,
-                        title: 'Find Jobs',
-                        onTap: () => _navigateToJobFeed(),
-                      ),
-                    ],
+                    // Removed 'Find Jobs' from drawer as requested
                   ],
                 ),
 
@@ -514,28 +508,17 @@ class _MainDashboardState extends State<MainDashboard>
 
   /// Navigate to portfolio screen
   void _navigateToPortfolio() {
-    try {
-      print('MainDashboard: Navigating to portfolio screen');
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const PortfolioScreen()),
-      );
-      print('MainDashboard: Portfolio navigation successful');
-    } catch (e) {
-      print('MainDashboard: Portfolio navigation error: $e');
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Portfolio',
-            message:
-                'Portfolio feature is coming soon! You\'ll be able to view and manage your work portfolio here.',
-            icon: Icons.work_outline,
-          ),
+    print('MainDashboard: Navigating to portfolio screen');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider(
+          create: (_) => PortfolioProvider(),
+          child: const PortfolioScreen(),
         ),
-      );
-    }
+      ),
+    );
+    print('MainDashboard: Portfolio navigation successful');
   }
 
   /// Navigate to messages screen
@@ -667,25 +650,10 @@ class _MainDashboardState extends State<MainDashboard>
 
   /// Navigate to fundi feed screen
   void _navigateToFundiFeed() {
-    try {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const FundiFeedScreen()),
-      );
-    } catch (e) {
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Find Fundis',
-            message:
-                'Fundi discovery feature is coming soon! You\'ll be able to browse and find skilled fundis here.',
-            icon: Icons.people_outline,
-          ),
-        ),
-      );
-    }
+    // Switch to the existing bottom tab to avoid duplicate screens
+    setState(() {
+      _currentIndex = 1; // Customers: index 1 is Find Fundis
+    });
   }
 
   /// Navigate to job feed screen

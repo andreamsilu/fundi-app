@@ -145,3 +145,4 @@ In debug mode, you can see the flow progression in the console:
 
 This ensures the app flow is working correctly and provides a smooth user experience from launch to the main interface.
 
+

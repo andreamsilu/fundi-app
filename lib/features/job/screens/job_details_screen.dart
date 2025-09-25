@@ -456,7 +456,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
                 radius: 25,
                 backgroundColor: context.primaryColor.withValues(alpha: 0.1),
                 child: Text(
-                  widget.job.customerName?.substring(0, 1).toUpperCase() ?? '',
+                  (widget.job.customerName != null &&
+                          widget.job.customerName!.isNotEmpty)
+                      ? widget.job.customerName![0].toUpperCase()
+                      : '',
                   style: TextStyle(
                     color: context.primaryColor,
                     fontWeight: FontWeight.bold,
@@ -494,109 +497,112 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   }
 
   Widget _buildActionButtons() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        if (authProvider.isCustomer) {
-          // Customer actions
-          return Column(
-            children: [
-              AppButton(
-                text: 'Edit Job',
-                onPressed: () {
-                  // TODO: Navigate to edit job screen
-                },
-                type: ButtonType.secondary,
-                isFullWidth: true,
-                icon: Icons.edit,
+    AuthProvider? authProvider;
+    try {
+      authProvider = Provider.of<AuthProvider>(context, listen: false);
+    } catch (_) {
+      authProvider = null;
+    }
+    final bool isCustomer = authProvider?.isCustomer ?? false;
+    final bool isFundi = authProvider?.isFundi ?? false;
+
+    if (isCustomer) {
+      // Customer actions
+      return Column(
+        children: [
+          AppButton(
+            text: 'Edit Job',
+            onPressed: () {
+              // TODO: Navigate to edit job screen
+            },
+            type: ButtonType.secondary,
+            isFullWidth: true,
+            icon: Icons.edit,
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            text: 'View Applications',
+            onPressed: () {
+              // TODO: Navigate to applications screen
+            },
+            isFullWidth: true,
+            icon: Icons.people,
+          ),
+        ],
+      );
+    } else if (isFundi) {
+      // Fundi actions
+      return Column(
+        children: [
+          if (_hasApplied) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
               ),
-              const SizedBox(height: 12),
-              AppButton(
-                text: 'View Applications',
-                onPressed: () {
-                  // TODO: Navigate to applications screen
-                },
-                isFullWidth: true,
-                icon: Icons.people,
-              ),
-            ],
-          );
-        } else if (authProvider.isFundi) {
-          // Fundi actions
-          return Column(
-            children: [
-              if (_hasApplied) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.green.withValues(alpha: 0.3),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You have applied for this job',
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check_circle, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'You have applied for this job',
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                AppButton(
-                  text: 'Apply for Job',
-                  onPressed: _isApplying ? null : _applyForJob,
-                  isLoading: _isApplying,
-                  isFullWidth: true,
-                  icon: Icons.send,
-                ),
-              ],
-              const SizedBox(height: 12),
-              AppButton(
-                text: 'Contact Customer',
-                onPressed: () {
-                  // TODO: Navigate to chat with customer
-                },
-                type: ButtonType.secondary,
-                isFullWidth: true,
-                icon: Icons.message,
+                ],
               ),
-            ],
-          );
-        } else {
-          // Admin actions
-          return Column(
-            children: [
-              AppButton(
-                text: 'View Applications',
-                onPressed: () {
-                  // TODO: Navigate to applications screen
-                },
-                isFullWidth: true,
-                icon: Icons.people,
-              ),
-              const SizedBox(height: 12),
-              AppButton(
-                text: 'Manage Job',
-                onPressed: () {
-                  // TODO: Navigate to job management screen
-                },
-                type: ButtonType.secondary,
-                isFullWidth: true,
-                icon: Icons.settings,
-              ),
-            ],
-          );
-        }
-      },
-    );
+            ),
+          ] else ...[
+            AppButton(
+              text: 'Apply for Job',
+              onPressed: _isApplying ? null : _applyForJob,
+              isLoading: _isApplying,
+              isFullWidth: true,
+              icon: Icons.send,
+            ),
+          ],
+          const SizedBox(height: 12),
+          AppButton(
+            text: 'Contact Customer',
+            onPressed: () {
+              // TODO: Navigate to chat with customer
+            },
+            type: ButtonType.secondary,
+            isFullWidth: true,
+            icon: Icons.message,
+          ),
+        ],
+      );
+    } else {
+      // Admin actions
+      return Column(
+        children: [
+          AppButton(
+            text: 'View Applications',
+            onPressed: () {
+              // TODO: Navigate to applications screen
+            },
+            isFullWidth: true,
+            icon: Icons.people,
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            text: 'Manage Job',
+            onPressed: () {
+              // TODO: Navigate to job management screen
+            },
+            type: ButtonType.secondary,
+            isFullWidth: true,
+            icon: Icons.settings,
+          ),
+        ],
+      );
+    }
   }
 }

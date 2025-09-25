@@ -60,21 +60,18 @@ class FeedsService {
       );
 
       if (response.success && response.data != null) {
+        // Return raw list; provider maps to models
         final List<dynamic> fundiData = response.data['fundis'] ?? [];
-        final fundis = fundiData
-            .map((json) => FundiModel.fromJson(json))
-            .toList();
-
         return {
           'success': true,
-          'fundis': fundis,
+          'fundis': fundiData,
           'pagination': response.data['pagination'] ?? {},
           'message': 'Fundis fetched successfully',
         };
       } else {
         return {
           'success': false,
-          'fundis': <FundiModel>[],
+          'fundis': <dynamic>[],
           'pagination': {},
           'message': response.message,
         };
@@ -144,19 +141,18 @@ class FeedsService {
       );
 
       if (response.success && response.data != null) {
+        // Return raw list; provider maps to models
         final List<dynamic> jobData = response.data['jobs'] ?? [];
-        final jobs = jobData.map((json) => JobModel.fromJson(json)).toList();
-
         return {
           'success': true,
-          'jobs': jobs,
+          'jobs': jobData,
           'pagination': response.data['pagination'] ?? {},
           'message': 'Jobs fetched successfully',
         };
       } else {
         return {
           'success': false,
-          'jobs': <JobModel>[],
+          'jobs': <dynamic>[],
           'pagination': {},
           'message': response.message,
         };

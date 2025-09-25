@@ -138,7 +138,9 @@ class FeedsProvider extends ChangeNotifier {
 
           final paginationData = result['pagination'] as Map<dynamic, dynamic>;
           final pagination = Map<String, dynamic>.from(paginationData);
-          _hasMoreFundis = pagination['hasNextPage'] ?? false;
+          final currentPage = (pagination['current_page'] ?? pagination['currentPage'] ?? 1) as int;
+          final lastPage = (pagination['last_page'] ?? pagination['lastPage'] ?? 1) as int;
+          _hasMoreFundis = currentPage < lastPage;
           _fundisCurrentPage++;
           _fundisError = null;
           break; // Success, exit retry loop
@@ -188,7 +190,9 @@ class FeedsProvider extends ChangeNotifier {
 
         final paginationData = result['pagination'] as Map<dynamic, dynamic>;
         final pagination = Map<String, dynamic>.from(paginationData);
-        _hasMoreFundis = pagination['hasNextPage'] ?? false;
+        final currentPage = (pagination['current_page'] ?? pagination['currentPage'] ?? 1) as int;
+        final lastPage = (pagination['last_page'] ?? pagination['lastPage'] ?? 1) as int;
+        _hasMoreFundis = currentPage < lastPage;
         _fundisCurrentPage++;
       }
     } catch (e) {
