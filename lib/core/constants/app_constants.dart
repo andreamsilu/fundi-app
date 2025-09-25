@@ -1,23 +1,15 @@
 import '../config/env_config.dart';
+import '../config/api_config.dart';
 
 /// Application-wide constants and configuration
 /// This file contains all the static values used throughout the app
 class AppConstants {
   // API Configuration
-  static String get baseUrl => EnvConfig.get(
-    'API_BASE_URL',
-    defaultValue: 'http://185.213.27.206:8081/api',
-  );
+  static String get baseUrl => ApiConfig.baseUrl;
   static String get apiVersion =>
       EnvConfig.get('API_VERSION', defaultValue: 'v1');
-  static int get connectionTimeout => EnvConfig.getInt(
-    'API_TIMEOUT',
-    defaultValue: 60000,
-  ); // Increased to 60 seconds
-  static int get receiveTimeout => EnvConfig.getInt(
-    'API_TIMEOUT',
-    defaultValue: 60000,
-  ); // Increased to 60 seconds
+  static int get connectionTimeout => ApiConfig.timeout;
+  static int get receiveTimeout => ApiConfig.timeout;
 
   // Storage Keys
   static const String tokenKey = 'auth_token';
@@ -30,11 +22,11 @@ class AppConstants {
   static const Duration mediumAnimation = Duration(milliseconds: 300);
   static const Duration longAnimation = Duration(milliseconds: 500);
 
-  // UI Constants
-  static const double defaultPadding = 16.0;
-  static const double smallPadding = 8.0;
-  static const double largePadding = 24.0;
-  static const double borderRadius = 12.0;
+  // UI Constants (compact defaults)
+  static const double defaultPadding = 12.0; // was 16.0
+  static const double smallPadding = 6.0; // was 8.0
+  static const double largePadding = 20.0; // was 24.0
+  static const double borderRadius = 10.0; // was 12.0
   static const double cardElevation = 2.0;
 
   // Asset Paths

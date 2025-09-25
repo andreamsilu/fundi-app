@@ -28,6 +28,8 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
   List<String> _selectedActions = [];
+  String? _errorMessage;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -54,6 +56,79 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// Handle payment processing with error handling
+  Future<void> _processPayment() async {
+    if (_selectedActions.isEmpty) {
+      _showError('Please select at least one payment action');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final paymentProvider = Provider.of<PaymentProvider>(context, listen: false);
+      
+      for (String actionId in _selectedActions) {
+        final result = await paymentProvider.processPayment(
+          actionId: actionId,
+          referenceId: widget.referenceId,
+          metadata: widget.metadata,
+        );
+
+        if (!result.success) {
+          _showError(result.message ?? 'Payment processing failed');
+          return;
+        }
+      }
+
+      // Navigate to success screen
+      _navigateToSuccess();
+    } catch (e) {
+      _showError('An unexpected error occurred. Please try again.');
+      PaymentLogger.logPaymentError(
+        error: 'Payment processing error',
+        transactionId: widget.referenceId ?? 'unknown',
+        exception: e,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Show error message
+  void _showError(String message) {
+    setState(() {
+      _errorMessage = message;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  /// Navigate to success screen
+  void _navigateToSuccess() {
+    Navigator.pushReplacementNamed(
+      context,
+      '/payment-success',
+      arguments: {
+        'actions': _selectedActions,
+        'referenceId': widget.referenceId,
+      },
+    );
   }
 
   void _nextStep() {
@@ -167,6 +242,34 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
       ),
       body: Column(
         children: [
+          // Error banner
+          if (_errorMessage != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              color: Colors.red[50],
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red[600], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Colors.red[600]),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _errorMessage = null;
+                      });
+                    },
+                    icon: Icon(Icons.close, color: Colors.red[600], size: 20),
+                  ),
+                ],
+              ),
+            ),
+          
           // Progress indicator
           _buildProgressIndicator(),
 
@@ -339,14 +442,25 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
 
           Expanded(
             child: ElevatedButton(
-              onPressed: _currentStep == 0 && _selectedActions.isNotEmpty
-                  ? _nextStep
-                  : null,
+              onPressed: _isLoading 
+                  ? null 
+                  : (_currentStep == 0 && _selectedActions.isNotEmpty
+                      ? _nextStep
+                      : _currentStep == 2 ? _processPayment : null),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
               ),
-              child: Text(_currentStep == 0 ? 'Continue' : 'Done'),
+              child: _isLoading 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(_currentStep == 0 ? 'Continue' : _currentStep == 2 ? 'Process Payment' : 'Done'),
             ),
           ),
         ],

@@ -12,72 +12,9 @@ class DashboardService {
 
   final ApiClient _apiClient = ApiClient();
 
-  /// Get dashboard statistics for the current user
-  Future<DashboardResult> getDashboardStats() async {
-    try {
-      Logger.userAction('Fetch dashboard stats');
+  // Dashboard stats method - REMOVED (dashboard stats endpoint not implemented in API)
 
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.dashboardStats,
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
-
-      if (response.success && response.data != null) {
-        final dashboardModel = DashboardModel.fromJson(response.data!);
-
-        Logger.userAction('Dashboard stats loaded successfully');
-
-        return DashboardResult.success(
-          dashboard: dashboardModel,
-          message: response.message,
-        );
-      } else {
-        Logger.warning('Dashboard stats fetch failed: ${response.message}');
-        return DashboardResult.failure(message: response.message);
-      }
-    } on ApiError catch (e) {
-      Logger.error('Dashboard stats API error', error: e);
-      return DashboardResult.failure(message: e.message);
-    } catch (e) {
-      Logger.error('Dashboard stats unexpected error', error: e);
-      return DashboardResult.failure(message: 'Failed to load dashboard data');
-    }
-  }
-
-  /// Get recent activity for the dashboard
-  Future<ActivityResult> getRecentActivity({int limit = 10}) async {
-    try {
-      Logger.userAction('Fetch recent activity');
-
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.dashboardActivity,
-        queryParameters: {'limit': limit},
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
-
-      if (response.success && response.data != null) {
-        final activities = (response.data!['activities'] as List<dynamic>)
-            .map(
-              (activity) =>
-                  ActivityItem.fromJson(activity as Map<String, dynamic>),
-            )
-            .toList();
-
-        return ActivityResult.success(
-          activities: activities,
-          message: response.message,
-        );
-      } else {
-        return ActivityResult.failure(message: response.message);
-      }
-    } on ApiError catch (e) {
-      Logger.error('Recent activity API error', error: e);
-      return ActivityResult.failure(message: e.message);
-    } catch (e) {
-      Logger.error('Recent activity unexpected error', error: e);
-      return ActivityResult.failure(message: 'Failed to load recent activity');
-    }
-  }
+  // Recent activity method - REMOVED (dashboard activity endpoint not implemented in API)
 
   // Static variable to prevent concurrent category fetching
   static Future<CategoryResult>? _categoryFetchFuture;
@@ -144,24 +81,7 @@ class DashboardService {
       return CategoryResult.failure(message: e.message);
     } catch (e) {
       Logger.error('Job categories unexpected error', error: e);
-
-      // Return fallback categories if API fails
-      final fallbackCategories = [
-        const JobCategory(id: 'plumbing', name: 'Plumbing'),
-        const JobCategory(id: 'electrical', name: 'Electrical'),
-        const JobCategory(id: 'carpentry', name: 'Carpentry'),
-        const JobCategory(id: 'painting', name: 'Painting'),
-        const JobCategory(id: 'cleaning', name: 'Cleaning'),
-        const JobCategory(id: 'gardening', name: 'Gardening'),
-        const JobCategory(id: 'repair', name: 'Repair'),
-        const JobCategory(id: 'installation', name: 'Installation'),
-        const JobCategory(id: 'other', name: 'Other'),
-      ];
-
-      return CategoryResult.success(
-        categories: fallbackCategories,
-        message: 'Using fallback categories due to API error',
-      );
+      return CategoryResult.failure(message: 'Failed to load categories from API');
     }
   }
 }

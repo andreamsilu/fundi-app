@@ -4,6 +4,7 @@ import '../../features/auth/models/user_model.dart';
 import '../constants/app_constants.dart';
 import '../utils/logger.dart';
 import '../services/session_manager.dart';
+import '../services/connectivity_service.dart';
 
 /// Centralized API client for all network communications
 /// Handles authentication, error handling, and request/response logging
@@ -14,6 +15,7 @@ class ApiClient {
 
   late Dio _dio;
   final SessionManager _sessionManager = SessionManager();
+  final ConnectivityAwareApiClient _connectivityClient = ConnectivityAwareApiClient();
 
   /// Initialize the API client with base configuration
   Future<void> initialize() async {
@@ -82,11 +84,26 @@ class ApiClient {
   Interceptor _createLoggingInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) {
+        // Redact sensitive headers
+        final redactedHeaders = Map<String, dynamic>.from(options.headers);
+        if (redactedHeaders.containsKey('Authorization')) {
+          redactedHeaders['Authorization'] = 'Bearer ***REDACTED***';
+        }
+
+        // Avoid logging request bodies for auth endpoints
+        final path = options.path;
+        final isAuthEndpoint = path.contains('/auth/login') ||
+            path.contains('/auth/register') ||
+            path.contains('/auth/reset-password') ||
+            path.contains('/auth/forgot-password') ||
+            path.contains('/auth/verify-otp') ||
+            path.contains('/auth/send-otp');
+
         Logger.apiRequest(
           options.method,
           options.uri.toString(),
-          headers: options.headers,
-          body: options.data,
+          headers: redactedHeaders,
+          body: isAuthEndpoint ? '{"body":"***REDACTED***"}' : options.data,
         );
         Logger.info('Making API request to: ${options.uri}');
         handler.next(options);
@@ -221,22 +238,53 @@ class ApiClient {
   /// Check if user is authenticated
   bool get isAuthenticated => _sessionManager.isAuthenticated;
 
-  /// GET request
+  /// Cancel a specific request
+  void cancelRequest(String requestId) {
+    _connectivityClient.cancelRequest(requestId);
+  }
+
+  /// Cancel all active requests
+  void cancelAllRequests() {
+    _connectivityClient.cancelAllRequests();
+  }
+
+  /// GET request with connectivity awareness
   Future<ApiResponse<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
     Options? options,
     T Function(dynamic)? fromJson,
+    bool useConnectivityAware = true,
+    String? requestId,
   }) async {
-    try {
-      final response = await _dio.get(
-        path,
-        queryParameters: queryParameters,
-        options: options,
+    if (useConnectivityAware) {
+      return await _connectivityClient.executeWithRetry(
+        () async {
+          final response = await _dio.get(
+            path,
+            queryParameters: queryParameters,
+            options: options,
+          );
+          return _handleResponse<T>(response, fromJson);
+        },
+        requestId: requestId,
       );
-      return _handleResponse<T>(response, fromJson);
-    } on DioException catch (e) {
-      throw _handleApiError(e);
+    } else {
+      try {
+        final response = await _dio.get(
+          path,
+          queryParameters: queryParameters,
+          options: options,
+        );
+        return _handleResponse<T>(response, fromJson);
+      } on DioException catch (e) {
+        // Do not retry on client auth/permission/validation errors
+        final status = e.response?.statusCode ?? 0;
+        if (status == 401 || status == 403 || status == 422) {
+          rethrow;
+        }
+        throw _handleApiError(e);
+      }
     }
   }
 

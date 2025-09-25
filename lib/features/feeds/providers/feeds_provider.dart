@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/fundi_model.dart';
 import '../models/job_model.dart';
 import '../services/feeds_service.dart';
+import '../../core/network/api_client.dart';
 
 /// Provider for managing feeds state and business logic
 /// Implements proper separation of concerns for feeds functionality
@@ -47,6 +48,10 @@ class FeedsProvider extends ChangeNotifier {
 
   FeedsProvider({FeedsService? feedsService})
     : _feedsService = feedsService ?? FeedsService();
+
+  // Request management
+  String? _currentFundisRequestId;
+  String? _currentJobsRequestId;
 
   // Getters for fundis state
   List<FundiModel> get fundis => _fundis;
@@ -607,6 +612,13 @@ class FeedsProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    // Cancel any active requests
+    if (_currentFundisRequestId != null) {
+      ApiClient().cancelRequest(_currentFundisRequestId!);
+    }
+    if (_currentJobsRequestId != null) {
+      ApiClient().cancelRequest(_currentJobsRequestId!);
+    }
     super.dispose();
   }
 }

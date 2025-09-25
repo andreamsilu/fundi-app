@@ -160,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen>
                     // Phone field
                     AppInputField(
                       label: 'Phone Number',
-                      hint: 'Enter your phone number',
+                      hint: 'Enter your phone number (e.g., 0654289824)',
                       controller: _phoneController,
                       isRequired: true,
                       prefixIcon: const Icon(Icons.phone_outlined),
@@ -174,9 +174,9 @@ class _LoginScreenState extends State<LoginScreen>
                           RegExp(r'[\s-]'),
                           '',
                         );
-                        final phoneRegex = RegExp(r'^(\+255|0)[0-9]{9}$');
+                        final phoneRegex = RegExp(r'^(06|07)[0-9]{8}$');
                         if (!phoneRegex.hasMatch(cleanValue)) {
-                          return 'Please enter a valid Tanzanian phone number (e.g., +255123456789 or 0123456789)';
+                          return 'Please enter a valid Tanzanian phone number (e.g., 0654289824 or 0754289824)';
                         }
                         return null;
                       },

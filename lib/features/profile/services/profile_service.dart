@@ -50,7 +50,8 @@ class ProfileService {
     }
   }
 
-  /// Update user profile with comprehensive details
+  /// Update the authenticated user's profile
+  /// Aligns with API: PATCH /users/me/profile
   Future<ProfileResult> updateProfile({
     required String userId,
     String? firstName,
@@ -83,9 +84,8 @@ class ProfileService {
       if (languages != null) data['languages'] = languages;
       if (preferences != null) data['preferences'] = preferences;
 
-      final response = await _apiClient.put<Map<String, dynamic>>(
-        ApiEndpoints.userProfileEndpoint(userId),
-        {},
+      final response = await _apiClient.patch<Map<String, dynamic>>(
+        ApiEndpoints.authProfile,
         data: data,
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -113,75 +113,27 @@ class ProfileService {
     }
   }
 
-  /// Upload profile image
-  Future<ProfileResult> uploadProfileImage({
-    required String userId,
-    required String imagePath,
-  }) async {
-    try {
-      Logger.userAction(
-        'Profile image upload attempt',
-        data: {'userId': userId},
-      );
+  // Note: Image upload is not supported via a dedicated endpoint on the API.
+  // Clients should send profile image URL via updateProfile (profile_image_url).
 
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        ApiEndpoints.userProfileImageEndpoint(userId),
-        {},
-        {'image_path': imagePath},
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
-
-      if (response.success && response.data != null) {
-        final profile = ProfileModel.fromJson(response.data!);
-        Logger.userAction(
-          'Profile image uploaded successfully',
-          data: {'userId': userId},
-        );
-        return ProfileResult.success(
-          profile: profile,
-          message: response.message,
-        );
-      } else {
-        Logger.warning('Profile image upload failed: ${response.message}');
-        return ProfileResult.failure(message: response.message);
-      }
-    } on ApiError catch (e) {
-      Logger.error('Profile image upload API error', error: e);
-      return ProfileResult.failure(message: e.message);
-    } catch (e) {
-      Logger.error('Profile image upload unexpected error', error: e);
-      return ProfileResult.failure(message: 'An unexpected error occurred');
-    }
-  }
-
-  /// Update skills
+  /// Update skills via PATCH /users/me/profile
   Future<ProfileResult> updateSkills({
     required String userId,
     required List<String> skills,
   }) async {
     try {
-      Logger.userAction(
-        'Skills update attempt',
-        data: {'userId': userId, 'skills': skills},
-      );
+      Logger.userAction('Skills update attempt', data: {'skills': skills});
 
-      final response = await _apiClient.put<Map<String, dynamic>>(
-        ApiEndpoints.userProfileSkillsEndpoint(userId),
-        {},
+      final response = await _apiClient.patch<Map<String, dynamic>>(
+        ApiEndpoints.authProfile,
         data: {'skills': skills},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
         final profile = ProfileModel.fromJson(response.data!);
-        Logger.userAction(
-          'Skills updated successfully',
-          data: {'userId': userId},
-        );
-        return ProfileResult.success(
-          profile: profile,
-          message: response.message,
-        );
+        Logger.userAction('Skills updated successfully');
+        return ProfileResult.success(profile: profile, message: response.message);
       } else {
         Logger.warning('Skills update failed: ${response.message}');
         return ProfileResult.failure(message: response.message);
@@ -195,34 +147,24 @@ class ProfileService {
     }
   }
 
-  /// Update languages
+  /// Update languages via PATCH /users/me/profile
   Future<ProfileResult> updateLanguages({
     required String userId,
     required List<String> languages,
   }) async {
     try {
-      Logger.userAction(
-        'Languages update attempt',
-        data: {'userId': userId, 'languages': languages},
-      );
+      Logger.userAction('Languages update attempt', data: {'languages': languages});
 
-      final response = await _apiClient.put<Map<String, dynamic>>(
-        ApiEndpoints.userProfileLanguagesEndpoint(userId),
-        {},
+      final response = await _apiClient.patch<Map<String, dynamic>>(
+        ApiEndpoints.authProfile,
         data: {'languages': languages},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
         final profile = ProfileModel.fromJson(response.data!);
-        Logger.userAction(
-          'Languages updated successfully',
-          data: {'userId': userId},
-        );
-        return ProfileResult.success(
-          profile: profile,
-          message: response.message,
-        );
+        Logger.userAction('Languages updated successfully');
+        return ProfileResult.success(profile: profile, message: response.message);
       } else {
         Logger.warning('Languages update failed: ${response.message}');
         return ProfileResult.failure(message: response.message);
@@ -236,31 +178,24 @@ class ProfileService {
     }
   }
 
-  /// Update preferences
+  /// Update preferences via PATCH /users/me/profile
   Future<ProfileResult> updatePreferences({
     required String userId,
     required Map<String, dynamic> preferences,
   }) async {
     try {
-      Logger.userAction('Preferences update attempt', data: {'userId': userId});
+      Logger.userAction('Preferences update attempt', data: {'preferences': preferences});
 
-      final response = await _apiClient.put<Map<String, dynamic>>(
-        ApiEndpoints.userProfilePreferencesEndpoint(userId),
-        {},
+      final response = await _apiClient.patch<Map<String, dynamic>>(
+        ApiEndpoints.authProfile,
         data: {'preferences': preferences},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
         final profile = ProfileModel.fromJson(response.data!);
-        Logger.userAction(
-          'Preferences updated successfully',
-          data: {'userId': userId},
-        );
-        return ProfileResult.success(
-          profile: profile,
-          message: response.message,
-        );
+        Logger.userAction('Preferences updated successfully');
+        return ProfileResult.success(profile: profile, message: response.message);
       } else {
         Logger.warning('Preferences update failed: ${response.message}');
         return ProfileResult.failure(message: response.message);
@@ -274,60 +209,7 @@ class ProfileService {
     }
   }
 
-  /// Search profiles by criteria
-  Future<List<ProfileModel>> searchProfiles({
-    String? query,
-    UserRole? role,
-    String? location,
-    List<String>? skills,
-    double? minRating,
-    int? limit = 20,
-    int? offset = 0,
-  }) async {
-    try {
-      Logger.userAction(
-        'Profile search',
-        data: {
-          'query': query,
-          'role': role?.value,
-          'location': location,
-          'skills': skills,
-          'minRating': minRating,
-        },
-      );
-
-      final queryParams = <String, dynamic>{};
-      if (query != null) queryParams['q'] = query;
-      if (role != null) queryParams['role'] = role.value;
-      if (location != null) queryParams['location'] = location;
-      if (skills != null) queryParams['skills'] = skills.join(',');
-      if (minRating != null) queryParams['min_rating'] = minRating;
-      queryParams['limit'] = limit;
-      queryParams['offset'] = offset;
-
-      final response = await _apiClient.get<List<dynamic>>(
-        ApiEndpoints.search,
-        queryParameters: queryParams,
-        fromJson: (data) => data as List<dynamic>,
-      );
-
-      if (response.success && response.data != null) {
-        final profiles = response.data!
-            .map((json) => ProfileModel.fromJson(json as Map<String, dynamic>))
-            .toList();
-        Logger.userAction(
-          'Profile search successful',
-          data: {'count': profiles.length},
-        );
-        return profiles;
-      }
-
-      return [];
-    } catch (e) {
-      Logger.error('Profile search error', error: e);
-      return [];
-    }
-  }
+  // Search profiles method - REMOVED (search endpoint not implemented in API)
 }
 
 /// Profile operation result wrapper

@@ -165,7 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                     // Phone field
                     AppInputField(
                       label: 'Phone Number',
-                      hint: 'Enter your phone number',
+                      hint: 'Enter your phone number (e.g., 0654289824)',
                       controller: _phoneController,
                       isRequired: true,
                       prefixIcon: const Icon(Icons.phone_outlined),

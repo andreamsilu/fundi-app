@@ -5,6 +5,7 @@ class UserModel {
   final String phone; // Primary identifier (matches API)
   final String? password; // Hidden in API responses
   final List<UserRole> roles; // Multiple roles: ['customer', 'fundi', 'admin']
+  final List<int> roleIds; // Role IDs: [1, 2, 3] for efficient API operations
   final UserStatus status; // User status
   final String? nidaNumber; // National ID number
   final DateTime? createdAt;
@@ -21,6 +22,7 @@ class UserModel {
     required this.phone,
     this.password,
     required this.roles,
+    required this.roleIds,
     required this.status,
     this.nidaNumber,
     this.createdAt,
@@ -63,6 +65,17 @@ class UserModel {
   /// Check if user has multiple roles
   bool get hasMultipleRoles => roles.length > 1;
 
+  /// Get role IDs as list of integers
+  List<int> get roleIdList => roleIds;
+
+  /// Check if user has specific role by ID
+  bool hasRoleById(int roleId) => roleIds.contains(roleId);
+
+  /// Check if user has any of the specified role IDs
+  bool hasAnyRoleByIds(List<int> roleIds) {
+    return this.roleIds.any((id) => roleIds.contains(id));
+  }
+
   /// Check if user is active
   bool get isActive => status == UserStatus.active;
 
@@ -91,6 +104,9 @@ class UserModel {
       roles: (json['roles'] as List<dynamic>?)
           ?.map((role) => UserRole.fromString(role as String))
           .toList() ?? [UserRole.customer],
+      roleIds: (json['role_ids'] as List<dynamic>?)
+          ?.map((id) => id as int)
+          .toList() ?? [1], // Default to customer role ID
       status: json['status'] != null
           ? UserStatus.fromString(json['status'] as String)
           : UserStatus.active, // Default to active if not provided
@@ -116,6 +132,7 @@ class UserModel {
       'phone': phone,
       'password': password, // Usually not sent in API requests
       'roles': roles.map((role) => role.value).toList(),
+      'role_ids': roleIds, // Include role IDs for API operations
       'status': status.value,
       'nida_number': nidaNumber,
       'created_at': createdAt?.toIso8601String(),
@@ -133,6 +150,7 @@ class UserModel {
     String? phone,
     String? password,
     List<UserRole>? roles,
+    List<int>? roleIds,
     UserStatus? status,
     String? nidaNumber,
     DateTime? createdAt,
@@ -147,6 +165,7 @@ class UserModel {
       phone: phone ?? this.phone,
       password: password ?? this.password,
       roles: roles ?? this.roles,
+      roleIds: roleIds ?? this.roleIds,
       status: status ?? this.status,
       nidaNumber: nidaNumber ?? this.nidaNumber,
       createdAt: createdAt ?? this.createdAt,

@@ -402,32 +402,5 @@ class WorkApprovalService {
     }
   }
 
-  /// Get approval statistics
-  Future<Map<String, dynamic>> getApprovalStatistics() async {
-    try {
-      final response = await _apiClient.get(
-        ApiEndpoints.workApprovalStatistics,
-      );
-
-      if (response.success && response.data != null) {
-        return {
-          'success': true,
-          'statistics': response.data,
-          'message': 'Statistics fetched successfully',
-        };
-      } else {
-        return {
-          'success': false,
-          'statistics': {},
-          'message': response.message,
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'statistics': {},
-        'message': 'Error fetching statistics: ${e.toString()}',
-      };
-    }
-  }
+  // Approval statistics method - REMOVED (work approval statistics endpoint not implemented in API)
 }

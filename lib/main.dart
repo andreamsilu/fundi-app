@@ -6,6 +6,7 @@ import 'core/app/app_initialization_service.dart';
 import 'core/providers/lazy_provider_manager.dart';
 import 'core/routing/app_router.dart';
 import 'core/utils/startup_performance.dart';
+import 'core/config/env_config.dart';
 // Removed debug-only imports
 
 /// Main entry point of the Fundi App
@@ -17,6 +18,10 @@ void main() async {
   // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
   StartupPerformance.markMilestone('flutter_binding_initialized');
+
+  // Initialize environment configuration first
+  await EnvConfig.initialize();
+  StartupPerformance.markMilestone('env_config_initialized');
 
   // Initialize only lightweight configuration
   AppConfig.initialize();

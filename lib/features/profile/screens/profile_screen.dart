@@ -232,7 +232,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildBody(AuthService authService) {
     if (_isLoading) {
-      return const Center(child: LoadingWidget(message: 'Loading profile...'));
+      // Shimmer profile header while loading
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: ShimmerUserProfile(),
+      );
     }
 
     if (_errorMessage != null) {

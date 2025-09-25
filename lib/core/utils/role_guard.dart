@@ -6,8 +6,8 @@ import '../../features/auth/models/user_model.dart';
 /// Role-based access control guard
 /// Ensures users can only access pages appropriate for their role
 class RoleGuard {
-  /// Check if user can access a specific route based on their role
-  static bool canAccessRoute(String routeName, UserRole userRole) {
+  /// Check if user can access a specific route based on their roles
+  static bool canAccessRoute(String routeName, List<UserRole> userRoles) {
     // Define role-based route access rules
     switch (routeName) {
       // Public routes (accessible to all authenticated users)
@@ -20,32 +20,37 @@ class RoleGuard {
 
       // Customer-only routes
       case '/fundi-application':
-        return userRole == UserRole.customer;
+        return userRoles.contains(UserRole.customer);
 
       // Fundi-only routes
       case '/create-portfolio':
       case '/portfolio-gallery':
       case '/portfolio-details':
-        return userRole == UserRole.fundi;
+        return userRoles.contains(UserRole.fundi);
 
       // Admin-only routes (if any)
       case '/admin':
-        return userRole == UserRole.admin;
+        return userRoles.contains(UserRole.admin);
 
       // Job-related routes (both customers and fundis can access)
       case '/create-job':
       case '/job-details':
-        return userRole == UserRole.customer || userRole == UserRole.fundi;
+        return userRoles.contains(UserRole.customer) || userRoles.contains(UserRole.fundi);
 
       // Search and messaging (both customers and fundis can access)
       case '/search':
       case '/chat':
-        return userRole == UserRole.customer || userRole == UserRole.fundi;
+        return userRoles.contains(UserRole.customer) || userRoles.contains(UserRole.fundi);
 
       // Default: deny access
       default:
         return false;
     }
+  }
+
+  /// Check if user can access a specific route based on a single role (backward compatibility)
+  static bool canAccessRouteWithSingleRole(String routeName, UserRole userRole) {
+    return canAccessRoute(routeName, [userRole]);
   }
 
   /// Check if user can access route with context
@@ -57,19 +62,25 @@ class RoleGuard {
       return false;
     }
 
-    return canAccessRoute(routeName, user.roles.first);
+    return canAccessRoute(routeName, user.roles);
   }
 
-  /// Get appropriate redirect route based on user role
-  static String getRedirectRouteForRole(UserRole role) {
-    switch (role) {
-      case UserRole.customer:
-        return '/dashboard';
-      case UserRole.fundi:
-        return '/dashboard';
-      case UserRole.admin:
-        return '/dashboard';
+  /// Get appropriate redirect route based on user roles
+  static String getRedirectRouteForRoles(List<UserRole> roles) {
+    // Priority: Admin > Fundi > Customer
+    if (roles.contains(UserRole.admin)) {
+      return '/dashboard';
+    } else if (roles.contains(UserRole.fundi)) {
+      return '/dashboard';
+    } else if (roles.contains(UserRole.customer)) {
+      return '/dashboard';
     }
+    return '/dashboard'; // Default fallback
+  }
+
+  /// Get appropriate redirect route based on user role (backward compatibility)
+  static String getRedirectRouteForRole(UserRole role) {
+    return getRedirectRouteForRoles([role]);
   }
 
   /// Get appropriate redirect route with context
@@ -81,7 +92,7 @@ class RoleGuard {
       return '/login';
     }
 
-    return getRedirectRouteForRole(user.roles.first);
+    return getRedirectRouteForRoles(user.roles);
   }
 
   /// Check if user has specific role
@@ -89,7 +100,17 @@ class RoleGuard {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
     
-    return user?.roles.first == requiredRole;
+    return user?.roles.contains(requiredRole) ?? false;
+  }
+
+  /// Check if user has any of the specified roles
+  static bool hasAnyRole(BuildContext context, List<UserRole> requiredRoles) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    
+    if (user == null) return false;
+    
+    return requiredRoles.any((role) => user.roles.contains(role));
   }
 
   /// Check if user is customer

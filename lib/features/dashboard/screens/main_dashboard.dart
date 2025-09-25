@@ -8,7 +8,7 @@ import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../job/screens/job_list_screen.dart';
 import '../../portfolio/screens/portfolio_screen.dart';
-import '../../messaging/screens/chat_list_screen.dart';
+// Messaging feature removed - not implemented in API
 import '../../profile/screens/profile_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../help/screens/help_screen.dart';
@@ -523,28 +523,13 @@ class _MainDashboardState extends State<MainDashboard>
 
   /// Navigate to messages screen
   void _navigateToMessages() {
-    try {
-      print('MainDashboard: Navigating to messages screen');
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ChatListScreen()),
-      );
-      print('MainDashboard: Messages navigation successful');
-    } catch (e) {
-      print('MainDashboard: Messages navigation error: $e');
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Messages',
-            message:
-                'Messaging feature is coming soon! You\'ll be able to chat with fundis and customers here.',
-            icon: Icons.message_outlined,
-          ),
-        ),
-      );
-    }
+    // Messaging feature not implemented in API
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Messaging feature is coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   /// Navigate to notifications screen
@@ -785,27 +770,11 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
     });
 
     try {
-      // Load dashboard stats and recent activity in parallel
-      final results = await Future.wait([
-        DashboardService().getDashboardStats(),
-        DashboardService().getRecentActivity(limit: 5),
-      ]);
-
-      final dashboardResult = results[0] as DashboardResult;
-      final activityResult = results[1] as ActivityResult;
-
+      // Dashboard stats and activity endpoints removed - using empty data
       if (mounted) {
         setState(() {
-          if (dashboardResult.success) {
-            _dashboardData = dashboardResult.dashboard;
-          } else {
-            _errorMessage = dashboardResult.message;
-          }
-
-          if (activityResult.success) {
-            _recentActivity = activityResult.activities ?? [];
-          }
-
+          _dashboardData = DashboardModel.empty();
+          _recentActivity = [];
           _isLoading = false;
         });
       }
@@ -1011,7 +980,12 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
               'Explore verified craftsmen',
               Icons.search,
               () {
-                // TODO: Navigate to fundi search
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Search feature is coming soon!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
               },
             ),
           ] else if (authService.currentUser?.isFundi ?? false) ...[
@@ -1021,7 +995,12 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
               'Discover new opportunities',
               Icons.search,
               () {
-                // TODO: Navigate to job search
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Search feature is coming soon!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
               },
             ),
             const SizedBox(height: 12),

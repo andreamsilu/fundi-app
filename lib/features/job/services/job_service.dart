@@ -22,6 +22,7 @@ class JobService {
     required String budgetType,
     required DateTime deadline,
     String urgency = 'medium',
+    String? preferredTime,
     List<String>? requiredSkills,
     double? latitude,
     double? longitude,
@@ -46,6 +47,7 @@ class JobService {
           'deadline': deadline.toIso8601String().split(
             'T',
           )[0], // Format as YYYY-MM-DD
+          if (preferredTime != null) 'preferred_time': preferredTime,
           if (latitude != null) 'location_lat': latitude,
           if (longitude != null) 'location_lng': longitude,
           if (requiredSkills != null) 'required_skills': requiredSkills,
@@ -83,6 +85,7 @@ class JobService {
     double? maxBudget,
     JobStatus? status,
     String? search,
+    String? requestId,
   }) async {
     try {
       Logger.userAction(
@@ -108,21 +111,24 @@ class JobService {
         ApiEndpoints.jobs,
         queryParameters: queryParams,
         fromJson: (data) => data as Map<String, dynamic>,
+        requestId: requestId,
       );
 
       if (response.success && response.data != null) {
         final data = response.data!;
-        final jobsData = data['data'] as List<dynamic>;
+        // API now returns a consistent structure: { jobs: [], pagination: {...} }
+        final jobsData = (data['jobs'] as List<dynamic>? ?? <dynamic>[]);
         final jobs = jobsData
             .map(
               (jobData) => JobModel.fromJson(jobData as Map<String, dynamic>),
             )
             .toList();
 
-        // Pagination data is in the response data object
-        final totalCount = data['total'] as int;
-        final totalPages = data['last_page'] as int;
-        final currentPage = data['current_page'] as int;
+        // Pagination object
+        final pagination = (data['pagination'] as Map<String, dynamic>? ?? {});
+        final totalCount = (pagination['total'] as int?) ?? jobs.length;
+        final totalPages = (pagination['last_page'] as int?) ?? 1;
+        final currentPage = (pagination['current_page'] as int?) ?? page;
 
         Logger.userAction(
           'Jobs fetched successfully',

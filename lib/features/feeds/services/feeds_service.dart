@@ -1,5 +1,6 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_endpoints.dart';
+import '../../../core/services/cache_service.dart';
 import '../models/fundi_model.dart';
 import '../models/job_model.dart';
 
@@ -7,6 +8,7 @@ import '../models/job_model.dart';
 /// Implements proper separation of concerns for feeds functionality
 class FeedsService {
   final ApiClient _apiClient;
+  final CacheService _cacheService = CacheService();
 
   FeedsService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
 
@@ -30,8 +32,18 @@ class FeedsService {
     double? minRating,
     bool? isAvailable,
     bool? isVerified,
+    bool useCache = true,
   }) async {
     try {
+      // Check cache first for first page without filters
+      if (useCache && page == 1 && searchQuery == null && location == null && 
+          skills == null && minRating == null && isAvailable == null && isVerified == null) {
+        final cachedData = await _cacheService.getCachedApiResponse('fundis_page_1');
+        if (cachedData != null) {
+          return cachedData;
+        }
+      }
+
       // Build query parameters
       final queryParams = <String, dynamic>{'page': page, 'limit': limit};
 
@@ -60,6 +72,12 @@ class FeedsService {
       );
 
       if (response.success && response.data != null) {
+        // Cache the response for first page without filters
+        if (useCache && page == 1 && searchQuery == null && location == null && 
+            skills == null && minRating == null && isAvailable == null && isVerified == null) {
+          await _cacheService.cacheApiResponse('fundis_page_1', response.data);
+        }
+        
         // Return raw list; provider maps to models
         final List<dynamic> fundiData = response.data['fundis'] ?? [];
         return {

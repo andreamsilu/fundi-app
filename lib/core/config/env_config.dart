@@ -1,20 +1,41 @@
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Environment configuration utility
-/// Handles loading configuration from environment variables and defaults
+/// Handles loading configuration from .env file and environment variables
 class EnvConfig {
   static final Map<String, String> _config = {};
+  static bool _isInitialized = false;
 
-  /// Initialize configuration from environment variables
-  static void initialize() {
-    // Load from environment variables
+  /// Initialize configuration from .env file and environment variables
+  static Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    try {
+      // Load .env file if it exists
+      await dotenv.load(fileName: ".env");
+      
+      // Load from .env file first
+      dotenv.env.forEach((key, value) {
+        if (value != null && value.isNotEmpty) {
+          _config[key] = value;
+        }
+      });
+    } catch (e) {
+      // .env file not found or error loading, continue with defaults
+      print('Warning: Could not load .env file: $e');
+    }
+
+    // Load from system environment variables (override .env)
     Platform.environment.forEach((key, value) {
-      _config[key] = value;
+      if (value.isNotEmpty) {
+        _config[key] = value;
+      }
     });
 
-    // Set default values for development
+    // Set default values if not configured (avoid real URLs)
     if (!_config.containsKey('API_BASE_URL')) {
-      _config['API_BASE_URL'] = 'http://185.213.27.206:8081/api';
+      _config['API_BASE_URL'] = '';
     }
     if (!_config.containsKey('API_VERSION')) {
       _config['API_VERSION'] = 'v1';
@@ -43,6 +64,9 @@ class EnvConfig {
     if (!_config.containsKey('ALLOWED_FILE_TYPES')) {
       _config['ALLOWED_FILE_TYPES'] = 'jpg,jpeg,png,gif';
     }
+
+    _isInitialized = true;
+    print('Environment configuration loaded successfully');
   }
 
   /// Get configuration value as string
@@ -120,7 +144,7 @@ class EnvConfig {
 
   /// Get API base URL
   static String get apiBaseUrl {
-    return get('API_BASE_URL', defaultValue: 'http://185.213.27.206:8081/api');
+    return get('API_BASE_URL', defaultValue: '');
   }
 
   /// Get API version

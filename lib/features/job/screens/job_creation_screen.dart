@@ -7,6 +7,7 @@ import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/error_handler.dart';
 
 /// Job creation screen for posting new jobs
 /// Allows customers to create detailed job postings with images
@@ -18,13 +19,14 @@ class JobCreationScreen extends StatefulWidget {
 }
 
 class _JobCreationScreenState extends State<JobCreationScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, ErrorHandlingMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _budgetController = TextEditingController();
   final _locationController = TextEditingController();
   final _durationController = TextEditingController();
+  final _deadlineController = TextEditingController();
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -36,6 +38,8 @@ class _JobCreationScreenState extends State<JobCreationScreen>
   String? _errorMessage;
   String? _successMessage;
   String _selectedCategory = '';
+  String _selectedUrgency = 'medium';
+  String _selectedPreferredTime = 'weekend';
   List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
   List<JobCategory> _categories = [];
@@ -71,53 +75,23 @@ class _JobCreationScreenState extends State<JobCreationScreen>
   }
 
   Future<void> _loadCategories() async {
-    try {
-      final result = await DashboardService().getJobCategories();
-      if (mounted) {
-        setState(() {
-          if (result.success && result.categories != null) {
-            _categories = result.categories!;
-            if (_categories.isNotEmpty) {
+    await handleApiCall(
+      () async {
+        final result = await DashboardService().getJobCategories();
+        if (result.success && result.categories != null && result.categories!.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _categories = result.categories!;
               _selectedCategory = _categories.first.id;
-            }
-          } else {
-            // Fallback to hardcoded categories if API fails
-            _categories = [
-              const JobCategory(id: 'plumbing', name: 'Plumbing'),
-              const JobCategory(id: 'electrical', name: 'Electrical'),
-              const JobCategory(id: 'carpentry', name: 'Carpentry'),
-              const JobCategory(id: 'painting', name: 'Painting'),
-              const JobCategory(id: 'cleaning', name: 'Cleaning'),
-              const JobCategory(id: 'gardening', name: 'Gardening'),
-              const JobCategory(id: 'repair', name: 'Repair'),
-              const JobCategory(id: 'installation', name: 'Installation'),
-              const JobCategory(id: 'other', name: 'Other'),
-            ];
-            _selectedCategory = _categories.first.id;
+              _isLoadingCategories = false;
+            });
           }
-          _isLoadingCategories = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          // Fallback to hardcoded categories
-          _categories = [
-            const JobCategory(id: 'plumbing', name: 'Plumbing'),
-            const JobCategory(id: 'electrical', name: 'Electrical'),
-            const JobCategory(id: 'carpentry', name: 'Carpentry'),
-            const JobCategory(id: 'painting', name: 'Painting'),
-            const JobCategory(id: 'cleaning', name: 'Cleaning'),
-            const JobCategory(id: 'gardening', name: 'Gardening'),
-            const JobCategory(id: 'repair', name: 'Repair'),
-            const JobCategory(id: 'installation', name: 'Installation'),
-            const JobCategory(id: 'other', name: 'Other'),
-          ];
-          _selectedCategory = _categories.first.id;
-          _isLoadingCategories = false;
-        });
-      }
-    }
+        } else {
+          throw Exception('No categories available from API');
+        }
+      },
+      loadingMessage: 'Loading categories...',
+    );
   }
 
   @override
@@ -127,6 +101,7 @@ class _JobCreationScreenState extends State<JobCreationScreen>
     _budgetController.dispose();
     _locationController.dispose();
     _durationController.dispose();
+    _deadlineController.dispose();
     _fadeController.dispose();
     _slideController.dispose();
     super.dispose();
@@ -135,52 +110,38 @@ class _JobCreationScreenState extends State<JobCreationScreen>
   Future<void> _handleCreateJob() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _successMessage = null;
-    });
+    await handleApiCall(
+      () async {
+        final result = await JobService().createJob(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          categoryId: int.parse(_selectedCategory),
+          budget: double.tryParse(_budgetController.text.trim()) ?? 0.0,
+          budgetType: 'fixed',
+          location: _locationController.text.trim(),
+          deadline: _deadlineController.text.isNotEmpty 
+              ? DateTime.parse(_deadlineController.text)
+              : DateTime.now().add(Duration(days: 30)),
+          urgency: _selectedUrgency,
+          preferredTime: _selectedPreferredTime,
+          requiredSkills: [],
+          imageUrls: _selectedImages.map((file) => file.path).toList(),
+        );
 
-    try {
-      final result = await JobService().createJob(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        categoryId: int.parse(_selectedCategory),
-        budget: double.tryParse(_budgetController.text.trim()) ?? 0.0,
-        budgetType: 'fixed',
-        location: _locationController.text.trim(),
-        deadline: DateTime.now().add(Duration(days: 30)),
-        requiredSkills: [],
-        imageUrls: _selectedImages.map((file) => file.path).toList(),
-      );
-
-      if (result.success) {
-        setState(() {
-          _successMessage = 'Job posted successfully!';
-        });
-
-        // Navigate back after a short delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            Navigator.pop(context, true);
-          }
-        });
-      } else {
-        setState(() {
-          _errorMessage = result.message;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+        if (result.success) {
+          ErrorHandler.showSuccessSnackBar(context, 'Job posted successfully!');
+          // Navigate back after a short delay
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              Navigator.pop(context, true);
+            }
+          });
+        } else {
+          throw Exception(result.message ?? 'Failed to create job');
+        }
+      },
+      loadingMessage: 'Creating job...',
+    );
   }
 
   Future<void> _pickImages() async {
@@ -233,13 +194,20 @@ class _JobCreationScreenState extends State<JobCreationScreen>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+          child: Column(
+            children: [
+              // Error banner
+              buildErrorBanner(),
+              
+              // Main content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   // Messages
                   if (_errorMessage != null) ...[
                     ErrorBanner(
@@ -380,8 +348,37 @@ class _JobCreationScreenState extends State<JobCreationScreen>
 
                   const SizedBox(height: 16),
 
+                  // Deadline
+                  AppInputField(
+                    label: 'Deadline',
+                    hint: 'YYYY-MM-DD (e.g., 2025-09-28)',
+                    controller: _deadlineController,
+                    prefixIcon: const Icon(Icons.calendar_today),
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        try {
+                          final date = DateTime.parse(value);
+                          if (date.isBefore(DateTime.now())) {
+                            return 'Deadline must be in the future';
+                          }
+                        } catch (e) {
+                          return 'Enter a valid date (YYYY-MM-DD)';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
                   // Urgency Selection
-                  // _buildUrgencySelector(),
+                  _buildUrgencySelector(),
+
+                  const SizedBox(height: 16),
+
+                  // Preferred Time Selection
+                  _buildPreferredTimeSelector(),
+
                   const SizedBox(height: 24),
 
                   // Images Section
@@ -568,6 +565,91 @@ class _JobCreationScreenState extends State<JobCreationScreen>
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildUrgencySelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Urgency',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.darkGray,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppTheme.mediumGray),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedUrgency,
+              isExpanded: true,
+              items: [
+                DropdownMenuItem(value: 'low', child: Text('Low')),
+                DropdownMenuItem(value: 'medium', child: Text('Medium')),
+                DropdownMenuItem(value: 'high', child: Text('High')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedUrgency = value;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreferredTimeSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Preferred Time',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.darkGray,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppTheme.mediumGray),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedPreferredTime,
+              isExpanded: true,
+              items: [
+                DropdownMenuItem(value: 'weekend', child: Text('Weekend')),
+                DropdownMenuItem(value: 'weekday', child: Text('Weekday')),
+                DropdownMenuItem(value: 'anytime', child: Text('Anytime')),
+                DropdownMenuItem(value: 'morning', child: Text('Morning')),
+                DropdownMenuItem(value: 'afternoon', child: Text('Afternoon')),
+                DropdownMenuItem(value: 'evening', child: Text('Evening')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedPreferredTime = value;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
       ],
     );
   }

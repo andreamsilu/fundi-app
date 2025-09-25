@@ -122,6 +122,7 @@ class PortfolioService {
     int limit = 20,
     String? category,
     String? search,
+    String? requestId,
   }) async {
     try {
       Logger.apiRequest('GET', ApiEndpoints.myPortfolio);
@@ -136,6 +137,7 @@ class PortfolioService {
           if (category != null) 'category': category,
           if (search != null) 'search': search,
         },
+        requestId: requestId,
       );
 
       Logger.apiResponse(

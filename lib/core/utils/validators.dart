@@ -7,7 +7,7 @@ class Validators {
   );
 
   /// Phone number validation regex pattern (Tanzania format)
-  static final RegExp _phoneRegex = RegExp(r'^(\+255|0)[0-9]{9}$');
+  static final RegExp _phoneRegex = RegExp(r'^(06|07)[0-9]{8}$');
 
   /// NIDA number validation regex pattern (Tanzania)
   static final RegExp _nidaRegex = RegExp(r'^[0-9]{20}$');
@@ -70,7 +70,7 @@ class Validators {
     final cleanValue = value.replaceAll(RegExp(r'[\s-]'), '');
 
     if (!_phoneRegex.hasMatch(cleanValue)) {
-      return 'Please enter a valid Tanzanian phone number (e.g., +255123456789 or 0123456789)';
+      return 'Please enter a valid Tanzanian phone number (e.g., 0654289824 or 0754289824)';
     }
 
     return null;

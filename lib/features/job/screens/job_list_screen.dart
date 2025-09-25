@@ -10,7 +10,8 @@ import '../../../shared/widgets/error_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/hardcoded_data.dart';
+import '../../../core/utils/performance_utils.dart';
+// Removed hardcoded data import - using only API categories
 import '../widgets/job_card.dart';
 
 /// Screen displaying a list of available jobs
@@ -32,7 +33,7 @@ class JobListScreen extends StatefulWidget {
 }
 
 class _JobListScreenState extends State<JobListScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, PerformanceOptimized {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -76,8 +77,10 @@ class _JobListScreenState extends State<JobListScreen>
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    // Use performance-optimized scroll handling
+    if (shouldLoadMore(_scrollController, 
+        currentCount: _jobs.length, 
+        totalCount: _totalPages * 15)) {
       _loadMoreJobs();
     }
   }
@@ -188,8 +191,8 @@ class _JobListScreenState extends State<JobListScreen>
   }
 
   void _onSearchChanged(String value) {
-    // Debounce search
-    Future.delayed(const Duration(milliseconds: 500), () {
+    // Use performance-optimized debounced search
+    debounceSearch(value, () {
       if (_searchController.text == value) {
         _loadJobs(refresh: true);
       }
@@ -197,31 +200,25 @@ class _JobListScreenState extends State<JobListScreen>
   }
 
   Future<void> _loadCategories() async {
-    // Use hardcoded categories for now to ensure they always load
-    if (mounted) {
-      setState(() {
-        _categories = HardcodedData.jobCategories
-            .map((cat) => JobCategory(id: cat['id']!, name: cat['name']!))
-            .toList();
-        _isLoadingCategories = false;
-        print('Loaded hardcoded categories: ${_categories.length}');
-      });
-    }
-
-    // Try to load from API in background
     try {
       final result = await DashboardService().getJobCategories();
-      if (mounted &&
-          result.success &&
-          result.categories != null &&
-          result.categories!.isNotEmpty) {
+      if (mounted) {
         setState(() {
-          _categories = result.categories!;
-          print('Updated with API categories: ${_categories.length}');
+          if (result.success && result.categories != null && result.categories!.isNotEmpty) {
+            _categories = result.categories!;
+          } else {
+            _categories = []; // No fallback - only use API categories
+          }
+          _isLoadingCategories = false;
         });
       }
     } catch (e) {
-      print('API categories failed, using hardcoded: $e');
+      if (mounted) {
+        setState(() {
+          _categories = []; // No fallback - only use API categories
+          _isLoadingCategories = false;
+        });
+      }
     }
   }
 
@@ -514,13 +511,26 @@ class _JobListScreenState extends State<JobListScreen>
                       ),
                     ),
 
-                  // Loading state
-                  if (_isLoadingCategories)
-                    Container(
-                      height: 50,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: const Center(child: LoadingWidget(size: 20)),
-                    ),
+                   // Loading state (shimmer strip)
+                   if (_isLoadingCategories)
+                     SizedBox(
+                       height: 50,
+                       child: ListView.builder(
+                         scrollDirection: Axis.horizontal,
+                         padding: const EdgeInsets.symmetric(horizontal: 16),
+                         itemCount: 6,
+                         itemBuilder: (context, index) {
+                           return const Padding(
+                             padding: EdgeInsets.only(right: 8),
+                             child: ShimmerLoading(
+                               width: 90,
+                               height: 32,
+                               borderRadius: 20,
+                             ),
+                           );
+                         },
+                       ),
+                     ),
                 ],
               ),
             ),
@@ -566,7 +576,15 @@ class _JobListScreenState extends State<JobListScreen>
 
   Widget _buildContent() {
     if (_isLoading && _jobs.isEmpty) {
-      return const LoadingWidget(message: 'Loading jobs...');
+      // Full-page shimmer while first page loads
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 6,
+        itemBuilder: (context, index) => const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: ShimmerJobCard(),
+        ),
+      );
     }
 
     if (_errorMessage != null && _jobs.isEmpty) {
@@ -674,13 +692,10 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
       final result = await DashboardService().getJobCategories();
       if (mounted) {
         setState(() {
-          if (result.success && result.categories != null) {
+          if (result.success && result.categories != null && result.categories!.isNotEmpty) {
             _categories = result.categories!;
           } else {
-            // Fallback to hardcoded categories if API fails
-            _categories = HardcodedData.jobCategories
-                .map((cat) => JobCategory(id: cat['id']!, name: cat['name']!))
-                .toList();
+            _categories = []; // No fallback - only use API categories
           }
           _isLoadingCategories = false;
         });
@@ -688,10 +703,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          // Fallback to hardcoded categories
-          _categories = HardcodedData.jobCategories
-              .map((cat) => JobCategory(id: cat['id']!, name: cat['name']!))
-              .toList();
+          _categories = []; // No fallback - only use API categories
           _isLoadingCategories = false;
         });
       }

@@ -7,6 +7,8 @@ import '../../../core/utils/logger.dart';
 /// Handles portfolio-related state and operations
 class PortfolioProvider extends ChangeNotifier {
   final PortfolioService _portfolioService = PortfolioService();
+  // Request management
+  String? _currentPortfoliosRequestId;
 
   List<PortfolioModel> _portfolios = [];
   bool _isLoading = false;
@@ -62,11 +64,13 @@ class PortfolioProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      _currentPortfoliosRequestId = 'portfolios_${DateTime.now().millisecondsSinceEpoch}';
       final result = await _portfolioService.getPortfolios(
         fundiId: fundiId ?? _fundiId ?? '',
         page: _currentPage,
         category: category,
         search: search,
+        requestId: _currentPortfoliosRequestId,
       );
 
       if (result.success) {
@@ -102,12 +106,14 @@ class PortfolioProvider extends ChangeNotifier {
     _setLoadingMore(true);
 
     try {
+      _currentPortfoliosRequestId = 'portfolios_${DateTime.now().millisecondsSinceEpoch}';
       _currentPage++;
       final result = await _portfolioService.getPortfolios(
         fundiId: _fundiId ?? '',
         page: _currentPage,
         search: _searchQuery,
         category: _selectedCategory,
+        requestId: _currentPortfoliosRequestId,
       );
 
       if (result.success) {
@@ -396,6 +402,7 @@ class PortfolioProvider extends ChangeNotifier {
   @override
   void dispose() {
     _mounted = false;
+    // Cancel any active portfolios request if API client supports it
     super.dispose();
   }
 }

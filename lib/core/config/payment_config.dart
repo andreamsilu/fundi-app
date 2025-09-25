@@ -58,17 +58,8 @@ class PaymentConfig {
   static const String callbackUrl = '/payments/callback';
   static const String cancelUrl = '/payments/cancel';
 
-  // Sample payment URLs (these will be configured via .env on backend)
-  static const Map<String, String> samplePaymentUrls = {
-    'pesapal_sandbox':
-        'https://sandbox.pesapal.com/pesapalapi/api/PostPesapalDirectOrderV4',
-    'pesapal_production':
-        'https://www.pesapal.com/api/PostPesapalDirectOrderV4',
-    'mpesa_sandbox':
-        'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
-    'mpesa_production':
-        'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
-  };
+  // Payment gateway URLs are provided by backend config; no hardcoded URLs here
+  static const Map<String, String> samplePaymentUrls = {};
 
   // Payment endpoints (configured via backend .env)
   static const Map<String, String> paymentEndpoints = {

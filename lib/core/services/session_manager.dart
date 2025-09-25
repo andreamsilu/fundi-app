@@ -66,18 +66,17 @@ class SessionManager {
   Future<void> saveToken(String token) async {
     try {
       _authToken = token;
+      // TODO: Migrate to flutter_secure_storage for tokens (SharedPreferences is not encrypted)
       await _prefs?.setString(AppConstants.tokenKey, token);
       Logger.auth(
         'Token saved successfully',
         data: {
           'tokenLength': token.length,
-          'tokenPreview': token.substring(0, 10) + '...',
+          'tokenPreview': token.substring(0, 6) + '***',
         },
       );
-      debugPrint('SessionManager: Token saved - length: ${token.length}');
     } catch (e) {
       Logger.error('Failed to save token', error: e);
-      debugPrint('SessionManager: Failed to save token - $e');
       throw Exception('Failed to save authentication token');
     }
   }

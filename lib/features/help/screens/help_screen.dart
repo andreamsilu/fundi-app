@@ -69,7 +69,7 @@ class _HelpScreenState extends State<HelpScreen> with TickerProviderStateMixin {
                     icon: Icons.phone,
                     title: 'Phone Support',
                     subtitle: '+255 123 456 789',
-                    onTap: () => _launchPhone('+255123456789'),
+                    onTap: () => _launchPhone('0754289824'),
                   ),
                   _buildContactItem(
                     icon: Icons.email,

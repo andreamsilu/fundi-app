@@ -1,10 +1,10 @@
-import '../config/env_config.dart';
+import '../config/api_config.dart';
 
 /// API Endpoints Constants
 /// This file contains all API endpoints matching the Laravel API routes exactly
 class ApiEndpoints {
-  // Base API URL - Read from environment configuration
-  static String get baseUrl => EnvConfig.apiBaseUrl;
+  // Base API URL - Read from centralized configuration
+  static String get baseUrl => ApiConfig.baseUrl;
 
   // Authentication Endpoints
   static const String register = '/auth/register';
@@ -64,39 +64,18 @@ class ApiEndpoints {
   static const String checkPermission = '/payments/check-permission';
   static const String payPerUse = '/payments/pay-per-use';
   static const String userPayments = '/payments/user';
-  static const String paymentConfig = '/payments/config';
-  static const String paymentCallback = '/payments/callback';
-  static const String paymentStatus = '/payments/status';
-  static const String paymentRetry = '/payments/retry';
-
-  // Payment Gateways
-  static const String pesapalProcess = '/payments/pesapal/process';
-  static const String mpesaProcess = '/payments/mpesa/process';
-  static const String pesapalCallback = '/payments/pesapal/callback';
-  static const String mpesaCallback = '/payments/mpesa/callback';
-  static const String verifyPayment = '/payments/verify/{transactionId}';
+  // Payment Gateway Endpoints - REMOVED (not implemented in API)
 
   // Notification Endpoints
   static const String notifications = '/notifications';
   static const String markNotificationAsRead = '/notifications/{id}/read';
   static const String deleteNotification = '/notifications/{id}';
 
-  // Messaging Endpoints
-  static const String chats = '/chats';
-  static const String messageUpload = '/messages/upload';
-  static String getChatMessagesEndpoint(String chatId) =>
-      '/chats/$chatId/messages';
-  static String getChatMessagesReadEndpoint(String chatId) =>
-      '/chats/$chatId/messages/read';
+  // Messaging Endpoints - REMOVED (not implemented in API)
   static String getChatMessageEndpoint(String chatId, String messageId) =>
       '/chats/$chatId/messages/$messageId';
 
-  // Search Endpoints
-  static const String search = '/search';
-  static const String searchSuggestions = '/search/suggestions';
-  static const String searchPopular = '/search/popular';
-  static const String searchFilters = '/search/filters';
-  static const String searchAnalytics = '/search/analytics';
+  // Search Endpoints - REMOVED (not implemented in API)
 
   // Profile Endpoints
   static String userProfileEndpoint(String userId) => '/users/$userId/profile';
@@ -109,8 +88,7 @@ class ApiEndpoints {
   static String userProfilePreferencesEndpoint(String userId) =>
       '/users/$userId/profile/preferences';
 
-  // Work Approval Endpoints
-  static const String workApprovalStatistics = '/work-approval/statistics';
+  // Work Approval Endpoints - Statistics removed (not implemented in API)
   static String getWorkApprovalSubmissionsRequestRevisionEndpoint(
     String submissionId,
   ) => '/work-approval/submissions/$submissionId/request-revision';
@@ -119,9 +97,7 @@ class ApiEndpoints {
   static String getWorkApprovalSubmissionsEndpoint(String submissionId) =>
       '/work-approval/submissions/$submissionId';
 
-  // Dashboard Endpoints
-  static const String dashboardStats = '/dashboard/stats';
-  static const String dashboardActivity = '/dashboard/activity';
+  // Dashboard Endpoints - REMOVED (not implemented in API)
   static const String markAllNotificationsAsRead = '/notifications/read-all';
   static const String clearAllNotifications = '/notifications/clear-all';
   static const String notificationSettings = '/notifications/settings';
@@ -302,8 +278,5 @@ class ApiEndpoints {
     return '$payments/$paymentId';
   }
 
-  /// Get payment status endpoint
-  static String getPaymentStatusEndpoint(String paymentId) {
-    return '$payments/$paymentId/status';
-  }
+  // Payment status endpoint - REMOVED (not implemented in API)
 }

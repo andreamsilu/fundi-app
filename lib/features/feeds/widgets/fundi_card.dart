@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/fundi_model.dart';
+import '../../../shared/widgets/optimized_image.dart';
 
 class FundiCard extends StatelessWidget {
   final dynamic fundi;
@@ -34,14 +35,14 @@ class FundiCard extends StatelessWidget {
     }();
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -49,7 +50,7 @@ class FundiCard extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 25,
+                    radius: 22,
                     backgroundColor: Theme.of(
                       context,
                     ).primaryColor.withOpacity(0.1),
@@ -62,7 +63,7 @@ class FundiCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,27 +71,25 @@ class FundiCard extends StatelessWidget {
                         Text(
                           name,
                           style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Row(
                           children: [
-                            Icon(Icons.star, color: Colors.amber, size: 16),
-                            const SizedBox(width: 4),
+                            Icon(Icons.star, color: Colors.amber, size: 14),
+                            const SizedBox(width: 3),
                             Text(
                               averageRating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '($totalRatings reviews)',
+                              '($totalRatings)',
                               style: TextStyle(
                                 color: Colors.grey[600],
-                                fontSize: 12,
+                                fontSize: 11,
                               ),
                             ),
                           ],
@@ -106,21 +105,21 @@ class FundiCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Portfolio Preview
               if (portfolioItems.isNotEmpty) ...[
                 Text(
                   'Recent Work',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[800],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 SizedBox(
-                  height: 100,
+                  height: 90,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: portfolioItems.length > 3
@@ -140,18 +139,10 @@ class FundiCard extends StatelessWidget {
                           child:
                               item['media'] != null &&
                                   (item['media'] as List).isNotEmpty
-                              ? Image.network(
-                                  item['media'][0]['url'],
+                              ? OptimizedListImage(
+                                  imageUrl: item['media'][0]['url'],
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[300],
-                                      child: const Icon(
-                                        Icons.image,
-                                        color: Colors.grey,
-                                      ),
-                                    );
-                                  },
+                                  borderRadius: BorderRadius.circular(8),
                                 )
                               : Container(
                                   color: Colors.grey[300],

@@ -7,6 +7,8 @@ import '../../../core/utils/logger.dart';
 /// Handles job-related state and operations
 class JobProvider extends ChangeNotifier {
   final JobService _jobService = JobService();
+  // Request management
+  String? _currentJobsRequestId;
 
   List<JobModel> _jobs = [];
   List<JobModel> _myJobs = [];
@@ -69,11 +71,13 @@ class JobProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      _currentJobsRequestId = 'jobs_${DateTime.now().millisecondsSinceEpoch}';
       final result = await _jobService.getJobs(
         page: _currentPage,
         search: search,
         category: category,
         location: location,
+        requestId: _currentJobsRequestId,
       );
 
       if (result.success) {
@@ -109,12 +113,14 @@ class JobProvider extends ChangeNotifier {
     _setLoadingMore(true);
 
     try {
+      _currentJobsRequestId = 'jobs_${DateTime.now().millisecondsSinceEpoch}';
       _currentPage++;
       final result = await _jobService.getJobs(
         page: _currentPage,
         search: _searchQuery,
         category: _selectedCategory,
         location: _selectedLocation,
+        requestId: _currentJobsRequestId,
       );
 
       if (result.success) {
@@ -139,10 +145,12 @@ class JobProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      _currentJobsRequestId = 'my_jobs_${DateTime.now().millisecondsSinceEpoch}';
       // This would typically be a different endpoint for user's own jobs
       final result = await _jobService.getJobs(
         page: 1,
         limit: 100, // Get all user's jobs
+        requestId: _currentJobsRequestId,
       );
 
       if (result.success) {
@@ -160,6 +168,13 @@ class JobProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  @override
+  void dispose() {
+    // Cancel any active jobs request if API client supports it
+    // ApiClient().cancelRequest can be used from service when provided
+    super.dispose();
   }
 
   /// Load job applications

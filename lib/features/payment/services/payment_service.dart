@@ -549,56 +549,7 @@ class PaymentService {
     }
   }
 
-  /// Get payment configuration
-  Future<PaymentConfigResult> getPaymentConfig() async {
-    try {
-      PaymentLogger.logPaymentEvent(
-        event: 'get_payment_config',
-        transactionId: 'config_request',
-      );
-
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        '/payments/config',
-        fromJson: (data) => data as Map<String, dynamic>,
-      );
-
-      if (response.success && response.data != null) {
-        PaymentLogger.logPaymentEvent(
-          event: 'payment_config_retrieved',
-          transactionId: 'config_request',
-        );
-
-        return PaymentConfigResult.success(
-          actions: response.data!['actions'] as Map<String, dynamic>,
-          currency: response.data!['currency'] as String,
-          limits: response.data!['limits'] as Map<String, dynamic>,
-        );
-      } else {
-        PaymentLogger.logPaymentError(
-          error: 'Failed to get payment config',
-          transactionId: 'config_request',
-          context: {'response_message': response.message},
-        );
-        return PaymentConfigResult.failure(message: response.message);
-      }
-    } on ApiError catch (e) {
-      PaymentLogger.logPaymentError(
-        error: 'Get payment config API error',
-        transactionId: 'config_request',
-        exception: e,
-      );
-      return PaymentConfigResult.failure(message: e.message);
-    } catch (e) {
-      PaymentLogger.logPaymentError(
-        error: 'Get payment config unexpected error',
-        transactionId: 'config_request',
-        exception: e,
-      );
-      return PaymentConfigResult.failure(
-        message: 'An unexpected error occurred',
-      );
-    }
-  }
+  // Payment config method - REMOVED (payment config endpoint not implemented in API)
 
   /// Retry a failed payment
   Future<TransactionResult> retryPayment(String transactionId) async {

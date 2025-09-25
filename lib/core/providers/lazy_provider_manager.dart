@@ -2,8 +2,7 @@ import 'package:provider/provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/job/providers/job_provider.dart';
 import '../../features/portfolio/providers/portfolio_provider.dart';
-import '../../features/messaging/providers/messaging_provider.dart';
-import '../../features/search/providers/search_provider.dart';
+// Messaging and search providers removed - features not implemented in API
 import '../../features/notifications/providers/notification_provider.dart';
 import '../../features/settings/providers/settings_provider.dart';
 import '../../features/feeds/providers/feeds_provider.dart';
@@ -49,7 +48,7 @@ class LazyProviderManager {
 
     _providers[JobProvider] = ChangeNotifierProvider(
       create: (_) => JobProvider(),
-      lazy: true,
+      lazy: false, // Jobs are widely used; ensure provider is ready
     );
 
     _providers[PortfolioProvider] = ChangeNotifierProvider(
@@ -57,15 +56,7 @@ class LazyProviderManager {
       lazy: false, // Ensure Portfolio screens always find provider
     );
 
-    _providers[MessagingProvider] = ChangeNotifierProvider(
-      create: (_) => MessagingProvider(),
-      lazy: true,
-    );
-
-    _providers[SearchProvider] = ChangeNotifierProvider(
-      create: (_) => SearchProvider(),
-      lazy: true,
-    );
+    // Messaging and search providers removed - features not implemented in API
 
     _providers[NotificationProvider] = ChangeNotifierProvider(
       create: (_) => NotificationProvider(),
