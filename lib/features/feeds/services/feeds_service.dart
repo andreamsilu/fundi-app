@@ -36,9 +36,17 @@ class FeedsService {
   }) async {
     try {
       // Check cache first for first page without filters
-      if (useCache && page == 1 && searchQuery == null && location == null && 
-          skills == null && minRating == null && isAvailable == null && isVerified == null) {
-        final cachedData = await _cacheService.getCachedApiResponse('fundis_page_1');
+      if (useCache &&
+          page == 1 &&
+          searchQuery == null &&
+          location == null &&
+          skills == null &&
+          minRating == null &&
+          isAvailable == null &&
+          isVerified == null) {
+        final cachedData = await _cacheService.getCachedApiResponse(
+          'fundis_page_1',
+        );
         if (cachedData != null) {
           return cachedData;
         }
@@ -73,11 +81,17 @@ class FeedsService {
 
       if (response.success && response.data != null) {
         // Cache the response for first page without filters
-        if (useCache && page == 1 && searchQuery == null && location == null && 
-            skills == null && minRating == null && isAvailable == null && isVerified == null) {
+        if (useCache &&
+            page == 1 &&
+            searchQuery == null &&
+            location == null &&
+            skills == null &&
+            minRating == null &&
+            isAvailable == null &&
+            isVerified == null) {
           await _cacheService.cacheApiResponse('fundis_page_1', response.data);
         }
-        
+
         // Return raw list; provider maps to models
         final List<dynamic> fundiData = response.data['fundis'] ?? [];
         return {
@@ -193,10 +207,9 @@ class FeedsService {
       );
 
       if (response.success && response.data != null) {
-        final fundi = FundiModel.fromJson(response.data);
         return {
           'success': true,
-          'fundi': fundi,
+          'fundi': response.data,
           'message': 'Fundi profile fetched successfully',
         };
       } else {
@@ -273,9 +286,17 @@ class FeedsService {
           );
 
       if (response.success && response.data != null) {
+        // Handle both list and object responses
+        List<dynamic> categories;
+        if (response.data is List) {
+          categories = response.data as List<dynamic>;
+        } else {
+          categories = response.data['categories'] ?? [];
+        }
+
         return {
           'success': true,
-          'categories': response.data['categories'] ?? [],
+          'categories': categories,
           'message': 'Categories fetched successfully',
         };
       } else {

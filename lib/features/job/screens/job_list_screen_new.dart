@@ -77,7 +77,7 @@ class _JobListScreenNewState extends State<JobListScreenNew>
   Future<void> _loadJobs() async {
     try {
       final jobProvider = Provider.of<JobProvider>(context, listen: false);
-      await jobProvider.loadJobs(refresh: true);
+      await jobProvider.loadAvailableJobs(refresh: true);
     } catch (e) {
       print('JobProvider not available: $e');
     }
@@ -105,22 +105,25 @@ class _JobListScreenNewState extends State<JobListScreenNew>
 
   Future<void> _refreshJobs() async {
     final jobProvider = context.read<JobProvider>();
-    await jobProvider.loadJobs(refresh: true);
+    await jobProvider.loadAvailableJobs(refresh: true);
   }
 
   void _searchJobs(String query) {
     final jobProvider = context.read<JobProvider>();
-    jobProvider.loadJobs(refresh: true, search: query.isEmpty ? null : query);
+    jobProvider.loadAvailableJobs(
+      refresh: true,
+      search: query.isEmpty ? null : query,
+    );
   }
 
   void _filterByCategory(String? category) {
     final jobProvider = context.read<JobProvider>();
-    jobProvider.loadJobs(refresh: true, category: category);
+    jobProvider.loadAvailableJobs(refresh: true, category: category);
   }
 
   void _filterByLocation(String? location) {
     final jobProvider = context.read<JobProvider>();
-    jobProvider.loadJobs(refresh: true, location: location);
+    jobProvider.loadAvailableJobs(refresh: true, location: location);
   }
 
   @override
@@ -160,7 +163,7 @@ class _JobListScreenNewState extends State<JobListScreenNew>
     } catch (e) {
       // Provider not available, create a new one
       return ChangeNotifierProvider(
-        create: (_) => JobProvider()..loadJobs(),
+        create: (_) => JobProvider()..loadAvailableJobs(),
         child: Consumer<JobProvider>(
           builder: (context, jobProvider, child) {
             return FadeTransition(

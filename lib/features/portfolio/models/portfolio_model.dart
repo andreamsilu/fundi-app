@@ -102,43 +102,89 @@ class PortfolioModel {
 
   /// Create PortfolioModel from JSON (follows API structure)
   factory PortfolioModel.fromJson(Map<String, dynamic> json) {
-    return PortfolioModel(
-      id: json['id']
-          .toString(), // Convert to String to handle both int and String
-      fundiId: json['fundi_id']
-          .toString(), // Convert to String to handle both int and String
-      title: json['title'] as String,
-      description: json['description'] as String,
-      category: json['category'] as String? ?? 'General',
-      skillsUsed: List<String>.from(json['skills_used'] as List),
-      images: json['images'] != null
-          ? List<String>.from(json['images'] as List)
-          : [],
-      durationHours: json['duration_hours'] as int,
-      budget: (json['budget'] as num).toDouble(),
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
-      fundiName: json['fundi_name'] as String?, // Additional field for mobile
-      fundiImageUrl:
-          json['fundi_image_url'] as String?, // Additional field for mobile
-      imageUrls: json['image_urls'] != null
-          ? List<String>.from(json['image_urls'] as List)
-          : null, // Additional field for mobile
-      videoUrls: json['video_urls'] != null
-          ? List<String>.from(json['video_urls'] as List)
-          : null, // Additional field for mobile
-      location: json['location'] as String?, // Additional field for mobile
-      clientName: json['client_name'] as String?, // Additional field for mobile
-      clientImageUrl:
-          json['client_image_url'] as String?, // Additional field for mobile
-      metadata:
-          json['metadata']
-              as Map<String, dynamic>?, // Additional field for mobile
-    );
+    try {
+      // Handle skills_used field - can be string or list
+      List<String> skillsUsed = [];
+      if (json['skills_used'] != null) {
+        if (json['skills_used'] is String) {
+          // Handle comma-separated string
+          skillsUsed = json['skills_used']
+              .split(',')
+              .map((s) => s.trim())
+              .toList();
+        } else if (json['skills_used'] is List) {
+          skillsUsed = List<String>.from(json['skills_used']);
+        }
+      }
+
+      // Handle images field - can be null or list
+      List<String> images = [];
+      if (json['images'] != null && json['images'] is List) {
+        images = List<String>.from(json['images']);
+      }
+
+      // Handle media field if present
+      List<String> imageUrls = [];
+      if (json['media'] != null && json['media'] is List) {
+        final mediaList = json['media'] as List<dynamic>;
+        for (final media in mediaList) {
+          if (media is Map<String, dynamic> && media['file_path'] != null) {
+            imageUrls.add(media['file_path'] as String);
+          }
+        }
+      }
+
+      return PortfolioModel(
+        id: json['id']
+            .toString(), // Convert to String to handle both int and String
+        fundiId: json['fundi_id']
+            .toString(), // Convert to String to handle both int and String
+        title: json['title'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        category: json['category'] as String? ?? 'General',
+        skillsUsed: skillsUsed,
+        images: images,
+        durationHours: json['duration_hours'] as int? ?? 0,
+        budget: (json['budget'] as num?)?.toDouble() ?? 0.0,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'] as String)
+            : null,
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'] as String)
+            : null,
+        fundiName: json['fundi_name'] as String?, // Additional field for mobile
+        fundiImageUrl:
+            json['fundi_image_url'] as String?, // Additional field for mobile
+        imageUrls: imageUrls.isNotEmpty
+            ? imageUrls
+            : null, // Additional field for mobile
+        videoUrls: json['video_urls'] != null
+            ? List<String>.from(json['video_urls'] as List)
+            : null, // Additional field for mobile
+        location: json['location'] as String?, // Additional field for mobile
+        clientName:
+            json['client_name'] as String?, // Additional field for mobile
+        clientImageUrl:
+            json['client_image_url'] as String?, // Additional field for mobile
+        metadata:
+            json['metadata']
+                as Map<String, dynamic>?, // Additional field for mobile
+      );
+    } catch (e) {
+      print('Error parsing PortfolioModel: $e');
+      // Return empty portfolio model if parsing fails
+      return PortfolioModel(
+        id: '0',
+        fundiId: '0',
+        title: 'Error loading portfolio',
+        description: 'Failed to load portfolio item',
+        category: 'General',
+        skillsUsed: [],
+        images: [],
+        durationHours: 0,
+        budget: 0.0,
+      );
+    }
   }
 
   /// Convert PortfolioModel to JSON (follows API structure exactly)

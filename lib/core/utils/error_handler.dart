@@ -167,7 +167,7 @@ class ErrorHandler {
       final errorMessage = handleApiError(e);
       
       if (showErrorSnackBar) {
-        showErrorSnackBar(context, errorMessage);
+        ErrorHandler.showErrorSnackBar(context, errorMessage);
       }
       
       if (onError != null) {
@@ -197,7 +197,7 @@ class ErrorHandler {
         return true;
       } else {
         if (showErrorSnackBar) {
-          showErrorSnackBar(context, 'Operation failed. Please try again.');
+          ErrorHandler.showErrorSnackBar(context, 'Operation failed. Please try again.');
         }
         if (onError != null) {
           onError();
@@ -208,7 +208,7 @@ class ErrorHandler {
       final errorMessage = handleApiError(e);
       
       if (showErrorSnackBar) {
-        showErrorSnackBar(context, errorMessage);
+        ErrorHandler.showErrorSnackBar(context, errorMessage);
       }
       
       if (onError != null) {

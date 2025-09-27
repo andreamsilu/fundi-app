@@ -208,198 +208,201 @@ class _JobCreationScreenState extends State<JobCreationScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                  // Messages
-                  if (_errorMessage != null) ...[
-                    ErrorBanner(
-                      message: _errorMessage!,
-                      onDismiss: () {
-                        setState(() {
-                          _errorMessage = null;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                        // Messages
+                        if (_errorMessage != null) ...[
+                          ErrorBanner(
+                            message: _errorMessage!,
+                            onDismiss: () {
+                              setState(() {
+                                _errorMessage = null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
 
-                  if (_successMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.green.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.green),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _successMessage!,
-                              style: const TextStyle(color: Colors.green),
+                        if (_successMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.green.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle, color: Colors.green),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _successMessage!,
+                                    style: const TextStyle(color: Colors.green),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          const SizedBox(height: 16),
                         ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
 
-                  // Job Title
-                  AppInputField(
-                    label: 'Job Title',
-                    hint: 'e.g., Fix leaking kitchen faucet',
-                    controller: _titleController,
-                    isRequired: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Job title is required';
-                      }
-                      if (value.length < 5) {
-                        return 'Title must be at least 5 characters';
-                      }
-                      return null;
-                    },
-                  ),
+                        // Job Title
+                        AppInputField(
+                          label: 'Job Title',
+                          hint: 'e.g., Fix leaking kitchen faucet',
+                          controller: _titleController,
+                          isRequired: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Job title is required';
+                            }
+                            if (value.length < 5) {
+                              return 'Title must be at least 5 characters';
+                            }
+                            return null;
+                          },
+                        ),
 
-                  const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                  // Category Selection
-                  _buildCategorySelector(),
+                        // Category Selection
+                        _buildCategorySelector(),
 
-                  const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                  // Description
-                  AppInputField(
-                    label: 'Job Description',
-                    hint: 'Describe the job in detail...',
-                    controller: _descriptionController,
-                    maxLines: 4,
-                    isRequired: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Job description is required';
-                      }
-                      if (value.length < 20) {
-                        return 'Description must be at least 20 characters';
-                      }
-                      return null;
-                    },
-                  ),
+                        // Description
+                        AppInputField(
+                          label: 'Job Description',
+                          hint: 'Describe the job in detail...',
+                          controller: _descriptionController,
+                          maxLines: 4,
+                          isRequired: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Job description is required';
+                            }
+                            if (value.length < 20) {
+                              return 'Description must be at least 20 characters';
+                            }
+                            return null;
+                          },
+                        ),
 
-                  const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                  // Budget and Duration Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppInputField(
-                          label: 'Budget (TZS)',
-                          hint: '0',
-                          controller: _budgetController,
-                          keyboardType: TextInputType.number,
-                          prefixIcon: const Icon(Icons.attach_money),
+                        // Budget and Duration Row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppInputField(
+                                label: 'Budget (TZS)',
+                                hint: '0',
+                                controller: _budgetController,
+                                keyboardType: TextInputType.number,
+                                prefixIcon: const Icon(Icons.attach_money),
+                                validator: (value) {
+                                  if (value != null && value.isNotEmpty) {
+                                    final budget = double.tryParse(value);
+                                    if (budget == null || budget < 0) {
+                                      return 'Enter a valid budget';
+                                    }
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: AppInputField(
+                                label: 'Duration',
+                                hint: 'e.g., 2 days',
+                                controller: _durationController,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Duration is required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Location
+                        AppInputField(
+                          label: 'Location',
+                          hint: 'e.g., Dar es Salaam, Kinondoni',
+                          controller: _locationController,
+                          isRequired: true,
+                          prefixIcon: const Icon(Icons.location_on_outlined),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Location is required';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Deadline
+                        AppInputField(
+                          label: 'Deadline',
+                          hint: 'YYYY-MM-DD (e.g., 2025-09-28)',
+                          controller: _deadlineController,
+                          prefixIcon: const Icon(Icons.calendar_today),
                           validator: (value) {
                             if (value != null && value.isNotEmpty) {
-                              final budget = double.tryParse(value);
-                              if (budget == null || budget < 0) {
-                                return 'Enter a valid budget';
+                              try {
+                                final date = DateTime.parse(value);
+                                if (date.isBefore(DateTime.now())) {
+                                  return 'Deadline must be in the future';
+                                }
+                              } catch (e) {
+                                return 'Enter a valid date (YYYY-MM-DD)';
                               }
                             }
                             return null;
                           },
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: AppInputField(
-                          label: 'Duration',
-                          hint: 'e.g., 2 days',
-                          controller: _durationController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Duration is required';
-                            }
-                            return null;
-                          },
+
+                        const SizedBox(height: 16),
+
+                        // Urgency Selection
+                        _buildUrgencySelector(),
+
+                        const SizedBox(height: 16),
+
+                        // Preferred Time Selection
+                        _buildPreferredTimeSelector(),
+
+                        const SizedBox(height: 24),
+
+                        // Images Section
+                        _buildImagesSection(),
+
+                        const SizedBox(height: 32),
+
+                        // Create Job Button
+                        AppButton(
+                          text: 'Post Job',
+                          onPressed: _isLoading ? null : _handleCreateJob,
+                          isLoading: _isLoading,
+                          isFullWidth: true,
+                          size: ButtonSize.large,
+                          icon: Icons.post_add,
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 32),
+                      ],
+                    ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Location
-                  AppInputField(
-                    label: 'Location',
-                    hint: 'e.g., Dar es Salaam, Kinondoni',
-                    controller: _locationController,
-                    isRequired: true,
-                    prefixIcon: const Icon(Icons.location_on_outlined),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Location is required';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Deadline
-                  AppInputField(
-                    label: 'Deadline',
-                    hint: 'YYYY-MM-DD (e.g., 2025-09-28)',
-                    controller: _deadlineController,
-                    prefixIcon: const Icon(Icons.calendar_today),
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        try {
-                          final date = DateTime.parse(value);
-                          if (date.isBefore(DateTime.now())) {
-                            return 'Deadline must be in the future';
-                          }
-                        } catch (e) {
-                          return 'Enter a valid date (YYYY-MM-DD)';
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Urgency Selection
-                  _buildUrgencySelector(),
-
-                  const SizedBox(height: 16),
-
-                  // Preferred Time Selection
-                  _buildPreferredTimeSelector(),
-
-                  const SizedBox(height: 24),
-
-                  // Images Section
-                  _buildImagesSection(),
-
-                  const SizedBox(height: 32),
-
-                  // Create Job Button
-                  AppButton(
-                    text: 'Post Job',
-                    onPressed: _isLoading ? null : _handleCreateJob,
-                    isLoading: _isLoading,
-                    isFullWidth: true,
-                    size: ButtonSize.large,
-                    icon: Icons.post_add,
-                  ),
-
-                  const SizedBox(height: 32),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),

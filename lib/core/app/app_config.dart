@@ -6,8 +6,7 @@ import '../theme/app_theme.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/job/providers/job_provider.dart';
 import '../../features/portfolio/providers/portfolio_provider.dart';
-import '../../features/messaging/providers/messaging_provider.dart';
-import '../../features/search/providers/search_provider.dart';
+// Removed messaging and search providers as features were deleted
 import '../../features/notifications/providers/notification_provider.dart';
 import '../../features/settings/providers/settings_provider.dart';
 
@@ -29,8 +28,7 @@ class AppConfig {
     ChangeNotifierProvider(create: (_) => AuthProvider()),
     ChangeNotifierProvider(create: (_) => JobProvider()),
     ChangeNotifierProvider(create: (_) => PortfolioProvider()),
-    ChangeNotifierProvider(create: (_) => MessagingProvider()),
-    ChangeNotifierProvider(create: (_) => SearchProvider()),
+    // Removed MessagingProvider and SearchProvider as features were deleted
     ChangeNotifierProvider(create: (_) => NotificationProvider()),
     ChangeNotifierProvider(create: (_) => SettingsProvider()),
   ];

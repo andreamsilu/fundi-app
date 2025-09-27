@@ -34,8 +34,8 @@ class PaymentPlanModel {
       billingCycle: json['billing_cycle'] as String?,
       features: List<String>.from(json['features'] ?? []),
       limits: json['limits'] as Map<String, dynamic>?,
-      isActive: json['is_active'] as bool,
-      isDefault: json['is_default'] as bool,
+      isActive: json['is_active'] == true,
+      isDefault: json['is_default'] == true,
     );
   }
 

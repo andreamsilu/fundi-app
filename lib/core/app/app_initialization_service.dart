@@ -21,6 +21,7 @@ class AppInitializationService {
   static Future<void> initializeAsync() async {
     if (_isInitialized || _isInitializing) return;
 
+    print('⚙️ AppInit: Starting background initialization...');
     _isInitializing = true;
 
     // Delay initialization to allow UI to render first
@@ -45,6 +46,7 @@ class AppInitializationService {
   /// Fallback initialization on main thread
   static Future<void> _initializeOnMainThread() async {
     try {
+      print('🔧 AppInit: Initializing services on main thread...');
       EnvConfig.initialize();
 
       final sessionManager = SessionManager();

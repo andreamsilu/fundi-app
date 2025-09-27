@@ -46,10 +46,7 @@ class DashboardService {
       Logger.userAction('Fetch job categories');
 
       final response = await _apiClient
-          .get<Map<String, dynamic>>(
-            ApiEndpoints.categories,
-            fromJson: (data) => data as Map<String, dynamic>,
-          )
+          .get(ApiEndpoints.categories)
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () {
@@ -62,7 +59,15 @@ class DashboardService {
           );
 
       if (response.success && response.data != null) {
-        final categories = (response.data!['categories'] as List<dynamic>)
+        // Handle both list and object responses
+        List<dynamic> categoryList;
+        if (response.data is List) {
+          categoryList = response.data as List<dynamic>;
+        } else {
+          categoryList = response.data!['categories'] ?? [];
+        }
+
+        final categories = categoryList
             .map(
               (category) =>
                   JobCategory.fromJson(category as Map<String, dynamic>),
@@ -81,7 +86,9 @@ class DashboardService {
       return CategoryResult.failure(message: e.message);
     } catch (e) {
       Logger.error('Job categories unexpected error', error: e);
-      return CategoryResult.failure(message: 'Failed to load categories from API');
+      return CategoryResult.failure(
+        message: 'Failed to load categories from API',
+      );
     }
   }
 }
@@ -209,7 +216,7 @@ class JobCategory {
 
   factory JobCategory.fromJson(Map<String, dynamic> json) {
     return JobCategory(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       description: json['description'],
       icon: json['icon'],

@@ -38,15 +38,18 @@ class AuthService {
       );
 
       if (response.success && response.data != null) {
-        final userData = response.data!;
-        final token = userData['token'] as String;
+        final responseData = response.data!;
+        // Extract token and user data from the JWT API response structure
+        final token = responseData['access_token'] as String;
+        final userData = responseData['user'] as Map<String, dynamic>;
         final user = UserModel.fromJson(userData);
 
-        print('AuthService: Login successful, saving token and user data');
+        print('AuthService: Login successful, saving JWT token and user data');
         print('AuthService: Token length: ${token.length}');
         print('AuthService: User ID: ${user.id}');
+        print('AuthService: User roles: ${user.roles.map((r) => r.value).join(', ')}');
 
-        // Save session with token and user data
+        // Save session with JWT token and user data
         await _sessionManager.saveToken(token);
         await _sessionManager.saveUser(user);
 
@@ -54,7 +57,7 @@ class AuthService {
         final isAuthenticated = _sessionManager.isAuthenticated;
         print('AuthService: Session saved - isAuthenticated: $isAuthenticated');
 
-        Logger.userAction('Login successful', data: {'userId': user.id});
+        Logger.userAction('Login successful', data: {'userId': user.id, 'roles': user.roles.map((r) => r.value).join(', ')});
 
         return AuthResult.success(user: user, message: response.message);
       } else {
@@ -90,15 +93,17 @@ class AuthService {
       );
 
       if (response.success && response.data != null) {
-        final token = response.data!['token'] as String;
-        final userData = response.data!;
+        final responseData = response.data!;
+        // Extract token and user data from the JWT API response structure
+        final token = responseData['access_token'] as String;
+        final userData = responseData['user'] as Map<String, dynamic>;
         final user = UserModel.fromJson(userData);
 
-        // Save session with token and user data
+        // Save session with JWT token and user data
         await _sessionManager.saveToken(token);
         await _sessionManager.saveUser(user);
 
-        Logger.userAction('Registration successful', data: {'userId': user.id});
+        Logger.userAction('Registration successful', data: {'userId': user.id, 'roles': user.roles.map((r) => r.value).join(', ')});
 
         return AuthResult.success(user: user, message: response.message);
       } else {
@@ -421,6 +426,40 @@ class AuthService {
       return AuthResult.failure(message: e.message);
     } catch (e) {
       Logger.error('Password reset unexpected error', error: e);
+      return AuthResult.failure(message: 'An unexpected error occurred');
+    }
+  }
+
+  /// Refresh JWT token
+  Future<AuthResult> refreshToken() async {
+    try {
+      Logger.userAction('JWT token refresh attempt');
+      
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiEndpoints.authRefresh,
+        {},
+        {},
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
+
+      if (response.success && response.data != null) {
+        final responseData = response.data!;
+        final token = responseData['access_token'] as String;
+        
+        // Update token in session
+        await _sessionManager.saveToken(token);
+        
+        Logger.userAction('JWT token refreshed successfully');
+        return AuthResult.success(message: 'Token refreshed successfully');
+      } else {
+        Logger.warning('Token refresh failed: ${response.message}');
+        return AuthResult.failure(message: response.message);
+      }
+    } on ApiError catch (e) {
+      Logger.error('Token refresh API error', error: e);
+      return AuthResult.failure(message: e.message);
+    } catch (e) {
+      Logger.error('Token refresh unexpected error', error: e);
       return AuthResult.failure(message: 'An unexpected error occurred');
     }
   }

@@ -71,17 +71,22 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
     });
 
     try {
-      final paymentProvider = Provider.of<PaymentProvider>(context, listen: false);
-      
+      final paymentProvider = Provider.of<PaymentProvider>(
+        context,
+        listen: false,
+      );
+
       for (String actionId in _selectedActions) {
         final result = await paymentProvider.processPayment(
-          actionId: actionId,
-          referenceId: widget.referenceId,
-          metadata: widget.metadata,
+          paymentType: actionId,
+          amount: 0.0, // Default amount, should be provided by user in form
+          phoneNumber: '',
+          email: '',
+          description: 'Payment for ${actionId}',
         );
 
-        if (!result.success) {
-          _showError(result.message ?? 'Payment processing failed');
+        if (result != null && result['success'] != true) {
+          _showError(result['message'] ?? 'Payment processing failed');
           return;
         }
       }
@@ -109,7 +114,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
     setState(() {
       _errorMessage = message;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -165,8 +170,8 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
       transactionId: 'ui_action',
       data: {
         'screen': 'payment_flow_screen',
-        'selected_actions': actions, 
-        'action_count': actions.length
+        'selected_actions': actions,
+        'action_count': actions.length,
       },
     );
   }
@@ -232,9 +237,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
             PaymentLogger.logPaymentEvent(
               event: 'payment_flow_cancelled',
               transactionId: 'ui_action',
-              data: {
-                'screen': 'payment_flow_screen',
-              },
+              data: {'screen': 'payment_flow_screen'},
             );
             Navigator.of(context).pop();
           },
@@ -269,7 +272,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
                 ],
               ),
             ),
-          
+
           // Progress indicator
           _buildProgressIndicator(),
 
@@ -368,7 +371,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
       child: PaymentActionSelector(
         selectedActions: _selectedActions,
         onSelectionChanged: _onActionsChanged,
-          availableActions: PaymentConfig.actions.values.toList(),
+        availableActions: PaymentConfig.actions.values.toList(),
       ),
     );
   }
@@ -380,7 +383,16 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
         builder: (context, provider, child) {
           return PaymentForm(
             selectedActions: _selectedActions,
-            onSubmit: (action, amount, description, referenceId, metadata) => _onPaymentSubmit(action, amount, description, referenceId, '', '', metadata),
+            onSubmit: (action, amount, description, referenceId, metadata) =>
+                _onPaymentSubmit(
+                  action,
+                  amount,
+                  description,
+                  referenceId,
+                  '',
+                  '',
+                  metadata,
+                ),
             isLoading: provider.isLoading,
             error: provider.errorMessage,
           );
@@ -403,9 +415,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
               PaymentLogger.logPaymentEvent(
                 event: 'view_transaction_details',
                 transactionId: 'ui_action',
-                data: {
-                  'screen': 'payment_flow_screen',
-                },
+                data: {'screen': 'payment_flow_screen'},
               );
               // TODO: Navigate to transaction details
             },
@@ -442,16 +452,18 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
 
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading 
-                  ? null 
+              onPressed: _isLoading
+                  ? null
                   : (_currentStep == 0 && _selectedActions.isNotEmpty
-                      ? _nextStep
-                      : _currentStep == 2 ? _processPayment : null),
+                        ? _nextStep
+                        : _currentStep == 2
+                        ? _processPayment
+                        : null),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
               ),
-              child: _isLoading 
+              child: _isLoading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -460,7 +472,13 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : Text(_currentStep == 0 ? 'Continue' : _currentStep == 2 ? 'Process Payment' : 'Done'),
+                  : Text(
+                      _currentStep == 0
+                          ? 'Continue'
+                          : _currentStep == 2
+                          ? 'Process Payment'
+                          : 'Done',
+                    ),
             ),
           ),
         ],

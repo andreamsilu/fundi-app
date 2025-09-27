@@ -23,7 +23,9 @@ class _WorkApprovalScreenState extends State<WorkApprovalScreen>
     _tabController = TabController(length: 2, vsync: this);
     // Initialize work approval data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WorkApprovalProvider>().initialize();
+      if (mounted) {
+        context.read<WorkApprovalProvider>().initialize();
+      }
     });
   }
 

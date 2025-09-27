@@ -55,8 +55,8 @@ class JobProvider extends ChangeNotifier {
   /// Get selected location
   String? get selectedLocation => _selectedLocation;
 
-  /// Load jobs with filters
-  Future<void> loadJobs({
+  /// Load available jobs (public feed) with filters
+  Future<void> loadAvailableJobs({
     bool refresh = false,
     String? search,
     String? category,
@@ -71,8 +71,9 @@ class JobProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      _currentJobsRequestId = 'jobs_${DateTime.now().millisecondsSinceEpoch}';
-      final result = await _jobService.getJobs(
+      _currentJobsRequestId =
+          'available_jobs_${DateTime.now().millisecondsSinceEpoch}';
+      final result = await _jobService.getAvailableJobs(
         page: _currentPage,
         search: search,
         category: category,
@@ -106,16 +107,17 @@ class JobProvider extends ChangeNotifier {
     }
   }
 
-  /// Load more jobs (pagination)
+  /// Load more available jobs (pagination)
   Future<void> loadMoreJobs() async {
     if (_isLoadingMore || _currentPage >= _totalPages) return;
 
     _setLoadingMore(true);
 
     try {
-      _currentJobsRequestId = 'jobs_${DateTime.now().millisecondsSinceEpoch}';
+      _currentJobsRequestId =
+          'available_jobs_${DateTime.now().millisecondsSinceEpoch}';
       _currentPage++;
-      final result = await _jobService.getJobs(
+      final result = await _jobService.getAvailableJobs(
         page: _currentPage,
         search: _searchQuery,
         category: _selectedCategory,
@@ -140,16 +142,28 @@ class JobProvider extends ChangeNotifier {
   }
 
   /// Load my jobs (for current user)
-  Future<void> loadMyJobs() async {
+  Future<void> loadMyJobs({
+    bool refresh = false,
+    String? search,
+    String? category,
+    String? location,
+  }) async {
+    if (refresh) {
+      _currentPage = 1;
+      _myJobs.clear();
+    }
+
     _setLoading(true);
     _clearError();
 
     try {
-      _currentJobsRequestId = 'my_jobs_${DateTime.now().millisecondsSinceEpoch}';
-      // This would typically be a different endpoint for user's own jobs
-      final result = await _jobService.getJobs(
-        page: 1,
-        limit: 100, // Get all user's jobs
+      _currentJobsRequestId =
+          'my_jobs_${DateTime.now().millisecondsSinceEpoch}';
+      final result = await _jobService.getMyJobs(
+        page: _currentPage,
+        search: search,
+        category: category,
+        location: location,
         requestId: _currentJobsRequestId,
       );
 

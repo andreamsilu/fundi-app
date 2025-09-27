@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/auth_service.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
@@ -6,6 +7,9 @@ import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/navigation_guard.dart';
 import '../../../core/app/app_initialization_service.dart';
+import '../../../core/config/env_config.dart';
+import '../../../core/config/api_config.dart';
+import '../../../core/constants/app_constants.dart';
 
 /// Login screen for user authentication
 /// Features email/password login with validation and error handling
@@ -65,6 +69,30 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  Future<void> _testApiConfig() async {
+    setState(() {
+      _errorMessage = null;
+    });
+
+    try {
+      print('=== API Configuration Debug ===');
+      print('EnvConfig.get(API_BASE_URL): ${EnvConfig.get('API_BASE_URL')}');
+      print('ApiConfig.baseUrl: ${ApiConfig.baseUrl}');
+      print('AppConstants.baseUrl: ${AppConstants.baseUrl}');
+      print(
+        'AppInitializationService.isInitialized: ${AppInitializationService.isInitialized}',
+      );
+
+      setState(() {
+        _errorMessage = 'Check console for API config debug info';
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Debug error: $e';
+      });
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -74,24 +102,21 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      // Check if API client is initialized
-      if (!AppInitializationService.isInitialized) {
-        setState(() {
-          _errorMessage =
-              'App is still loading. Please wait a moment and try again.';
-        });
-        return;
-      }
-
       // Use AuthService directly for login
       final authService = AuthService();
 
       // Ensure service is initialized
       await authService.initialize();
 
+      print('🔐 Login: Attempting login for ${_phoneController.text.trim()}');
+
       final result = await authService.login(
         phoneNumber: _phoneController.text.trim(),
         password: _passwordController.text,
+      );
+
+      print(
+        '🔐 Login: Result success=${result.success}, message=${result.message}',
       );
 
       if (result.success) {
@@ -229,6 +254,18 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
 
                     const SizedBox(height: 32),
+
+                    // Debug button to test configuration
+                    if (kDebugMode) ...[
+                      AppButton(
+                        text: 'Debug: Test API Config',
+                        onPressed: _testApiConfig,
+                        type: ButtonType.secondary,
+                        isFullWidth: true,
+                        size: ButtonSize.medium,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Login button
                     AppButton(

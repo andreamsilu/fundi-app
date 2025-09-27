@@ -6,12 +6,14 @@ class ApiEndpoints {
   // Base API URL - Read from centralized configuration
   static String get baseUrl => ApiConfig.baseUrl;
 
-  // Authentication Endpoints
+  // Authentication Endpoints (JWT API)
   static const String register = '/auth/register';
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
   static const String me = '/auth/me';
   static const String authChangePassword = '/auth/change-password';
+  static const String authRefresh = '/auth/refresh';
+  // Note: OTP endpoints may not be implemented in JWT API
   static const String authForgotPassword = '/auth/forgot-password';
   static const String authResetPassword = '/auth/reset-password';
   static const String authSendOtp = '/auth/send-otp';
@@ -27,7 +29,8 @@ class ApiEndpoints {
   static const String categories = '/categories';
 
   // Job Endpoints
-  static const String jobs = '/jobs';
+  static const String jobs = '/jobs'; // Available jobs (public feed)
+  static const String myJobs = '/jobs/my-jobs'; // User's own jobs
   static const String jobById = '/jobs/{id}';
   static const String createJob = '/jobs';
   static const String updateJob = '/jobs/{id}';
@@ -260,17 +263,17 @@ class ApiEndpoints {
   // Payment Configuration Helper Methods
   /// Get payment configuration endpoint
   static String getPaymentConfigEndpoint() {
-    return paymentConfig;
+    return '/payments/config';
   }
 
   /// Get payment callback endpoint
   static String getPaymentCallbackEndpoint() {
-    return paymentCallback;
+    return '/payments/callback';
   }
 
   /// Get payment verification endpoint
   static String getVerifyPaymentEndpoint(String transactionId) {
-    return verifyPayment.replaceAll('{transactionId}', transactionId);
+    return '/payments/verify/$transactionId';
   }
 
   /// Get payment by ID endpoint

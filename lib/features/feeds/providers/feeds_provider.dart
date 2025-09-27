@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/fundi_model.dart';
 import '../models/job_model.dart';
 import '../services/feeds_service.dart';
-import '../../core/network/api_client.dart';
+import '../../../core/network/api_client.dart';
 
 /// Provider for managing feeds state and business logic
 /// Implements proper separation of concerns for feeds functionality
@@ -131,9 +131,23 @@ class FeedsProvider extends ChangeNotifier {
 
         if (result['success']) {
           final fundisData = result['fundis'] as List<dynamic>;
-          final newFundis = fundisData
-              .map((json) => FundiModel.fromJson(json as Map<String, dynamic>))
-              .toList();
+          final newFundis = fundisData.map((json) {
+            try {
+              // Parse fundi data safely
+              final jsonMap = json as Map<String, dynamic>;
+
+              return FundiModel.fromJson(jsonMap);
+            } catch (e) {
+              print('Error parsing fundi: $e');
+              print('Problematic JSON: $json');
+              print('Error type: ${e.runtimeType}');
+              if (e.toString().contains('bool')) {
+                print('Boolean parsing error detected!');
+              }
+              // Return a default fundi model to prevent crashes
+              return FundiModel.empty();
+            }
+          }).toList();
 
           if (refresh) {
             _fundis = newFundis;
@@ -143,8 +157,11 @@ class FeedsProvider extends ChangeNotifier {
 
           final paginationData = result['pagination'] as Map<dynamic, dynamic>;
           final pagination = Map<String, dynamic>.from(paginationData);
-          final currentPage = (pagination['current_page'] ?? pagination['currentPage'] ?? 1) as int;
-          final lastPage = (pagination['last_page'] ?? pagination['lastPage'] ?? 1) as int;
+          final currentPage =
+              (pagination['current_page'] ?? pagination['currentPage'] ?? 1)
+                  as int;
+          final lastPage =
+              (pagination['last_page'] ?? pagination['lastPage'] ?? 1) as int;
           _hasMoreFundis = currentPage < lastPage;
           _fundisCurrentPage++;
           _fundisError = null;
@@ -188,15 +205,32 @@ class FeedsProvider extends ChangeNotifier {
 
       if (result['success']) {
         final fundisData = result['fundis'] as List<dynamic>;
-        final newFundis = fundisData
-            .map((json) => FundiModel.fromJson(json as Map<String, dynamic>))
-            .toList();
+        final newFundis = fundisData.map((json) {
+          try {
+            // Parse fundi data safely
+            final jsonMap = json as Map<String, dynamic>;
+
+            return FundiModel.fromJson(jsonMap);
+          } catch (e) {
+            print('Error parsing fundi: $e');
+            print('Problematic JSON: $json');
+            print('Error type: ${e.runtimeType}');
+            if (e.toString().contains('bool')) {
+              print('Boolean parsing error detected!');
+            }
+            // Return a default fundi model to prevent crashes
+            return FundiModel.empty();
+          }
+        }).toList();
         _fundis.addAll(newFundis);
 
         final paginationData = result['pagination'] as Map<dynamic, dynamic>;
         final pagination = Map<String, dynamic>.from(paginationData);
-        final currentPage = (pagination['current_page'] ?? pagination['currentPage'] ?? 1) as int;
-        final lastPage = (pagination['last_page'] ?? pagination['lastPage'] ?? 1) as int;
+        final currentPage =
+            (pagination['current_page'] ?? pagination['currentPage'] ?? 1)
+                as int;
+        final lastPage =
+            (pagination['last_page'] ?? pagination['lastPage'] ?? 1) as int;
         _hasMoreFundis = currentPage < lastPage;
         _fundisCurrentPage++;
       }

@@ -60,7 +60,8 @@ class UserModel {
   bool get isAdmin => roles.contains(UserRole.admin);
 
   /// Get primary role (first role in the list)
-  UserRole get primaryRole => roles.isNotEmpty ? roles.first : UserRole.customer;
+  UserRole get primaryRole =>
+      roles.isNotEmpty ? roles.first : UserRole.customer;
 
   /// Check if user has multiple roles
   bool get hasMultipleRoles => roles.length > 1;
@@ -94,19 +95,51 @@ class UserModel {
     return null;
   }
 
-  /// Create UserModel from JSON (follows API structure)
+  /// Create UserModel from JSON (follows JWT API structure)
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    // Handle JWT API response structure
+    List<UserRole> roles = [];
+    List<int> roleIds = [];
+    
+    // Extract roles from JWT API response
+    if (json['roles'] != null) {
+      final rolesList = json['roles'] as List<dynamic>;
+      roles = rolesList.map((role) {
+        if (role is Map<String, dynamic>) {
+          return UserRole.fromString(role['name'] as String);
+        } else if (role is String) {
+          return UserRole.fromString(role);
+        }
+        return UserRole.customer;
+      }).toList();
+      
+      // Extract role IDs
+      roleIds = rolesList.map((role) {
+        if (role is Map<String, dynamic>) {
+          return role['id'] as int;
+        }
+        return 1; // Default customer role ID
+      }).toList();
+    }
+    
+    // Fallback to role_names if roles array is not available
+    if (roles.isEmpty && json['role_names'] != null) {
+      final roleNames = json['role_names'] as List<dynamic>;
+      roles = roleNames.map((roleName) => UserRole.fromString(roleName as String)).toList();
+    }
+    
+    // Default to customer role if no roles found
+    if (roles.isEmpty) {
+      roles = [UserRole.customer];
+      roleIds = [1];
+    }
+
     return UserModel(
-      id: json['id']
-          .toString(), // Convert to String to handle both int and String
+      id: json['id'].toString(), // Convert to String to handle both int and String
       phone: json['phone'] as String,
       password: json['password'] as String?, // Usually hidden in API responses
-      roles: (json['roles'] as List<dynamic>?)
-          ?.map((role) => UserRole.fromString(role as String))
-          .toList() ?? [UserRole.customer],
-      roleIds: (json['role_ids'] as List<dynamic>?)
-          ?.map((id) => id as int)
-          .toList() ?? [1], // Default to customer role ID
+      roles: roles,
+      roleIds: roleIds,
       status: json['status'] != null
           ? UserStatus.fromString(json['status'] as String)
           : UserStatus.active, // Default to active if not provided
@@ -119,8 +152,7 @@ class UserModel {
           : null,
       email: json['email'] as String?, // Additional field for mobile
       fullName: json['full_name'] as String?, // Additional field for mobile
-      profileImageUrl:
-          json['profile_image_url'] as String?, // Additional field for mobile
+      profileImageUrl: json['profile_image_url'] as String?, // Additional field for mobile
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }

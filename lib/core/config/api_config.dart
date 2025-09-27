@@ -9,7 +9,11 @@ class ApiConfig {
 
   /// Get API base URL strictly from environment (.env or system)
   static String get baseUrl {
-    return EnvConfig.get('API_BASE_URL', defaultValue: '');
+    final url = EnvConfig.get('API_BASE_URL', defaultValue: '');
+    if (kDebugMode) {
+      print('ApiConfig.baseUrl: $url');
+    }
+    return url;
   }
 
   /// Get API version

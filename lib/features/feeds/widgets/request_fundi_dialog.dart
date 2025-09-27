@@ -70,6 +70,18 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
       return;
     }
 
+    // Validate fundi ID
+    final fundiId = widget.fundi?['id']?.toString();
+    if (fundiId == null || fundiId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid fundi information'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -82,7 +94,7 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
         budget: double.parse(_budgetController.text),
         budgetType: _budgetType,
         deadline: _deadlineController.text,
-        fundiId: widget.fundi['id'], // Specific fundi request
+        fundiId: fundiId, // Specific fundi request
       );
 
       if (result['success']) {
@@ -134,11 +146,11 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
                           context,
                         ).primaryColor.withOpacity(0.1),
                         child: Text(
-                          widget.fundi['name']
-                                  ?.toString()
-                                  .substring(0, 1)
-                                  .toUpperCase() ??
-                              'F',
+                          (widget.fundi?['name']?.toString() ??
+                                  widget.fundi?['full_name']?.toString() ??
+                                  'Unknown')
+                              .substring(0, 1)
+                              .toUpperCase(),
                           style: TextStyle(
                             color: Theme.of(context).primaryColor,
                             fontWeight: FontWeight.bold,
@@ -158,7 +170,9 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
                               ),
                             ),
                             Text(
-                              widget.fundi['name'] ?? 'Unknown Fundi',
+                              widget.fundi?['name']?.toString() ??
+                                  widget.fundi?['full_name']?.toString() ??
+                                  'Unknown Fundi',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 14,
@@ -246,6 +260,7 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
                         flex: 2,
                         child: DropdownButtonFormField<String>(
                           value: _budgetType,
+                          isExpanded: true,
                           decoration: const InputDecoration(
                             labelText: 'Budget Type',
                             border: OutlineInputBorder(),

@@ -14,7 +14,7 @@ class EnvConfig {
     try {
       // Load .env file if it exists
       await dotenv.load(fileName: ".env");
-      
+
       // Load from .env file first
       dotenv.env.forEach((key, value) {
         if (value != null && value.isNotEmpty) {
@@ -33,9 +33,16 @@ class EnvConfig {
       }
     });
 
-    // Set default values if not configured (avoid real URLs)
+    // Set default values if not configured
     if (!_config.containsKey('API_BASE_URL')) {
-      _config['API_BASE_URL'] = '';
+      _config['API_BASE_URL'] = 'http://185.213.27.206:8081/api';
+      print(
+        'EnvConfig: Set default API_BASE_URL to: ${_config['API_BASE_URL']}',
+      );
+    } else {
+      print(
+        'EnvConfig: API_BASE_URL already set to: ${_config['API_BASE_URL']}',
+      );
     }
     if (!_config.containsKey('API_VERSION')) {
       _config['API_VERSION'] = 'v1';
@@ -71,7 +78,11 @@ class EnvConfig {
 
   /// Get configuration value as string
   static String get(String key, {String? defaultValue}) {
-    return _config[key] ?? defaultValue ?? '';
+    final value = _config[key] ?? defaultValue ?? '';
+    if (key == 'API_BASE_URL') {
+      print('EnvConfig.get($key): $value');
+    }
+    return value;
   }
 
   /// Get configuration value as integer

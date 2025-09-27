@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/fundi_model.dart';
 import '../../../shared/widgets/optimized_image.dart';
@@ -31,7 +32,10 @@ class FundiCard extends StatelessWidget {
         if (items is List) return items;
         return const [];
       }
-      return fundi['portfolio_items'] as List<dynamic>? ?? const [];
+      // Handle both visible_portfolio and portfolio_items from API response
+      return fundi['visible_portfolio'] as List<dynamic>? ??
+          fundi['portfolio_items'] as List<dynamic>? ??
+          const [];
     }();
 
     return Card(
@@ -82,7 +86,9 @@ class FundiCard extends StatelessWidget {
                             const SizedBox(width: 3),
                             Text(
                               averageRating.toStringAsFixed(1),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -196,34 +202,59 @@ class FundiCard extends StatelessWidget {
               if (!isModel &&
                   fundi['fundi_profile'] != null &&
                   fundi['fundi_profile']['skills'] != null) ...[
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: (fundi['fundi_profile']['skills'] as List<dynamic>)
-                      .take(3)
-                      .map<Widget>(
-                        (skill) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            skill.toString(),
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                Builder(
+                  builder: (context) {
+                    final skillsData = fundi['fundi_profile']['skills'];
+                    List<String> skills = [];
+
+                    if (skillsData is String) {
+                      try {
+                        // Parse JSON string like "[\"Plumbing\",\"Pipe Repair\",\"Installation\"]"
+                        final decoded = jsonDecode(skillsData) as List<dynamic>;
+                        skills = List<String>.from(decoded);
+                      } catch (e) {
+                        // If parsing fails, treat as comma-separated string
+                        skills = skillsData
+                            .split(',')
+                            .map((s) => s.trim().replaceAll('"', ''))
+                            .toList();
+                      }
+                    } else if (skillsData is List) {
+                      skills = List<String>.from(skillsData);
+                    }
+
+                    if (skills.isEmpty) return const SizedBox.shrink();
+
+                    return Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: skills
+                          .take(3)
+                          .map<Widget>(
+                            (skill) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                skill.toString(),
+                                style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                          )
+                          .toList(),
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
               ] else if (isModel &&

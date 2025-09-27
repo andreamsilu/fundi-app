@@ -32,7 +32,11 @@ class _RatingListScreenState extends State<RatingListScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RatingProvider>().loadFundiRatings(fundiId: widget.fundiId);
+      if (mounted) {
+        context.read<RatingProvider>().loadFundiRatings(
+          fundiId: widget.fundiId,
+        );
+      }
     });
   }
 
@@ -86,10 +90,9 @@ class _RatingListScreenState extends State<RatingListScreen> {
       ),
       body: Consumer<RatingProvider>(
         builder: (context, ratingProvider, child) {
-          if (ratingProvider.isLoading && ratingProvider.fundiRatingSummary == null) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (ratingProvider.isLoading &&
+              ratingProvider.fundiRatingSummary == null) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (ratingProvider.errorMessage != null) {
@@ -97,11 +100,7 @@ class _RatingListScreenState extends State<RatingListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[300],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
                     ratingProvider.errorMessage!,
@@ -123,9 +122,7 @@ class _RatingListScreenState extends State<RatingListScreen> {
 
           final summary = ratingProvider.fundiRatingSummary;
           if (summary == null) {
-            return const Center(
-              child: Text('No rating data available'),
-            );
+            return const Center(child: Text('No rating data available'));
           }
 
           return RefreshIndicator(
@@ -137,7 +134,7 @@ class _RatingListScreenState extends State<RatingListScreen> {
                   averageRating: summary.averageRating,
                   totalRatings: summary.totalRatings,
                 ),
-                
+
                 // Ratings list
                 Expanded(
                   child: summary.recentRatings.isEmpty
@@ -145,18 +142,21 @@ class _RatingListScreenState extends State<RatingListScreen> {
                       : ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.all(16),
-                          itemCount: summary.recentRatings.length + (_isLoadingMore ? 1 : 0),
+                          itemCount:
+                              summary.recentRatings.length +
+                              (_isLoadingMore ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == summary.recentRatings.length) {
                               return const Center(
                                 child: Padding(
                                   padding: EdgeInsets.all(16),
                                   child: CircularProgressIndicator(),
-                                  ),
+                                ),
                               );
                             }
 
-                            final rating = summary.recentRatings[index].toJson() ?? {};
+                            final rating =
+                                summary.recentRatings[index].toJson() ?? {};
                             return RatingCard(
                               rating: rating,
                               showJobTitle: true,
@@ -177,11 +177,7 @@ class _RatingListScreenState extends State<RatingListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.star_outline,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.star_outline, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No ratings yet',
@@ -190,9 +186,9 @@ class _RatingListScreenState extends State<RatingListScreen> {
           const SizedBox(height: 8),
           Text(
             'This fundi hasn\'t received any ratings yet',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -219,7 +215,9 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RatingProvider>().loadMyRatings();
+      if (mounted) {
+        context.read<RatingProvider>().loadMyRatings();
+      }
     });
   }
 
@@ -271,9 +269,7 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
       body: Consumer<RatingProvider>(
         builder: (context, ratingProvider, child) {
           if (ratingProvider.isLoading && ratingProvider.myRatings.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (ratingProvider.errorMessage != null) {
@@ -281,11 +277,7 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[300],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
                     ratingProvider.errorMessage!,
@@ -314,7 +306,8 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: ratingProvider.myRatings.length + (_isLoadingMore ? 1 : 0),
+              itemCount:
+                  ratingProvider.myRatings.length + (_isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == ratingProvider.myRatings.length) {
                   return const Center(
@@ -344,11 +337,7 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.star_outline,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.star_outline, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No ratings given',
@@ -357,9 +346,9 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
           const SizedBox(height: 8),
           Text(
             'You haven\'t rated any fundis yet',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -372,13 +361,13 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => RatingFormScreen(
-            fundiId: rating['fundiId'] ?? '',
+          fundiId: rating['fundiId'] ?? '',
           fundiName: rating['fundiName'] ?? '',
           fundiImageUrl: rating['fundiImageUrl'] ?? '',
           jobId: rating['jobId'] ?? '',
           jobTitle: rating['jobTitle'] ?? '',
           existingRating: RatingModel.fromJson(rating),
-          ),
+        ),
       ),
     ).then((success) {
       if (success == true) {

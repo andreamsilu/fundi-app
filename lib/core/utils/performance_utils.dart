@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 /// Performance utilities for optimizing mobile app performance
 class PerformanceUtils {

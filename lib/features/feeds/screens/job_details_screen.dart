@@ -71,7 +71,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         'message': 'Job application functionality not implemented',
       };
 
-      if (result['success'] as bool) {
+      if (result['success'] == true) {
         setState(() {
           _jobDetails['has_applied'] = true;
         });
@@ -307,8 +307,12 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ),
                 ),
 
-                // Apply Button
-                if (!hasApplied) ...[
+                // Apply Button (only for fundi users)
+                if (!hasApplied &&
+                    Provider.of<AuthProvider>(
+                      context,
+                      listen: false,
+                    ).isFundi) ...[
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: SizedBox(

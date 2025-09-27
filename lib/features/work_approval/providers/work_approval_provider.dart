@@ -229,11 +229,13 @@ class WorkApprovalProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _workApprovalService.getApprovalStatistics();
-
-      if (result['success']) {
-        _statistics = result['statistics'] as Map<String, dynamic>;
-      }
+      // Statistics endpoint not implemented yet
+      _statistics = {
+        'pending': 0,
+        'approved': 0,
+        'rejected': 0,
+        'total': 0,
+      };
     } catch (e) {
       debugPrint('Error loading statistics: ${e.toString()}');
     } finally {

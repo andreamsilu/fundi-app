@@ -9,7 +9,7 @@ class NotificationModel {
   final bool readStatus;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Additional fields for UI/UX (not in API but needed for mobile)
   final String? senderName;
   final String? senderImageUrl;
@@ -57,9 +57,15 @@ class NotificationModel {
       case 'system':
         return 'System Notification';
       default:
-        return type.replaceAll('_', ' ').split(' ').map((word) => 
-          word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : word
-        ).join(' ');
+        return type
+            .replaceAll('_', ' ')
+            .split(' ')
+            .map(
+              (word) => word.isNotEmpty
+                  ? word[0].toUpperCase() + word.substring(1)
+                  : word,
+            )
+            .join(' ');
     }
   }
 
@@ -119,14 +125,22 @@ class NotificationModel {
       type: json['type'] as String,
       title: json['title'] as String,
       message: json['message'] as String,
-      readStatus: json['read_status'] as bool,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      readStatus: json['read_status'] == true,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       senderName: json['sender_name'] as String?, // Additional field for mobile
-      senderImageUrl: json['sender_image_url'] as String?, // Additional field for mobile
+      senderImageUrl:
+          json['sender_image_url'] as String?, // Additional field for mobile
       actionUrl: json['action_url'] as String?, // Additional field for mobile
-      data: json['data'] as Map<String, dynamic>?, // Additional field for mobile
-      metadata: json['metadata'] as Map<String, dynamic>?, // Additional field for mobile
+      data:
+          json['data'] as Map<String, dynamic>?, // Additional field for mobile
+      metadata:
+          json['metadata']
+              as Map<String, dynamic>?, // Additional field for mobile
     );
   }
 
@@ -232,9 +246,7 @@ class NotificationResult {
     );
   }
 
-  factory NotificationResult.failure({
-    required String message,
-  }) {
+  factory NotificationResult.failure({required String message}) {
     return NotificationResult(
       success: false,
       notifications: [],
@@ -252,10 +264,7 @@ class ServiceResult {
   final bool success;
   final String? message;
 
-  const ServiceResult({
-    required this.success,
-    this.message,
-  });
+  const ServiceResult({required this.success, this.message});
 
   factory ServiceResult.success({String? message}) {
     return ServiceResult(success: true, message: message);

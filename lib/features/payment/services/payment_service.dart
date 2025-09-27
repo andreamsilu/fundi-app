@@ -83,7 +83,7 @@ class PaymentService {
           message: 'Current payment plan retrieved successfully',
           plan: plan,
           subscription: subscription,
-          isActive: data['is_active'] as bool,
+          isActive: data['is_active'] == true,
           daysRemaining: data['days_remaining'] as int?,
         );
       } else {
@@ -270,7 +270,7 @@ class PaymentService {
 
       if (response.success && response.data != null) {
         final data = response.data!;
-        final canPerform = data['can_perform'] as bool;
+        final canPerform = data['can_perform'] == true;
         final plan = PaymentPlanModel.fromJson(data['plan']);
 
         Logger.userAction('Action permission checked successfully');
@@ -313,7 +313,7 @@ class PaymentService {
 
       if (response.success && response.data != null) {
         final data = response.data!;
-        final paymentRequired = data['payment_required'] as bool;
+        final paymentRequired = data['payment_required'] == true;
         final requiredAmount = data['required_amount'] as double?;
         final plan = PaymentPlanModel.fromJson(data['plan']);
 

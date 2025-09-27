@@ -12,6 +12,9 @@ import 'core/config/env_config.dart';
 /// Main entry point of the Fundi App
 /// Optimized for fast startup with minimal blocking operations
 void main() async {
+  // Debug: App starting
+  print('🚀 FundiApp: Starting application...');
+  
   // Mark startup milestone
   StartupPerformance.markMilestone('app_start');
 
@@ -32,6 +35,7 @@ void main() async {
   StartupPerformance.markMilestone('background_init_started');
 
   // Run app immediately with splash screen
+  print('🎯 FundiApp: Running app...');
   runApp(const FundiApp());
   StartupPerformance.markMilestone('runapp_called');
 

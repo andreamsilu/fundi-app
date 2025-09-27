@@ -79,7 +79,9 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
     _setupAnimations();
     // Defer until after first frame to ensure providers are in scope
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadUserDataSafe();
+      if (mounted) {
+        _loadUserDataSafe();
+      }
     });
   }
 
@@ -121,6 +123,8 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
   }
 
   void _loadUserDataSafe() {
+    if (!mounted) return; // Exit early if widget is disposed
+
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final user = authProvider.user;

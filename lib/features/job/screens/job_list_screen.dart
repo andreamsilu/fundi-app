@@ -78,9 +78,11 @@ class _JobListScreenState extends State<JobListScreen>
 
   void _onScroll() {
     // Use performance-optimized scroll handling
-    if (shouldLoadMore(_scrollController, 
-        currentCount: _jobs.length, 
-        totalCount: _totalPages * 15)) {
+    if (shouldLoadMore(
+      _scrollController,
+      currentCount: _jobs.length,
+      totalCount: _totalPages * 15,
+    )) {
       _loadMoreJobs();
     }
   }
@@ -103,14 +105,24 @@ class _JobListScreenState extends State<JobListScreen>
         'JobListScreen: Loading jobs - page: $_currentPage, category: $_selectedCategory, location: $_selectedLocation',
       );
 
-      final result = await JobService().getJobs(
-        page: _currentPage,
-        category: _selectedCategory,
-        location: _selectedLocation,
-        search: _searchController.text.isNotEmpty
-            ? _searchController.text
-            : null,
-      );
+      // Use different service methods based on the screen title
+      final result = widget.title == 'My Jobs' || widget.title == 'Applied Jobs'
+          ? await JobService().getMyJobs(
+              page: _currentPage,
+              category: _selectedCategory,
+              location: _selectedLocation,
+              search: _searchController.text.isNotEmpty
+                  ? _searchController.text
+                  : null,
+            )
+          : await JobService().getAvailableJobs(
+              page: _currentPage,
+              category: _selectedCategory,
+              location: _selectedLocation,
+              search: _searchController.text.isNotEmpty
+                  ? _searchController.text
+                  : null,
+            );
 
       print(
         'JobListScreen: Jobs loaded - success: ${result.success}, count: ${result.jobs.length}',
@@ -162,7 +174,7 @@ class _JobListScreenState extends State<JobListScreen>
       _currentPage++;
       print('JobListScreen: Loading more jobs - page: $_currentPage');
 
-      final result = await JobService().getJobs(
+      final result = await JobService().getAvailableJobs(
         page: _currentPage,
         category: _selectedCategory,
         location: _selectedLocation,
@@ -204,7 +216,9 @@ class _JobListScreenState extends State<JobListScreen>
       final result = await DashboardService().getJobCategories();
       if (mounted) {
         setState(() {
-          if (result.success && result.categories != null && result.categories!.isNotEmpty) {
+          if (result.success &&
+              result.categories != null &&
+              result.categories!.isNotEmpty) {
             _categories = result.categories!;
           } else {
             _categories = []; // No fallback - only use API categories
@@ -511,26 +525,29 @@ class _JobListScreenState extends State<JobListScreen>
                       ),
                     ),
 
-                   // Loading state (shimmer strip)
-                   if (_isLoadingCategories)
-                     SizedBox(
-                       height: 50,
-                       child: ListView.builder(
-                         scrollDirection: Axis.horizontal,
-                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                         itemCount: 6,
-                         itemBuilder: (context, index) {
-                           return const Padding(
-                             padding: EdgeInsets.only(right: 8),
-                             child: ShimmerLoading(
-                               width: 90,
-                               height: 32,
-                               borderRadius: 20,
-                             ),
-                           );
-                         },
-                       ),
-                     ),
+                  // Loading state (shimmer strip)
+                  if (_isLoadingCategories)
+                    SizedBox(
+                      height: 50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: 6,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Container(
+                              width: 90,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -692,7 +709,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
       final result = await DashboardService().getJobCategories();
       if (mounted) {
         setState(() {
-          if (result.success && result.categories != null && result.categories!.isNotEmpty) {
+          if (result.success &&
+              result.categories != null &&
+              result.categories!.isNotEmpty) {
             _categories = result.categories!;
           } else {
             _categories = []; // No fallback - only use API categories

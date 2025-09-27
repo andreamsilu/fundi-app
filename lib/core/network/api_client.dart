@@ -4,6 +4,7 @@ import '../../features/auth/models/user_model.dart';
 import '../constants/app_constants.dart';
 import '../utils/logger.dart';
 import '../services/session_manager.dart';
+import '../services/jwt_token_manager.dart';
 import '../services/connectivity_service.dart';
 
 /// Centralized API client for all network communications
@@ -15,13 +16,16 @@ class ApiClient {
 
   late Dio _dio;
   final SessionManager _sessionManager = SessionManager();
+  final JwtTokenManager _jwtTokenManager = JwtTokenManager();
   final ConnectivityAwareApiClient _connectivityClient = ConnectivityAwareApiClient();
 
   /// Initialize the API client with base configuration
   Future<void> initialize() async {
+    print('🔗 ApiClient: Initializing with base URL: ${AppConstants.baseUrl}');
     Logger.info(
       'Initializing API client with base URL: ${AppConstants.baseUrl}',
     );
+    print('ApiClient.initialize() - baseUrl: ${AppConstants.baseUrl}');
 
     _dio = Dio(
       BaseOptions(
@@ -60,19 +64,32 @@ class ApiClient {
     await _sessionManager.initialize();
   }
 
-  /// Create authentication interceptor
+  /// Create authentication interceptor for JWT tokens
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Add authentication header
+        // Check if token is valid before making request
+        if (!_jwtTokenManager.isTokenValid()) {
+          print('ApiClient: JWT token is invalid or expired, clearing session');
+          await _sessionManager.clearSession();
+          handler.next(options);
+          return;
+        }
+
+        // Add JWT authentication header
         final token = _sessionManager.authToken;
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
+          print('ApiClient: Adding JWT token to request: ${token.substring(0, 20)}...');
+        } else {
+          print('ApiClient: No JWT token available for request');
         }
         handler.next(options);
       },
       onError: (error, handler) async {
+        // Handle JWT token expiration
         if (error.response?.statusCode == 401) {
+          print('ApiClient: JWT token expired or invalid, handling unauthorized');
           _handleUnauthorized();
         }
         handler.next(error);

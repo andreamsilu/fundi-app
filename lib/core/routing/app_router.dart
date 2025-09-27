@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fundi/features/auth/services/auth_service.dart';
 import 'package:fundi/features/job/models/job_model.dart';
-import 'package:fundi/features/messaging/models/chat_model.dart';
+// Removed chat_model import as messaging feature was deleted
 import 'package:fundi/features/portfolio/models/portfolio_model.dart';
 import 'package:provider/provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
@@ -17,8 +17,7 @@ import '../../features/job/screens/job_details_screen.dart';
 import '../../features/portfolio/screens/portfolio_creation_screen.dart';
 import '../../features/portfolio/screens/portfolio_gallery_screen.dart';
 import '../../features/portfolio/screens/portfolio_details_screen.dart';
-import '../../features/messaging/screens/chat_screen.dart';
-import '../../features/search/screens/search_screen.dart';
+// Removed messaging and search screen imports as features were deleted
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/fundi_application/screens/fundi_application_screen.dart';
@@ -146,17 +145,26 @@ class AppRouter {
         return _buildRoute(PortfolioDetailsScreen(portfolio: args), settings);
 
       case '/chat':
-        final args = settings.arguments as ChatModel?;
-        if (args == null) {
-          return _buildRoute(
-            const Scaffold(body: Center(child: Text('Chat not found'))),
-            settings,
-          );
-        }
-        return _buildRoute(ChatScreen(chat: args), settings);
+        // Messaging feature removed - show coming soon
+        return _buildRoute(
+          const Scaffold(
+            body: Center(
+              child: Text('Messaging feature coming soon!'),
+            ),
+          ),
+          settings,
+        );
 
       case '/search':
-        return _buildRoute(const SearchScreen(), settings);
+        // Search feature removed - show coming soon
+        return _buildRoute(
+          const Scaffold(
+            body: Center(
+              child: Text('Search feature coming soon!'),
+            ),
+          ),
+          settings,
+        );
 
       case '/notifications':
         return _buildRoute(const NotificationsScreen(), settings);

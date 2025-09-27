@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/payment_provider.dart';
 import '../models/payment_transaction_model.dart';
-import '../widgets/payment_transaction_details.dart';
 
 /// Payment list screen showing user's payment history
 class PaymentListScreen extends StatefulWidget {
@@ -22,7 +21,9 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PaymentProvider>().loadPayments();
+      if (mounted) {
+        context.read<PaymentProvider>().loadPayments();
+      }
     });
   }
 
@@ -74,9 +75,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
       body: Consumer<PaymentProvider>(
         builder: (context, paymentProvider, child) {
           if (paymentProvider.isLoading && paymentProvider.payments.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (paymentProvider.errorMessage != null) {
@@ -84,11 +83,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[300],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
                     paymentProvider.errorMessage!,
@@ -126,9 +121,9 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Your payment history will appear here',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -146,13 +141,15 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                   pendingPayments: paymentProvider.pendingPayments.length,
                   failedPayments: paymentProvider.failedPayments.length,
                 ),
-                
+
                 // Payment list
                 Expanded(
                   child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
-                    itemCount: paymentProvider.payments.length + (_isLoadingMore ? 1 : 0),
+                    itemCount:
+                        paymentProvider.payments.length +
+                        (_isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == paymentProvider.payments.length) {
                         return const Center(
@@ -179,7 +176,10 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
     );
   }
 
-  void _showPaymentDetails(BuildContext context, PaymentTransactionModel payment) {
+  void _showPaymentDetails(
+    BuildContext context,
+    PaymentTransactionModel payment,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -206,18 +206,26 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
         children: [
           Text(
             'Payment Summary',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: _buildSummaryItem('Total Paid', _formatAmount(totalAmount), Colors.green),
+                child: _buildSummaryItem(
+                  'Total Paid',
+                  _formatAmount(totalAmount),
+                  Colors.green,
+                ),
               ),
               Expanded(
-                child: _buildSummaryItem('Completed', completedPayments.toString(), Colors.green),
+                child: _buildSummaryItem(
+                  'Completed',
+                  completedPayments.toString(),
+                  Colors.green,
+                ),
               ),
             ],
           ),
@@ -225,10 +233,18 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildSummaryItem('Pending', pendingPayments.toString(), Colors.orange),
+                child: _buildSummaryItem(
+                  'Pending',
+                  pendingPayments.toString(),
+                  Colors.orange,
+                ),
               ),
               Expanded(
-                child: _buildSummaryItem('Failed', failedPayments.toString(), Colors.red),
+                child: _buildSummaryItem(
+                  'Failed',
+                  failedPayments.toString(),
+                  Colors.red,
+                ),
               ),
             ],
           ),
@@ -241,13 +257,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         const SizedBox(height: 4),
         Text(
           value,
@@ -270,10 +280,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: payment.paymentStatus.color.withOpacity(0.1),
-          child: Icon(
-            Icons.payment,
-            color: payment.paymentStatus.color,
-          ),
+          child: Icon(Icons.payment, color: payment.paymentStatus.color),
         ),
         title: Text(payment.typeDisplay),
         subtitle: Text(payment.description ?? 'No description'),
@@ -314,10 +321,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
 class PaymentDetailsSheet extends StatelessWidget {
   final PaymentTransactionModel payment;
 
-  const PaymentDetailsSheet({
-    super.key,
-    required this.payment,
-  });
+  const PaymentDetailsSheet({super.key, required this.payment});
 
   @override
   Widget build(BuildContext context) {
@@ -342,22 +346,22 @@ class PaymentDetailsSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Payment details
           Text(
             'Payment Details',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 16),
-          
+
           _buildDetailRow('Amount', payment.formattedAmount),
           _buildDetailRow('Type', payment.typeDisplay),
           _buildDetailRow('Status', payment.statusDisplay),
           _buildDetailRow('Reference', payment.gatewayReference ?? 'N/A'),
           _buildDetailRow('Date', _formatDate(payment.createdAt)),
-          
+
           const SizedBox(height: 24),
-          
+
           // Action buttons
           Row(
             children: [
@@ -418,9 +422,7 @@ class PaymentDetailsSheet extends StatelessWidget {
     // Implement payment verification
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Payment verification initiated'),
-      ),
+      const SnackBar(content: Text('Payment verification initiated')),
     );
   }
 }

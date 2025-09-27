@@ -75,8 +75,8 @@ class JobService {
     }
   }
 
-  /// Get jobs with pagination and filters
-  Future<JobListResult> getJobs({
+  /// Get available jobs (public feed) with pagination and filters
+  Future<JobListResult> getAvailableJobs({
     int page = 1,
     int limit = 20,
     String? category,
@@ -89,7 +89,7 @@ class JobService {
   }) async {
     try {
       Logger.userAction(
-        'Fetch jobs',
+        'Fetch available jobs',
         data: {
           'page': page,
           'limit': limit,
@@ -108,7 +108,7 @@ class JobService {
       if (search != null) queryParams['search'] = search;
 
       final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.jobs,
+        ApiEndpoints.jobs, // Use /jobs for available jobs (public feed)
         queryParameters: queryParams,
         fromJson: (data) => data as Map<String, dynamic>,
         requestId: requestId,
@@ -151,6 +151,86 @@ class JobService {
       return JobListResult.failure(message: e.message);
     } catch (e) {
       Logger.error('Fetch jobs unexpected error', error: e);
+      return JobListResult.failure(message: 'An unexpected error occurred');
+    }
+  }
+
+  /// Get user's own jobs (my jobs) with pagination and filters
+  Future<JobListResult> getMyJobs({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? location,
+    double? minBudget,
+    double? maxBudget,
+    JobStatus? status,
+    String? search,
+    String? requestId,
+  }) async {
+    try {
+      Logger.userAction(
+        'Fetch my jobs',
+        data: {
+          'page': page,
+          'limit': limit,
+          'category': category,
+          'location': location,
+        },
+      );
+
+      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+
+      if (category != null) queryParams['category'] = category;
+      if (location != null) queryParams['location'] = location;
+      if (minBudget != null) queryParams['min_budget'] = minBudget;
+      if (maxBudget != null) queryParams['max_budget'] = maxBudget;
+      if (status != null) queryParams['status'] = status.value;
+      if (search != null) queryParams['search'] = search;
+
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        ApiEndpoints.myJobs, // Use /jobs/my-jobs for user's own jobs
+        queryParameters: queryParams,
+        fromJson: (data) => data as Map<String, dynamic>,
+        requestId: requestId,
+      );
+
+      if (response.success && response.data != null) {
+        final data = response.data!;
+        // API now returns a consistent structure: { jobs: [], pagination: {...} }
+        final jobsData = (data['jobs'] as List<dynamic>? ?? <dynamic>[]);
+        final jobs = jobsData
+            .map(
+              (jobData) => JobModel.fromJson(jobData as Map<String, dynamic>),
+            )
+            .toList();
+
+        // Pagination object
+        final pagination = (data['pagination'] as Map<String, dynamic>? ?? {});
+        final totalCount = (pagination['total'] as int?) ?? jobs.length;
+        final totalPages = (pagination['last_page'] as int?) ?? 1;
+        final currentPage = (pagination['current_page'] as int?) ?? page;
+
+        Logger.userAction(
+          'My jobs fetched successfully',
+          data: {'count': jobs.length, 'total': totalCount},
+        );
+
+        return JobListResult.success(
+          jobs: jobs,
+          totalCount: totalCount,
+          totalPages: totalPages,
+          currentPage: currentPage,
+          message: response.message,
+        );
+      } else {
+        Logger.warning('Fetch my jobs failed: ${response.message}');
+        return JobListResult.failure(message: response.message);
+      }
+    } on ApiError catch (e) {
+      Logger.error('Fetch my jobs API error', error: e);
+      return JobListResult.failure(message: e.message);
+    } catch (e) {
+      Logger.error('Fetch my jobs unexpected error', error: e);
       return JobListResult.failure(message: 'An unexpected error occurred');
     }
   }

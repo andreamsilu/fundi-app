@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/feeds_provider.dart';
+import '../services/feeds_service.dart';
 import '../widgets/fundi_card.dart';
 import '../widgets/fundi_feed_filters.dart';
+import '../models/fundi_model.dart';
 import 'fundi_profile_screen.dart';
+import '../../../shared/widgets/loading_widget.dart';
+import '../../../shared/widgets/error_widget.dart';
 
 class FundiFeedScreen extends StatefulWidget {
   final bool showAppBar;
@@ -15,25 +17,27 @@ class FundiFeedScreen extends StatefulWidget {
 }
 
 class _FundiFeedScreenState extends State<FundiFeedScreen> {
+  final FeedsService _feedsService = FeedsService();
   final ScrollController _scrollController = ScrollController();
+
+  List<FundiModel> _fundis = [];
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMoreData = true;
+  int _currentPage = 1;
+  String? _error;
+
+  // Filter parameters
+  String _searchQuery = '';
+  String? _selectedLocation;
+  List<String> _selectedSkills = [];
+  double? _minRating;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // Initialize feeds data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      try {
-        final feedsProvider = Provider.of<FeedsProvider>(
-          context,
-          listen: false,
-        );
-        feedsProvider.loadFundis();
-      } catch (e) {
-        print('FeedsProvider not available, creating new instance: $e');
-        // If provider is not available, we'll handle it in the build method
-      }
-    });
+    _loadFundis();
   }
 
   @override
@@ -45,37 +49,126 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.8) {
-      context.read<FeedsProvider>().loadMoreFundis();
+      _loadMoreFundis();
     }
+  }
+
+  Future<void> _loadFundis({bool refresh = false}) async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      if (refresh) {
+        _currentPage = 1;
+        _fundis.clear();
+        _hasMoreData = true;
+      }
+    });
+
+    try {
+      final result = await _feedsService.getFundis(
+        page: _currentPage,
+        limit: 15,
+        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+        location: _selectedLocation,
+        skills: _selectedSkills.isNotEmpty ? _selectedSkills : null,
+        minRating: _minRating,
+      );
+
+      if (result['success']) {
+        final fundisData = result['fundis'] as List<dynamic>;
+        final newFundis = fundisData.map((json) {
+          try {
+            // Parse fundi data safely
+            final jsonMap = json as Map<String, dynamic>;
+            return FundiModel.fromJson(jsonMap);
+          } catch (e) {
+            print('Error parsing fundi: $e');
+            print('Problematic JSON: $json');
+            print('Error type: ${e.runtimeType}');
+            if (e.toString().contains('bool')) {
+              print('Boolean parsing error detected!');
+            }
+            // Return a default fundi model to prevent crashes
+            return FundiModel.empty();
+          }
+        }).toList();
+
+        setState(() {
+          if (refresh) {
+            _fundis = newFundis;
+          } else {
+            _fundis.addAll(newFundis);
+          }
+          _hasMoreData = newFundis.length == 15;
+          _currentPage++;
+        });
+      } else {
+        setState(() {
+          _error = result['message'];
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load fundis: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMoreFundis() async {
+    if (_isLoadingMore || !_hasMoreData) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    await _loadFundis();
+
+    setState(() {
+      _isLoadingMore = false;
+    });
   }
 
   Future<void> _refreshFeed() async {
-    try {
-      final provider = Provider.of<FeedsProvider>(context, listen: false);
-      await provider.loadFundis(refresh: true);
-    } catch (_) {
-      // Provider not found at this context; ignore to avoid crash
-    }
+    await _loadFundis(refresh: true);
   }
 
   void _applyFilters(Map<String, dynamic> filters) {
-    final provider = context.read<FeedsProvider>();
-
-    // Update filters in provider
-    provider.updateSearchQuery(filters['search'] ?? '');
-    provider.updateLocation(filters['location']);
-    provider.updateSkills(filters['skills'] ?? []);
-    provider.updateMinRating(filters['min_rating']);
-
-    // Apply filters and reload data
-    provider.applyFilters();
+    setState(() {
+      _searchQuery = filters['search'] ?? '';
+      _selectedLocation = filters['location'];
+      _selectedSkills = List<String>.from(filters['skills'] ?? []);
+      _minRating = filters['min_rating'];
+    });
+    _loadFundis(refresh: true);
   }
 
   void _navigateToFundiProfile(dynamic fundi) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => FundiProfileScreen(fundi: fundi)),
-    );
+    try {
+      if (fundi == null) {
+        throw Exception('Fundi data is null');
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FundiProfileScreen(fundi: fundi),
+        ),
+      );
+    } catch (e) {
+      print('Error navigating to fundi profile: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading fundi profile: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -84,6 +177,8 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
       appBar: widget.showAppBar
           ? AppBar(
               title: const Text('Find Fundis'),
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
               actions: [
                 IconButton(
                   icon: const Icon(Icons.filter_list),
@@ -97,158 +192,80 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
   }
 
   Widget _buildBody() {
-    // Try to get the existing provider, if not available create a new one
-    try {
-      Provider.of<FeedsProvider>(context, listen: false);
-      return Selector<FeedsProvider, ({List<dynamic> fundis, bool isLoading, bool isLoadingMore, String? error})>(
-        selector: (context, provider) => (
-          fundis: provider.fundis,
-          isLoading: provider.isLoadingFundis,
-          isLoadingMore: provider.isLoadingMoreFundis,
-          error: provider.fundisError,
-        ),
-        builder: (context, data, child) => _buildFundiList(data),
-      );
-    } catch (e) {
-      // Provider not available, create a new one
-      return ChangeNotifierProvider(
-        create: (_) => FeedsProvider()..loadFundis(),
-        child: Selector<FeedsProvider, ({List<dynamic> fundis, bool isLoading, bool isLoadingMore, String? error})>(
-          selector: (context, provider) => (
-            fundis: provider.fundis,
-            isLoading: provider.isLoadingFundis,
-            isLoadingMore: provider.isLoadingMoreFundis,
-            error: provider.fundisError,
-          ),
-          builder: (context, data, child) => _buildFundiList(data),
-        ),
-      );
+    if (_isLoading && _fundis.isEmpty) {
+      return const LoadingWidget();
     }
-  }
 
-  Widget _buildFundiList(({List<dynamic> fundis, bool isLoading, bool isLoadingMore, String? error}) data) {
-    if (data.isLoading && data.fundis.isEmpty) {
-      // Show shimmer list while loading
-      return ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 8,
-        itemBuilder: (context, index) => const Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: ShimmerJobCard(),
-        ),
+    if (_error != null && _fundis.isEmpty) {
+      return AppErrorWidget(
+        message: _error!,
+        onRetry: () => _loadFundis(refresh: true),
       );
     }
 
-    // If there's an error and no data, show the error explicitly
-    if (data.error != null && data.fundis.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: () {
-          final provider = Provider.of<FeedsProvider>(context, listen: false);
-          provider.loadFundis(refresh: true);
-        },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24),
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, color: Colors.red[400], size: 42),
-                const SizedBox(height: 12),
-                Text(
-                  data.error!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red, fontSize: 14),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    final provider = Provider.of<FeedsProvider>(context, listen: false);
-                    provider.loadFundis(refresh: true);
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    // If no error but list is empty after load, show friendly empty state
-    if (!data.isLoading && data.fundis.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: () {
-          final provider = Provider.of<FeedsProvider>(context, listen: false);
-          provider.loadFundis(refresh: true);
-        },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24),
-          children: const [
-            SizedBox(height: 80),
-            Icon(Icons.handyman_outlined, size: 42, color: Colors.grey),
-            SizedBox(height: 12),
-            Text(
-              'No fundis found. Try adjusting filters or pull to refresh.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        // Note: Filter chips would need provider access for searchQuery, selectedSkills, etc.
-        // For now, keeping this section as-is since it requires provider methods
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                if (feedsProvider.searchQuery.isNotEmpty)
-                  Chip(
-                    label: Text('Search: ${feedsProvider.searchQuery}'),
-                    onDeleted: () {
-                      feedsProvider.updateSearchQuery('');
-                      feedsProvider.applyFilters();
-                    },
-                  ),
-                if (feedsProvider.selectedSkills.isNotEmpty)
-                  Chip(
-                    label: Text(
-                      'Skills: ${feedsProvider.selectedSkills.length}',
+    return RefreshIndicator(
+      onRefresh: _refreshFeed,
+      child: Column(
+        children: [
+          if (_searchQuery.isNotEmpty ||
+              _selectedLocation != null ||
+              _selectedSkills.isNotEmpty ||
+              _minRating != null)
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  if (_searchQuery.isNotEmpty)
+                    Chip(
+                      label: Text('Search: $_searchQuery'),
+                      onDeleted: () {
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                        _loadFundis(refresh: true);
+                      },
                     ),
-                    onDeleted: () {
-                      feedsProvider.updateSkills([]);
-                      feedsProvider.applyFilters();
-                    },
-                  ),
-                if (feedsProvider.minRating != null)
-                  Chip(
-                    label: Text('Rating: ${feedsProvider.minRating!}+'),
-                    onDeleted: () {
-                      feedsProvider.updateMinRating(null);
-                      feedsProvider.applyFilters();
-                    },
-                  ),
-              ],
+                  if (_selectedLocation != null)
+                    Chip(
+                      label: Text('Location: $_selectedLocation'),
+                      onDeleted: () {
+                        setState(() {
+                          _selectedLocation = null;
+                        });
+                        _loadFundis(refresh: true);
+                      },
+                    ),
+                  if (_selectedSkills.isNotEmpty)
+                    Chip(
+                      label: Text('Skills: ${_selectedSkills.length}'),
+                      onDeleted: () {
+                        setState(() {
+                          _selectedSkills.clear();
+                        });
+                        _loadFundis(refresh: true);
+                      },
+                    ),
+                  if (_minRating != null)
+                    Chip(
+                      label: Text('Rating: ${_minRating!.toStringAsFixed(1)}+'),
+                      onDeleted: () {
+                        setState(() {
+                          _minRating = null;
+                        });
+                        _loadFundis(refresh: true);
+                      },
+                    ),
+                ],
+              ),
             ),
-          ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () => feedsProvider.loadFundis(refresh: true),
+          Expanded(
             child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount:
-                  feedsProvider.fundis.length +
-                  (feedsProvider.isLoadingMoreFundis ? 1 : 0),
+              itemCount: _fundis.length + (_isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
-                if (index == feedsProvider.fundis.length) {
+                if (index == _fundis.length) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
@@ -257,43 +274,46 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
                   );
                 }
 
-                final fundi = feedsProvider.fundis[index];
+                final fundi = _fundis[index];
                 return FundiCard(
                   fundi: fundi,
-                  onTap: () => _navigateToFundiProfile(fundi),
+                  onTap: () {
+                    try {
+                      _navigateToFundiProfile(fundi);
+                    } catch (e) {
+                      print('Error navigating to fundi profile: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Error loading fundi profile: ${e.toString()}',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
                 );
               },
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   void _showFilters() {
-    try {
-      final feedsProvider = context.read<FeedsProvider>();
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => FundiFeedFilters(
-          currentFilters: {
-            'search': feedsProvider.searchQuery,
-            'location': feedsProvider.selectedLocation,
-            'skills': feedsProvider.selectedSkills,
-            'min_rating': feedsProvider.minRating,
-          },
-          onApplyFilters: _applyFilters,
-        ),
-      );
-    } catch (e) {
-      // Provider not available, show error
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Filters not available at the moment'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => FundiFeedFilters(
+        currentFilters: {
+          'search': _searchQuery,
+          'location': _selectedLocation,
+          'skills': _selectedSkills,
+          'min_rating': _minRating,
+        },
+        onApplyFilters: _applyFilters,
+      ),
+    );
   }
 }
