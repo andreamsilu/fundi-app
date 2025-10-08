@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fundi/shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
-import 'package:provider/provider.dart';
-import '../../../features/auth/providers/auth_provider.dart';
 import '../services/feeds_service.dart';
 import '../widgets/portfolio_item_card.dart';
 import '../widgets/request_fundi_dialog.dart';
+import '../models/fundi_model.dart';
+import '../../auth/services/auth_service.dart';
 
 class FundiProfileScreen extends StatefulWidget {
   final dynamic fundi;
@@ -50,7 +50,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
 
       final result = await _feedsService.getFundiProfile(fundiId);
 
-      if (result['success'] && result['fundi'] != null) {
+      if (result['success'] == true && result['fundi'] != null) {
         if (!mounted) return;
         setState(() {
           _fundiDetails = result['fundi'];
@@ -98,23 +98,28 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
         title: const Text('Fundi Profile'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
-    // Try to check if user is customer, but don't block if provider not available
+    // Check if user is customer using AuthService directly
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (!authProvider.isCustomer) {
+      final authService = AuthService();
+      final currentUser = authService.currentUser;
+      if (currentUser != null && !currentUser.isCustomer) {
         return const Center(
           child: Text('Only customers can view fundi profiles'),
         );
       }
     } catch (e) {
-      // Provider not available, continue anyway
-      print('AuthProvider not available in FundiProfileScreen: $e');
+      print('AuthService error in FundiProfileScreen: $e');
+      // Continue without the check if auth service is not available
     }
 
     if (_isLoading && _fundiDetails == null) {
@@ -130,15 +135,55 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
       return const Center(child: Text('Fundi data not available'));
     }
 
-    final portfolioItems =
-        fundi['portfolio_items'] as List<dynamic>? ??
-        fundi['visible_portfolio'] as List<dynamic>? ??
-        [];
-    final averageRating =
-        fundi['average_rating']?.toDouble() ??
-        fundi['rating']?.toDouble() ??
-        0.0;
-    final totalRatings = fundi['total_ratings'] ?? 0;
+    // Handle both FundiModel and raw Map data
+    final bool isModel = fundi is FundiModel;
+
+    // Helper methods to safely access data
+    String getStringValue(String key) {
+      if (isModel) {
+        final model = fundi;
+        switch (key) {
+          case 'name':
+          case 'full_name':
+            return model.name;
+          case 'email':
+            return model.email;
+          case 'phone':
+            return model.phone;
+          case 'location':
+            return model.location;
+          case 'bio':
+            return model.bio ?? '';
+          default:
+            return '';
+        }
+      }
+      return fundi[key]?.toString() ?? '';
+    }
+
+    final portfolioItems = () {
+      if (isModel) {
+        final Map<String, dynamic> portfolio = (fundi).portfolio;
+        final items = portfolio['items'];
+        if (items is List) return items;
+        return <dynamic>[];
+      }
+      // Handle both visible_portfolio and portfolio_items from API response
+      return fundi['portfolio_items'] as List<dynamic>? ??
+          fundi['visible_portfolio'] as List<dynamic>? ??
+          <dynamic>[];
+    }();
+    final averageRating = () {
+      if (isModel) {
+        return (fundi).rating;
+      }
+      return fundi['average_rating']?.toDouble() ??
+          fundi['rating']?.toDouble() ??
+          0.0;
+    }();
+    final totalRatings = isModel
+        ? 0 // Not available on model by default
+        : (fundi['total_ratings'] as int? ?? 0);
 
     return SingleChildScrollView(
       child: Column(
@@ -157,11 +202,13 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                   radius: 40,
                   backgroundColor: Theme.of(context).primaryColor,
                   child: Text(
-                    (fundi['name']?.toString() ??
-                            fundi['full_name']?.toString() ??
-                            'Unknown')
-                        .substring(0, 1)
-                        .toUpperCase(),
+                    getStringValue('name').isNotEmpty
+                        ? getStringValue('name').substring(0, 1).toUpperCase()
+                        : getStringValue('full_name').isNotEmpty
+                        ? getStringValue(
+                            'full_name',
+                          ).substring(0, 1).toUpperCase()
+                        : 'U',
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -171,9 +218,11 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  fundi['name']?.toString() ??
-                      fundi['full_name']?.toString() ??
-                      'Unknown Fundi',
+                  getStringValue('name').isNotEmpty
+                      ? getStringValue('name')
+                      : getStringValue('full_name').isNotEmpty
+                      ? getStringValue('full_name')
+                      : 'Unknown Fundi',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -209,20 +258,19 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (fundi['email'] != null) ...[
-                  _buildInfoRow(Icons.email, 'Email', fundi['email']),
+                if (getStringValue('email').isNotEmpty) ...[
+                  _buildInfoRow(Icons.email, 'Email', getStringValue('email')),
                   const SizedBox(height: 8),
                 ],
-                if (fundi['phone'] != null) ...[
-                  _buildInfoRow(Icons.phone, 'Phone', fundi['phone']),
+                if (getStringValue('phone').isNotEmpty) ...[
+                  _buildInfoRow(Icons.phone, 'Phone', getStringValue('phone')),
                   const SizedBox(height: 8),
                 ],
-                if (fundi['fundi_profile'] != null &&
-                    fundi['fundi_profile']['location'] != null) ...[
+                if (getStringValue('location').isNotEmpty) ...[
                   _buildInfoRow(
                     Icons.location_on,
                     'Location',
-                    fundi['fundi_profile']['location'],
+                    getStringValue('location'),
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -235,29 +283,34 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
             builder: (context) {
               List<String> skills = [];
 
-              // Try to get skills from fundi_profile
-              if (fundi['fundi_profile'] != null &&
-                  fundi['fundi_profile']['skills'] != null) {
-                final skillsData = fundi['fundi_profile']['skills'];
-                if (skillsData is String) {
-                  try {
-                    final decoded = jsonDecode(skillsData) as List<dynamic>;
-                    skills = List<String>.from(decoded);
-                  } catch (e) {
-                    skills = skillsData
-                        .split(',')
-                        .map((s) => s.trim())
-                        .toList();
+              // Get skills from FundiModel or Map data
+              if (isModel) {
+                skills = (fundi as FundiModel).skills;
+              } else {
+                // Try to get skills from fundi_profile
+                if (fundi['fundi_profile'] != null &&
+                    fundi['fundi_profile']['skills'] != null) {
+                  final skillsData = fundi['fundi_profile']['skills'];
+                  if (skillsData is String) {
+                    try {
+                      final decoded = jsonDecode(skillsData) as List<dynamic>;
+                      skills = List<String>.from(decoded);
+                    } catch (e) {
+                      skills = skillsData
+                          .split(',')
+                          .map((s) => s.trim())
+                          .toList();
+                    }
+                  } else if (skillsData is List) {
+                    skills = List<String>.from(skillsData);
                   }
-                } else if (skillsData is List) {
-                  skills = List<String>.from(skillsData);
                 }
-              }
 
-              // Try to get skills from direct fundi data
-              if (skills.isEmpty && fundi['skills'] != null) {
-                if (fundi['skills'] is List) {
-                  skills = List<String>.from(fundi['skills']);
+                // Try to get skills from direct fundi data
+                if (skills.isEmpty && fundi['skills'] != null) {
+                  if (fundi['skills'] is List) {
+                    skills = List<String>.from(fundi['skills']);
+                  }
                 }
               }
 

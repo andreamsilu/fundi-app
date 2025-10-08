@@ -137,7 +137,7 @@ class _JobCreationScreenState extends State<JobCreationScreen>
             }
           });
         } else {
-          throw Exception(result.message ?? 'Failed to create job');
+          throw Exception(result.message);
         }
       },
       loadingMessage: 'Creating job...',

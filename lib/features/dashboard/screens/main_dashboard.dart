@@ -641,29 +641,6 @@ class _MainDashboardState extends State<MainDashboard>
     });
   }
 
-  /// Navigate to job feed screen
-  void _navigateToJobFeed() {
-    try {
-      print('MainDashboard: Navigating to job feed screen');
-      Navigator.pushNamed(context, '/job-feed');
-      print('MainDashboard: Job feed navigation successful');
-    } catch (e) {
-      print('MainDashboard: Job feed navigation error: $e');
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Job Feed',
-            message:
-                'Job feed feature is coming soon! You\'ll be able to browse available jobs here.',
-            icon: Icons.work_outline,
-          ),
-        ),
-      );
-    }
-  }
-
   /// Navigate to work approval screen
   void _navigateToWorkApproval() {
     try {
@@ -980,12 +957,17 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
               'Explore verified craftsmen',
               Icons.search,
               () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Search feature is coming soon!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                Navigator.pushNamed(context, '/fundi-feed');
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildActionButton(
+              context,
+              'Debug Fundi Feed',
+              'Debug version of fundi feed',
+              Icons.bug_report,
+              () {
+                Navigator.pushNamed(context, '/fundi-feed-debug');
               },
             ),
           ] else if (authService.currentUser?.isFundi ?? false) ...[
@@ -995,12 +977,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
               'Discover new opportunities',
               Icons.search,
               () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Search feature is coming soon!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                Navigator.pushNamed(context, '/job-feed');
               },
             ),
             const SizedBox(height: 12),

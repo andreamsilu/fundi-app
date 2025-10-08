@@ -37,7 +37,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     try {
       final result = await _feedsService.getJobDetails(widget.job['id']);
 
-      if (result['success']) {
+      if (result['success'] == true) {
         setState(() {
           _jobDetails = result['job'];
         });

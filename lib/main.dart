@@ -5,6 +5,7 @@ import 'core/app/app_initializer.dart';
 import 'core/app/app_initialization_service.dart';
 import 'core/providers/lazy_provider_manager.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/navigation_service.dart';
 import 'core/utils/startup_performance.dart';
 import 'core/config/env_config.dart';
 // Removed debug-only imports
@@ -14,7 +15,7 @@ import 'core/config/env_config.dart';
 void main() async {
   // Debug: App starting
   print('🚀 FundiApp: Starting application...');
-  
+
   // Mark startup milestone
   StartupPerformance.markMilestone('app_start');
 
@@ -63,6 +64,8 @@ class FundiApp extends StatelessWidget {
         // Provide a guaranteed entry screen to avoid null initialRoute
         home: const AppInitializer(),
         onGenerateRoute: AppRouter.generateRoute,
+        // Set the navigator key for global navigation
+        navigatorKey: NavigationService().navigatorKey,
       ),
     );
   }

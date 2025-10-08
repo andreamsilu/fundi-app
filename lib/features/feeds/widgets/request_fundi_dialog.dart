@@ -97,7 +97,7 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
         fundiId: fundiId, // Specific fundi request
       );
 
-      if (result['success']) {
+      if (result['success'] == true) {
         Navigator.pop(context);
         widget.onRequestSent?.call();
       } else {

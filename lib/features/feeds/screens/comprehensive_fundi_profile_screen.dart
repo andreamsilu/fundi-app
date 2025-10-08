@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fundi/shared/widgets/loading_widget.dart';
 import 'package:fundi/shared/widgets/error_widget.dart';
-import 'package:provider/provider.dart';
-import '../../../features/auth/providers/auth_provider.dart';
 import '../models/comprehensive_fundi_profile.dart';
 import '../services/feeds_service.dart';
 import '../widgets/portfolio_item_card.dart';
 import '../widgets/request_fundi_dialog.dart';
 import '../widgets/rating_summary_widget.dart';
-import '../widgets/certification_badge.dart';
 import '../widgets/availability_status_widget.dart';
 
 /// Comprehensive fundi profile screen showing all required details
@@ -53,7 +50,7 @@ class _ComprehensiveFundiProfileScreenState
 
       final result = await _feedsService.getFundiProfile(fundiId);
 
-      if (result['success'] && result['fundi'] != null) {
+      if (result['success'] == true && result['fundi'] != null) {
         setState(() {
           _fundiProfile = ComprehensiveFundiProfile.fromJson(result['fundi']);
         });

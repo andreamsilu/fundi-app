@@ -24,9 +24,9 @@ import '../../features/fundi_application/screens/fundi_application_screen.dart';
 import '../../features/feeds/screens/fundi_feed_screen.dart';
 import '../../features/feeds/screens/job_feed_screen.dart';
 import '../../features/feeds/screens/fundi_profile_screen.dart';
-import '../../features/feeds/screens/job_details_screen.dart' hide JobDetailsScreen;
 import '../../features/work_approval/screens/work_approval_screen.dart';
 import '../../features/home/screens/role_based_home_screen.dart';
+import '../../features/feeds/screens/fundi_feed_debug_screen.dart';
 
 /// Centralized routing configuration for the Fundi App
 /// Handles route definitions, navigation, and route guards
@@ -56,6 +56,7 @@ class AppRouter {
   static const String home = '/';
   static const String customerHome = '/customer-home';
   static const String fundiHome = '/fundi-home';
+  static const String fundiFeedDebug = '/fundi-feed-debug';
 
   /// Route generation function for named routes
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -148,9 +149,7 @@ class AppRouter {
         // Messaging feature removed - show coming soon
         return _buildRoute(
           const Scaffold(
-            body: Center(
-              child: Text('Messaging feature coming soon!'),
-            ),
+            body: Center(child: Text('Messaging feature coming soon!')),
           ),
           settings,
         );
@@ -159,9 +158,7 @@ class AppRouter {
         // Search feature removed - show coming soon
         return _buildRoute(
           const Scaffold(
-            body: Center(
-              child: Text('Search feature coming soon!'),
-            ),
+            body: Center(child: Text('Search feature coming soon!')),
           ),
           settings,
         );
@@ -193,6 +190,9 @@ class AppRouter {
 
       case '/work-approval':
         return _buildRoute(const WorkApprovalScreen(), settings);
+
+      case '/fundi-feed-debug':
+        return _buildRoute(const FundiFeedDebugScreen(), settings);
 
       default:
         return _buildRoute(

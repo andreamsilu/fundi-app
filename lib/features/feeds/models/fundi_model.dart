@@ -46,22 +46,27 @@ class FundiModel {
     required this.updatedAt,
   });
 
-  /// Helper method to safely parse boolean values
-  static bool _parseBoolean(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is int) return value == 1;
-    if (value is String) return value.toLowerCase() == 'true' || value == '1';
-    return false;
-  }
 
-  /// Helper method to safely parse boolean values with default
-  static bool _parseBooleanWithDefault(dynamic value, bool defaultValue) {
-    if (value == null) return defaultValue;
-    if (value is bool) return value;
-    if (value is int) return value == 1;
-    if (value is String) return value.toLowerCase() == 'true' || value == '1';
-    return defaultValue;
+
+  /// Ultra-safe boolean parsing that handles any type of input
+  static bool _parseBooleanSafely(dynamic value) {
+    try {
+      if (value == null) return false;
+      if (value is bool) return value;
+      if (value is int) return value == 1;
+      if (value is String) {
+        final lowerValue = value.toLowerCase().trim();
+        return lowerValue == 'true' || lowerValue == '1' || lowerValue == 'yes';
+      }
+      if (value is double) return value == 1.0;
+      if (value is num) return value.toInt() == 1;
+      // Handle any other type by converting to string and checking
+      final stringValue = value.toString().toLowerCase().trim();
+      return stringValue == 'true' || stringValue == '1' || stringValue == 'yes';
+    } catch (e) {
+      // If anything goes wrong, return false
+      return false;
+    }
   }
 
   /// Create FundiModel from JSON
@@ -175,16 +180,17 @@ class FundiModel {
             fundiProfile?['veta_certificate'] ??
             json['veta_certificate'] ??
             json['vetaCertificate'],
-        isVerified: (fundiProfile?['verification_status'] == 'approved') ||
-            _parseBoolean(json['is_verified']) ||
-            _parseBoolean(json['isVerified']),
-        isAvailable:
-            json.containsKey('is_available') || json.containsKey('isAvailable')
-            ? _parseBooleanWithDefault(
-                _parseBoolean(json['is_available']) || _parseBoolean(json['isAvailable']),
-                true,
-              )
-            : (json['status']?.toString() == 'active') || json['status'] == null,
+        isVerified: _parseBooleanSafely(
+          fundiProfile?['verification_status'] == 'approved' ||
+          json['is_verified'] ||
+          json['isVerified'],
+        ),
+        isAvailable: _parseBooleanSafely(
+          json['is_available'] ||
+          json['isAvailable'] ||
+          json['status']?.toString() == 'active' ||
+          json['status'] == null,
+        ),
         bio: fundiProfile?['bio'] ?? json['bio'],
         hourlyRate: (json['hourly_rate'] ?? json['hourlyRate'] ?? 0.0)
             .toDouble(),

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../utils/logger.dart';
 import '../../features/auth/models/user_model.dart';
+import 'navigation_service.dart';
 import 'dart:convert';
 
 /// Session manager for handling user authentication state
@@ -146,10 +147,54 @@ class SessionManager {
   }
 
   /// Force logout (clear session and redirect to login)
-  void forceLogout() {
-    clearSession();
-    // This would typically trigger a navigation to login screen
-    // Implementation depends on your navigation setup
+  Future<void> forceLogout({String? reason}) async {
+    try {
+      Logger.warning(
+        'Session manager: Force logout triggered',
+        data: {'reason': reason ?? 'Token expired or unauthorized'},
+      );
+
+      // Clear session data
+      await clearSession();
+
+      // Redirect to login screen using navigation service
+      final navigationService = NavigationService();
+      await navigationService.redirectToLogin(
+        reason: reason ?? 'Your session has expired. Please log in again.',
+        clearStack: true,
+      );
+
+      Logger.info('Session manager: Force logout completed successfully');
+    } catch (e) {
+      Logger.error('Session manager: Error during force logout', error: e);
+    }
+  }
+
+  /// Handle token expiration
+  Future<void> handleTokenExpiration({String? reason}) async {
+    try {
+      Logger.warning(
+        'Session manager: Token expiration detected',
+        data: {'reason': reason ?? 'JWT token expired'},
+      );
+
+      // Show token expiration dialog first
+      final navigationService = NavigationService();
+      await navigationService.showTokenExpirationDialog(
+        message: reason ?? 'Your session has expired. Please log in again.',
+        onOkPressed: () async {
+          // Clear session and redirect to login
+          await forceLogout(reason: reason);
+        },
+      );
+    } catch (e) {
+      Logger.error(
+        'Session manager: Error handling token expiration',
+        error: e,
+      );
+      // Fallback: directly redirect to login
+      await forceLogout(reason: reason);
+    }
   }
 
   /// Get token information for debugging

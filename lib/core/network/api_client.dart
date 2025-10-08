@@ -17,7 +17,8 @@ class ApiClient {
   late Dio _dio;
   final SessionManager _sessionManager = SessionManager();
   final JwtTokenManager _jwtTokenManager = JwtTokenManager();
-  final ConnectivityAwareApiClient _connectivityClient = ConnectivityAwareApiClient();
+  final ConnectivityAwareApiClient _connectivityClient =
+      ConnectivityAwareApiClient();
 
   /// Initialize the API client with base configuration
   Future<void> initialize() async {
@@ -70,8 +71,12 @@ class ApiClient {
       onRequest: (options, handler) async {
         // Check if token is valid before making request
         if (!_jwtTokenManager.isTokenValid()) {
-          print('ApiClient: JWT token is invalid or expired, clearing session');
-          await _sessionManager.clearSession();
+          Logger.warning(
+            'ApiClient: JWT token is invalid or expired, clearing session',
+          );
+          await _sessionManager.handleTokenExpiration(
+            reason: 'Your session has expired. Please log in again.',
+          );
           handler.next(options);
           return;
         }
@@ -80,17 +85,29 @@ class ApiClient {
         final token = _sessionManager.authToken;
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
-          print('ApiClient: Adding JWT token to request: ${token.substring(0, 20)}...');
+          Logger.debug(
+            'ApiClient: Adding JWT token to request: ${token.substring(0, 20)}...',
+          );
         } else {
-          print('ApiClient: No JWT token available for request');
+          Logger.warning('ApiClient: No JWT token available for request');
         }
         handler.next(options);
       },
       onError: (error, handler) async {
-        // Handle JWT token expiration
-        if (error.response?.statusCode == 401) {
-          print('ApiClient: JWT token expired or invalid, handling unauthorized');
-          _handleUnauthorized();
+        // Handle JWT token expiration and other auth errors
+        final statusCode = error.response?.statusCode;
+        if (statusCode == 401) {
+          Logger.warning(
+            'ApiClient: JWT token expired or invalid, handling unauthorized',
+          );
+          await _handleUnauthorized();
+        } else if (statusCode == 403) {
+          Logger.warning(
+            'ApiClient: Access forbidden, user may not have permission',
+          );
+          await _sessionManager.handleTokenExpiration(
+            reason: 'Access denied. Please log in again.',
+          );
         }
         handler.next(error);
       },
@@ -109,7 +126,8 @@ class ApiClient {
 
         // Avoid logging request bodies for auth endpoints
         final path = options.path;
-        final isAuthEndpoint = path.contains('/auth/login') ||
+        final isAuthEndpoint =
+            path.contains('/auth/login') ||
             path.contains('/auth/register') ||
             path.contains('/auth/reset-password') ||
             path.contains('/auth/forgot-password') ||
@@ -244,9 +262,11 @@ class ApiClient {
   }
 
   /// Handle unauthorized access
-  void _handleUnauthorized() {
-    _sessionManager.forceLogout();
-    Logger.warning('User session expired, redirecting to login');
+  Future<void> _handleUnauthorized() async {
+    Logger.warning('ApiClient: Handling unauthorized access');
+    await _sessionManager.handleTokenExpiration(
+      reason: 'Your session has expired. Please log in again.',
+    );
   }
 
   /// Get current user from session
@@ -275,17 +295,14 @@ class ApiClient {
     String? requestId,
   }) async {
     if (useConnectivityAware) {
-      return await _connectivityClient.executeWithRetry(
-        () async {
-          final response = await _dio.get(
-            path,
-            queryParameters: queryParameters,
-            options: options,
-          );
-          return _handleResponse<T>(response, fromJson);
-        },
-        requestId: requestId,
-      );
+      return await _connectivityClient.executeWithRetry(() async {
+        final response = await _dio.get(
+          path,
+          queryParameters: queryParameters,
+          options: options,
+        );
+        return _handleResponse<T>(response, fromJson);
+      }, requestId: requestId);
     } else {
       try {
         final response = await _dio.get(

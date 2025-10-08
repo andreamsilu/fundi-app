@@ -1,18 +1,30 @@
 import 'dart:convert';
-import 'package:fundi/features/auth/models/fundi_profile_model.dart';
 import 'package:fundi/features/portfolio/models/portfolio_model.dart';
 import 'package:fundi/features/rating/models/rating_model.dart';
 
 /// Comprehensive fundi profile model that combines all fundi-related data
 /// This model aggregates data from multiple sources for a complete fundi profile
 class ComprehensiveFundiProfile {
-  /// Helper method to safely parse boolean values
-  static bool _parseBoolean(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is int) return value == 1;
-    if (value is String) return value.toLowerCase() == 'true' || value == '1';
-    return false;
+
+  /// Ultra-safe boolean parsing that handles any type of input
+  static bool _parseBooleanSafely(dynamic value) {
+    try {
+      if (value == null) return false;
+      if (value is bool) return value;
+      if (value is int) return value == 1;
+      if (value is String) {
+        final lowerValue = value.toLowerCase().trim();
+        return lowerValue == 'true' || lowerValue == '1' || lowerValue == 'yes';
+      }
+      if (value is double) return value == 1.0;
+      if (value is num) return value.toInt() == 1;
+      // Handle any other type by converting to string and checking
+      final stringValue = value.toString().toLowerCase().trim();
+      return stringValue == 'true' || stringValue == '1' || stringValue == 'yes';
+    } catch (e) {
+      // If anything goes wrong, return false
+      return false;
+    }
   }
   // Personal Details
   final String id;
@@ -259,7 +271,12 @@ class ComprehensiveFundiProfile {
       totalRatings: json['total_ratings'] as int? ?? 0,
       recentReviews: recentReviews,
       ratingSummary: ratingSummary,
-      isAvailable: _parseBoolean(json['is_available']) || (json['status']?.toString() == 'active'),
+      isAvailable: _parseBooleanSafely(
+        json['is_available'] ||
+        json['isAvailable'] ||
+        json['status']?.toString() == 'active' ||
+        json['status'] == null,
+      ),
       availabilityStatus: json['availability_status'] as String?,
       lastActiveAt: json['last_active_at'] != null
           ? DateTime.parse(json['last_active_at'] as String)

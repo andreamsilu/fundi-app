@@ -200,7 +200,7 @@ class NotificationProvider extends ChangeNotifier {
     try {
       final result = await _notificationService.getNotificationSettings();
       if (result.success && result.settings != null) {
-        _settings = result.settings! as NotificationSettings;
+        _settings = result.settings!;
         notifyListeners();
       }
     } catch (e) {

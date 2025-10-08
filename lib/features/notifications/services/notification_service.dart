@@ -216,7 +216,7 @@ class NotificationService {
       } else {
         return ServiceResult(
           success: false,
-          message: response.message ?? 'Failed to send test notification.',
+          message: response.message,
         );
       }
     } catch (e) {

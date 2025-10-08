@@ -129,7 +129,7 @@ class FeedsProvider extends ChangeNotifier {
                   throw TimeoutException('Fundis loading timed out'),
             );
 
-        if (result['success']) {
+        if (result['success'] == true) {
           final fundisData = result['fundis'] as List<dynamic>;
           final newFundis = fundisData.map((json) {
             try {
@@ -274,7 +274,7 @@ class FeedsProvider extends ChangeNotifier {
               onTimeout: () => throw TimeoutException('Jobs loading timed out'),
             );
 
-        if (result['success']) {
+        if (result['success'] == true) {
           final jobsData = result['jobs'] as List<dynamic>;
           final newJobs = jobsData
               .map((json) => JobModel.fromJson(json as Map<String, dynamic>))

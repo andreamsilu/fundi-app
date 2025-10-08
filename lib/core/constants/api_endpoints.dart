@@ -78,7 +78,8 @@ class ApiEndpoints {
   static String getChatMessageEndpoint(String chatId, String messageId) =>
       '/chats/$chatId/messages/$messageId';
 
-  // Search Endpoints - REMOVED (not implemented in API)
+  // Search Endpoints
+  static const String searchSuggestions = '/search/suggestions';
 
   // Profile Endpoints
   static String userProfileEndpoint(String userId) => '/users/$userId/profile';

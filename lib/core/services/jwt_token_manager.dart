@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../utils/logger.dart';
 import 'session_manager.dart';
@@ -16,12 +15,17 @@ class JwtTokenManager {
   bool isTokenValid() {
     try {
       final token = _sessionManager.authToken;
-      if (token == null) return false;
+      if (token == null) {
+        Logger.warning('JWT token manager: No token available');
+        return false;
+      }
 
       // Check if token is expired
       final isExpired = JwtDecoder.isExpired(token);
       if (isExpired) {
-        Logger.warning('JWT token is expired');
+        Logger.warning('JWT token manager: Token is expired');
+        // Trigger token expiration handling
+        _handleTokenExpiration();
         return false;
       }
 
@@ -29,15 +33,17 @@ class JwtTokenManager {
       final expirationDate = JwtDecoder.getExpirationDate(token);
       final now = DateTime.now();
       final timeUntilExpiry = expirationDate.difference(now);
-      
+
       if (timeUntilExpiry.inMinutes < 5) {
-        Logger.info('JWT token expires soon: ${timeUntilExpiry.inMinutes} minutes');
+        Logger.info(
+          'JWT token manager: Token expires soon: ${timeUntilExpiry.inMinutes} minutes',
+        );
         return true; // Still valid but should be refreshed
       }
 
       return true;
     } catch (e) {
-      Logger.error('Error validating JWT token', error: e);
+      Logger.error('JWT token manager: Error validating JWT token', error: e);
       return false;
     }
   }
@@ -185,6 +191,27 @@ class JwtTokenManager {
       Logger.info('JWT token cleared');
     } catch (e) {
       Logger.error('Error clearing JWT token', error: e);
+    }
+  }
+
+  /// Handle token expiration
+  void _handleTokenExpiration() {
+    // Use session manager to handle token expiration
+    _sessionManager.handleTokenExpiration(
+      reason: 'Your session has expired. Please log in again.',
+    );
+  }
+
+  /// Force logout due to token issues
+  Future<void> forceLogout({String? reason}) async {
+    try {
+      Logger.warning(
+        'JWT token manager: Force logout due to token issues',
+        data: {'reason': reason},
+      );
+      await _sessionManager.forceLogout(reason: reason);
+    } catch (e) {
+      Logger.error('JWT token manager: Error during force logout', error: e);
     }
   }
 }

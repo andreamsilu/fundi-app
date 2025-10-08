@@ -74,10 +74,28 @@ class FeedsService {
         queryParams['isVerified'] = isVerified;
       }
 
+      print('FeedsService: Making API call to ${ApiEndpoints.feedsFundis}');
+      print('FeedsService: Query parameters: $queryParams');
+
       final response = await _apiClient.get(
         ApiEndpoints.feedsFundis,
         queryParameters: queryParams,
       );
+
+      print('FeedsService: API response success: ${response.success}');
+      print('FeedsService: API response data: ${response.data}');
+      print('FeedsService: API response message: ${response.message}');
+      print('FeedsService: API response statusCode: ${response.statusCode}');
+
+      // Log the raw response structure
+      if (response.data != null) {
+        print('FeedsService: Response data type: ${response.data.runtimeType}');
+        if (response.data is Map) {
+          print(
+            'FeedsService: Response data keys: ${(response.data as Map).keys.toList()}',
+          );
+        }
+      }
 
       if (response.success && response.data != null) {
         // Cache the response for first page without filters
@@ -94,6 +112,10 @@ class FeedsService {
 
         // Return raw list; provider maps to models
         final List<dynamic> fundiData = response.data['fundis'] ?? [];
+        print(
+          'FeedsService: Extracted ${fundiData.length} fundis from response',
+        );
+
         return {
           'success': true,
           'fundis': fundiData,
@@ -101,6 +123,9 @@ class FeedsService {
           'message': 'Fundis fetched successfully',
         };
       } else {
+        print(
+          'FeedsService: API call failed - success: ${response.success}, data: ${response.data}',
+        );
         return {
           'success': false,
           'fundis': <dynamic>[],

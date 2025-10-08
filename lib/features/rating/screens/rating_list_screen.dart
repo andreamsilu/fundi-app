@@ -156,7 +156,7 @@ class _RatingListScreenState extends State<RatingListScreen> {
                             }
 
                             final rating =
-                                summary.recentRatings[index].toJson() ?? {};
+                                summary.recentRatings[index].toJson();
                             return RatingCard(
                               rating: rating,
                               showJobTitle: true,
@@ -318,7 +318,7 @@ class _MyRatingsScreenState extends State<MyRatingsScreen> {
                   );
                 }
 
-                final rating = ratingProvider.myRatings[index].toJson() ?? {};
+                final rating = ratingProvider.myRatings[index].toJson();
                 return RatingCard(
                   rating: rating,
                   showJobTitle: true,
