@@ -110,16 +110,10 @@ class FundiNavigationHelper {
           description: 'View and manage applications',
         ),
         NavigationItem(
-          title: 'My Portfolio',
-          icon: Icons.photo_library,
-          route: '/my-portfolio',
-          description: 'Manage your work portfolio',
-        ),
-        NavigationItem(
-          title: 'Fundi Profile',
+          title: 'My Profile & Portfolio',
           icon: Icons.person,
-          route: '/fundi-profile',
-          description: 'Update your fundi profile',
+          route: '/profile',
+          description: 'Manage your profile and portfolio',
         ),
         NavigationItem(
           title: 'Application Status',
@@ -197,9 +191,9 @@ class FundiNavigationHelper {
           color: Colors.orange,
         ),
         QuickAction(
-          title: 'Update Portfolio',
+          title: 'My Portfolio',
           icon: Icons.photo_library,
-          route: '/my-portfolio',
+          route: '/profile',
           color: Colors.purple,
         ),
       ]);

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/portfolio_model.dart';
 import '../services/portfolio_service.dart';
@@ -64,7 +65,8 @@ class PortfolioProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      _currentPortfoliosRequestId = 'portfolios_${DateTime.now().millisecondsSinceEpoch}';
+      _currentPortfoliosRequestId =
+          'portfolios_${DateTime.now().millisecondsSinceEpoch}';
       final result = await _portfolioService.getPortfolios(
         fundiId: fundiId ?? _fundiId ?? '',
         page: _currentPage,
@@ -106,7 +108,8 @@ class PortfolioProvider extends ChangeNotifier {
     _setLoadingMore(true);
 
     try {
-      _currentPortfoliosRequestId = 'portfolios_${DateTime.now().millisecondsSinceEpoch}';
+      _currentPortfoliosRequestId =
+          'portfolios_${DateTime.now().millisecondsSinceEpoch}';
       _currentPage++;
       final result = await _portfolioService.getPortfolios(
         fundiId: _fundiId ?? '',
@@ -288,28 +291,36 @@ class PortfolioProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      // Create a temporary PortfolioDetailResult to use its uploadMedia method
-      final tempResult = PortfolioDetailResult(
-        success: false,
+      // Create a PortfolioDetailResult instance to access uploadMedia
+      final detailResult = PortfolioDetailResult(
+        success: true,
         portfolio: null,
         message: '',
       );
 
-      final result = await tempResult.uploadMedia(
-        filePaths: filePaths,
-        type: fileTypes.isNotEmpty ? fileTypes.first : 'image',
-      );
+      // Upload each file
+      for (var i = 0; i < filePaths.length; i++) {
+        final file = File(filePaths[i]);
+        final mediaType = fileTypes.length > i ? fileTypes[i] : 'image';
 
-      if (result != null) {
-        Logger.info(
-          'Media uploaded successfully',
-          data: {'portfolioId': portfolioId},
+        final result = await detailResult.uploadMedia(
+          portfolioId: portfolioId,
+          file: file,
+          mediaType: mediaType,
+          orderIndex: i,
         );
-        return true;
-      } else {
-        _setError('Failed to upload media');
-        return false;
+
+        if (!result.success) {
+          _setError(result.message);
+          return false;
+        }
       }
+
+      Logger.info(
+        'Media uploaded successfully',
+        data: {'portfolioId': portfolioId, 'count': filePaths.length},
+      );
+      return true;
     } catch (e) {
       Logger.error('Upload media error', error: e);
       _setError('Failed to upload media');
@@ -325,7 +336,7 @@ class PortfolioProvider extends ChangeNotifier {
       return await _portfolioService.getCategories();
     } catch (e) {
       Logger.error('Get categories error', error: e);
-      return PortfolioCategory.values.map((e) => e.value).toList();
+      return [];
     }
   }
 

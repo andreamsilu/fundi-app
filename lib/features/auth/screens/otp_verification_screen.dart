@@ -261,7 +261,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Verify Phone Number'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),

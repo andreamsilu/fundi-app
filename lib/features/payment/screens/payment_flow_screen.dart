@@ -30,14 +30,15 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
   List<String> _selectedActions = [];
   String? _errorMessage;
   bool _isLoading = false;
+  List<PaymentAction> _availableActions = [];
 
   @override
   void initState() {
     super.initState();
+    _loadAvailableActions();
 
     // Pre-select action if provided
-    if (widget.preselectedAction != null &&
-        PaymentConfig.getAction(widget.preselectedAction!) != null) {
+    if (widget.preselectedAction != null) {
       _selectedActions = [widget.preselectedAction!];
     }
 
@@ -56,6 +57,21 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAvailableActions() async {
+    try {
+      final actionsMap = await PaymentConfig.getAllActions();
+      setState(() {
+        _availableActions = actionsMap.values.toList();
+      });
+    } catch (e) {
+      PaymentLogger.logPaymentError(
+        error: 'Failed to load payment actions',
+        transactionId: 'ui_action',
+        exception: e,
+      );
+    }
   }
 
   /// Handle payment processing with error handling
@@ -371,7 +387,7 @@ class _PaymentFlowScreenState extends State<PaymentFlowScreen> {
       child: PaymentActionSelector(
         selectedActions: _selectedActions,
         onSelectionChanged: _onActionsChanged,
-        availableActions: PaymentConfig.actions.values.toList(),
+        availableActions: _availableActions,
       ),
     );
   }

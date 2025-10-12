@@ -1,59 +1,8 @@
-/// Hardcoded data constants for fallback when API fails
-/// This centralizes all hardcoded data used throughout the app
+/// App constants for error messages and default settings
+/// All dynamic data (categories, skills, locations) must be loaded from API
 class HardcodedData {
   // Private constructor to prevent instantiation
   HardcodedData._();
-
-  /// Default job categories
-  static const List<Map<String, String>> jobCategories = [
-    {'id': 'plumbing', 'name': 'Plumbing'},
-    {'id': 'electrical', 'name': 'Electrical'},
-    {'id': 'carpentry', 'name': 'Carpentry'},
-    {'id': 'painting', 'name': 'Painting'},
-    {'id': 'cleaning', 'name': 'Cleaning'},
-    {'id': 'gardening', 'name': 'Gardening'},
-    {'id': 'repair', 'name': 'Repair'},
-    {'id': 'installation', 'name': 'Installation'},
-    {'id': 'other', 'name': 'Other'},
-  ];
-
-  /// Default skills for portfolio
-  static const List<String> portfolioSkills = [
-    'Plumbing',
-    'Electrical',
-    'Carpentry',
-    'Painting',
-    'Tiling',
-    'Roofing',
-    'Masonry',
-    'Welding',
-    'HVAC',
-    'Landscaping',
-    'Flooring',
-    'Insulation',
-    'Drywall',
-    'Concrete',
-    'Steel Work',
-  ];
-
-  /// Default locations for Tanzania
-  static const List<String> tanzaniaLocations = [
-    'Dar es Salaam',
-    'Arusha',
-    'Mwanza',
-    'Dodoma',
-    'Tanga',
-    'Morogoro',
-    'Mbeya',
-    'Iringa',
-    'Tabora',
-    'Kigoma',
-    'Mtwara',
-    'Lindi',
-    'Ruvuma',
-    'Rukwa',
-    'Katavi',
-  ];
 
   /// Default error messages
   static const Map<String, String> errorMessages = {

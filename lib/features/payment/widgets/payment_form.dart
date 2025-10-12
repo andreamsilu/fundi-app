@@ -50,17 +50,23 @@ class _PaymentFormState extends State<PaymentForm> {
     }
   }
 
-  void _calculateAmounts() {
+  Future<void> _calculateAmounts() async {
     _totalAmount = 0.0;
     for (final actionId in widget.selectedActions) {
-      final action = PaymentConfig.getAction(actionId);
-      if (action != null) {
+      try {
+        final action = await PaymentConfig.getAction(actionId);
         _totalAmount += action.amount;
+      } catch (e) {
+        // Skip invalid actions
       }
     }
-    _primaryAction = widget.selectedActions.isNotEmpty
-        ? widget.selectedActions.first
-        : '';
+    if (mounted) {
+      setState(() {
+        _primaryAction = widget.selectedActions.isNotEmpty
+            ? widget.selectedActions.first
+            : '';
+      });
+    }
   }
 
   void _submitPayment() {
@@ -254,33 +260,11 @@ class _PaymentFormState extends State<PaymentForm> {
           ),
           const SizedBox(height: 8),
 
-          ...widget.selectedActions.map((actionId) {
-            final action = PaymentConfig.getAction(actionId);
-            if (action == null) return const SizedBox.shrink();
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      action.description,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ),
-                  Text(
-                    PaymentConfig.formatAmount(action.amount),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
+          // Display total amount only (individual action details shown during calculation)
+          const Text(
+            'Payment actions will be processed',
+            style: TextStyle(fontSize: 14),
+          ),
 
           const Divider(height: 16),
 

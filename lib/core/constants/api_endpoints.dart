@@ -10,7 +10,7 @@ class ApiEndpoints {
   static const String register = '/auth/register';
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
-  static const String me = '/auth/me';
+  // Note: /auth/me is deprecated, use userMe (/users/me) instead
   static const String authChangePassword = '/auth/change-password';
   static const String authRefresh = '/auth/refresh';
   // Note: OTP endpoints may not be implemented in JWT API
@@ -67,7 +67,12 @@ class ApiEndpoints {
   static const String checkPermission = '/payments/check-permission';
   static const String payPerUse = '/payments/pay-per-use';
   static const String userPayments = '/payments/user';
-  // Payment Gateway Endpoints - REMOVED (not implemented in API)
+
+  // ZenoPay Mobile Money Endpoints (Tanzania)
+  static const String zenoPayInitiate = '/payments/zenopay/initiate';
+  static const String zenoPayStatus = '/payments/zenopay/status/{orderId}';
+  static const String zenoPayProviders = '/payments/zenopay/providers';
+  static const String zenoPayWebhook = '/payments/zenopay/webhook';
 
   // Notification Endpoints
   static const String notifications = '/notifications';
@@ -283,4 +288,25 @@ class ApiEndpoints {
   }
 
   // Payment status endpoint - REMOVED (not implemented in API)
+
+  // File Upload Endpoints
+  static const String uploadPortfolioMedia = '/upload/portfolio-media';
+  static const String uploadJobMedia = '/upload/job-media';
+  static const String uploadProfileDocument = '/upload/profile-document';
+  static const String deleteMedia = '/upload/media/{id}';
+  static const String getMediaUrl = '/upload/media/{id}/url';
+
+  // File Upload Helper Methods
+  static String getDeleteMediaEndpoint(String mediaId) {
+    return deleteMedia.replaceAll('{id}', mediaId);
+  }
+
+  static String getMediaUrlEndpoint(String mediaId) {
+    return getMediaUrl.replaceAll('{id}', mediaId);
+  }
+
+  // ZenoPay Helper Methods
+  static String getZenoPayStatusEndpoint(String orderId) {
+    return zenoPayStatus.replaceAll('{orderId}', orderId);
+  }
 }

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/fundi_model.dart';
-import '../models/job_model.dart';
+import '../../job/models/job_model.dart';
 import '../services/feeds_service.dart';
 import '../../../core/network/api_client.dart';
 

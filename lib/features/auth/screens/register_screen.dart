@@ -163,12 +163,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
 
                     // Logo and title
                     _buildHeader(),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 24),
 
                     // Error message
                     if (_errorMessage != null) ...[
@@ -180,7 +180,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           });
                         },
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                     ],
 
                     // Phone field
@@ -208,7 +208,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       },
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
                     // Password field
                     AppInputField(
@@ -241,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       },
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
                     // Confirm Password field
                     AppInputField(
@@ -274,7 +274,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       },
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
 
                     // Register button
                     AppButton(
@@ -285,7 +285,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       size: ButtonSize.large,
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Divider
                     Row(
@@ -303,7 +303,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ],
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Login button
                     AppButton(
@@ -316,7 +316,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       size: ButtonSize.large,
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
 
                     // Terms and privacy
                     Text(
@@ -341,28 +341,28 @@ class _RegisterScreenState extends State<RegisterScreen>
       children: [
         // App logo
         Container(
-          width: 80,
-          height: 80,
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
             color: context.primaryColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
                 color: context.primaryColor.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: const Icon(Icons.build, color: Colors.white, size: 40),
+          child: const Icon(Icons.build, color: Colors.white, size: 30),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
 
         // App name
         Text(
           'Fundi App',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             color: context.primaryColor,
             fontWeight: FontWeight.bold,
           ),
@@ -370,41 +370,23 @@ class _RegisterScreenState extends State<RegisterScreen>
 
         const SizedBox(height: 8),
 
-        // Subtitle
-        Text(
-          'Connect with skilled craftsmen',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: AppTheme.mediumGray),
-        ),
-
-        const SizedBox(height: 16),
-
         // Welcome message
         Text(
-          'Create Account',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          'Create Your Account',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: AppTheme.darkGray,
             fontWeight: FontWeight.w600,
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
         Text(
-          'Join our community and start your journey as a customer',
+          'Join our community of skilled craftsmen',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
-        ),
-
-        const SizedBox(height: 8),
-
-        Text(
-          'You can apply to become a fundi later from your profile',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppTheme.mediumGray),
+          textAlign: TextAlign.center,
         ),
       ],
     );

@@ -46,7 +46,9 @@ class _HelpScreenState extends State<HelpScreen> with TickerProviderStateMixin {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Help & Support'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: FadeTransition(

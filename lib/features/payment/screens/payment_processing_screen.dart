@@ -3,9 +3,7 @@ import '../../../core/config/payment_config.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/payment_logger.dart';
 import '../services/payment_service.dart';
-import '../widgets/payment_status_widget.dart';
 import 'payment_success_screen.dart';
-import 'payment_failure_screen.dart';
 
 /// Screen for processing payments
 /// Handles payment creation and gateway interaction
@@ -33,7 +31,6 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
   bool _isProcessing = false;
   String? _errorMessage;
   String? _transactionId;
-  PaymentStatus _currentStatus = PaymentStatus.pending;
 
   @override
   void initState() {
@@ -68,7 +65,6 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
       if (result.success && result.transaction != null) {
         setState(() {
           _transactionId = result.transaction!.id.toString();
-          _currentStatus = result.transaction!.paymentStatus;
         });
 
         PaymentLogger.logPaymentSuccess(

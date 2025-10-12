@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fundi/features/job/services/job_service.dart';
-import 'package:provider/provider.dart';
 import '../models/job_model.dart';
-import '../providers/job_provider.dart';
 import '../../dashboard/services/dashboard_service.dart';
 import '../../auth/services/auth_service.dart';
 import '../../../shared/widgets/loading_widget.dart';
@@ -146,8 +144,9 @@ class _JobListScreenState extends State<JobListScreen>
       } else {
         print('JobListScreen: Job loading failed: ${result.message}');
         setState(() {
-          _errorMessage =
-              result.message ?? 'Failed to load jobs. Please try again.';
+          _errorMessage = result.message.isNotEmpty
+              ? result.message
+              : 'Failed to load jobs. Please try again.';
         });
       }
     } catch (e) {
@@ -293,8 +292,12 @@ class _JobListScreenState extends State<JobListScreen>
             label: 'View Application',
             textColor: Colors.white,
             onPressed: () {
-              // TODO: Navigate to application details
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              Navigator.pushNamed(
+                context,
+                '/application-details',
+                arguments: {'applicationId': job.id, 'jobId': job.id},
+              );
             },
           ),
         ),
@@ -334,8 +337,22 @@ class _JobListScreenState extends State<JobListScreen>
             const SnackBar(
               content: Text('Application submitted successfully!'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
             ),
           );
+
+          // Auto-navigate to Applied Jobs tab after brief delay
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted && widget.title != 'Applied Jobs') {
+              // Navigate to dashboard with Applied Jobs tab selected
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/dashboard',
+                (route) => false,
+                arguments: {'switchToAppliedJobs': true},
+              );
+            }
+          });
         } else {
           // Handle specific error messages from the API
           String errorMessage = applicationResult.message;
@@ -404,6 +421,9 @@ class _JobListScreenState extends State<JobListScreen>
       appBar: widget.showAppBar
           ? AppBar(
               title: Text(widget.title ?? 'Available Jobs'),
+              backgroundColor: AppTheme.primaryGreen,
+              foregroundColor: Colors.white,
+              iconTheme: const IconThemeData(color: Colors.white),
               actions: [
                 IconButton(
                   onPressed: _showLocationFilterDialog,

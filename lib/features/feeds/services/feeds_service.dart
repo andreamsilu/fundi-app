@@ -2,7 +2,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/services/cache_service.dart';
 import '../models/fundi_model.dart';
-import '../models/job_model.dart';
+import '../../job/models/job_model.dart';
 
 /// Service class for handling feeds-related API operations
 /// Implements proper separation of concerns for feeds functionality
@@ -332,23 +332,11 @@ class FeedsService {
         };
       }
     } catch (e) {
-      // Return fallback categories if API fails
-      final fallbackCategories = [
-        'Plumbing',
-        'Electrical',
-        'Carpentry',
-        'Painting',
-        'Cleaning',
-        'Gardening',
-        'Repair',
-        'Installation',
-        'Other',
-      ];
-
+      // Return error - no fallback categories
       return {
-        'success': true,
-        'categories': fallbackCategories,
-        'message': 'Using fallback categories due to API error',
+        'success': false,
+        'categories': [],
+        'message': 'Failed to load categories from API: ${e.toString()}',
       };
     }
   }

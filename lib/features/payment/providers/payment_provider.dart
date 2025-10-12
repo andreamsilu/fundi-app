@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/payment_transaction_model.dart';
+import '../models/payment_plan_model.dart';
+import '../models/user_subscription_model.dart';
 import '../services/payment_service.dart';
 import '../../../core/config/payment_config.dart';
 import '../../../core/utils/payment_logger.dart';
@@ -11,6 +13,9 @@ class PaymentProvider extends ChangeNotifier {
   // State variables
   List<PaymentTransactionModel> _transactions = [];
   Map<String, PaymentAction> _availableActions = {};
+  List<PaymentPlanModel> _availablePlans = [];
+  PaymentPlanModel? _currentPlan;
+  UserSubscriptionModel? _currentSubscription;
   bool _isLoading = false;
   String? _errorMessage;
   PaymentTransactionModel? _currentTransaction;
@@ -18,7 +23,11 @@ class PaymentProvider extends ChangeNotifier {
   // Getters
   List<PaymentTransactionModel> get transactions => _transactions;
   Map<String, PaymentAction> get availableActions => _availableActions;
+  List<PaymentPlanModel> get availablePlans => _availablePlans;
+  PaymentPlanModel? get currentPlan => _currentPlan;
+  UserSubscriptionModel? get currentSubscription => _currentSubscription;
   bool get isLoading => _isLoading;
+  String? get error => _errorMessage;
   String? get errorMessage => _errorMessage;
   PaymentTransactionModel? get currentTransaction => _currentTransaction;
 
@@ -62,7 +71,7 @@ class PaymentProvider extends ChangeNotifier {
 
       // For now, use static configuration
       // In the future, this could fetch from backend
-      _availableActions = Map.from(PaymentConfig.actions);
+      _availableActions = Map.from(await PaymentConfig.getAllActions());
 
       PaymentLogger.logPaymentEvent(
         event: 'payment_actions_loaded',
@@ -335,5 +344,78 @@ class PaymentProvider extends ChangeNotifier {
 
   void _clearError() {
     _errorMessage = null;
+  }
+
+  /// Load available payment plans
+  Future<void> loadAvailablePlans() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final result = await _paymentService.getAvailablePlans();
+
+      if (result.success && result.plans != null) {
+        _availablePlans = result.plans!;
+      } else {
+        _setError(result.message);
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load payment plans: ${e.toString()}');
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Load current plan and subscription
+  Future<void> loadCurrentPlan() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final result = await _paymentService.getCurrentPlan();
+
+      if (result.success) {
+        _currentPlan = result.plan;
+        _currentSubscription = result.subscription;
+      } else {
+        _setError(result.message);
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load current plan: ${e.toString()}');
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Cancel current subscription
+  Future<PaymentResult> cancelSubscription() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final result = await _paymentService.cancelSubscription();
+
+      if (result.success) {
+        _currentSubscription = result.subscription;
+      } else {
+        _setError(result.message);
+      }
+
+      notifyListeners();
+      return result;
+    } catch (e) {
+      final error = 'Failed to cancel subscription: ${e.toString()}';
+      _setError(error);
+      notifyListeners();
+      return PaymentResult.failure(message: error);
+    } finally {
+      _setLoading(false);
+    }
   }
 }

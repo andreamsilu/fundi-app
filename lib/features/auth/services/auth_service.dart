@@ -47,7 +47,9 @@ class AuthService {
         print('AuthService: Login successful, saving JWT token and user data');
         print('AuthService: Token length: ${token.length}');
         print('AuthService: User ID: ${user.id}');
-        print('AuthService: User roles: ${user.roles.map((r) => r.value).join(', ')}');
+        print(
+          'AuthService: User roles: ${user.roles.map((r) => r.value).join(', ')}',
+        );
 
         // Save session with JWT token and user data
         await _sessionManager.saveToken(token);
@@ -57,7 +59,13 @@ class AuthService {
         final isAuthenticated = _sessionManager.isAuthenticated;
         print('AuthService: Session saved - isAuthenticated: $isAuthenticated');
 
-        Logger.userAction('Login successful', data: {'userId': user.id, 'roles': user.roles.map((r) => r.value).join(', ')});
+        Logger.userAction(
+          'Login successful',
+          data: {
+            'userId': user.id,
+            'roles': user.roles.map((r) => r.value).join(', '),
+          },
+        );
 
         return AuthResult.success(user: user, message: response.message);
       } else {
@@ -103,7 +111,13 @@ class AuthService {
         await _sessionManager.saveToken(token);
         await _sessionManager.saveUser(user);
 
-        Logger.userAction('Registration successful', data: {'userId': user.id, 'roles': user.roles.map((r) => r.value).join(', ')});
+        Logger.userAction(
+          'Registration successful',
+          data: {
+            'userId': user.id,
+            'roles': user.roles.map((r) => r.value).join(', '),
+          },
+        );
 
         return AuthResult.success(user: user, message: response.message);
       } else {
@@ -154,14 +168,19 @@ class AuthService {
   Future<UserModel?> getCurrentUserProfile() async {
     try {
       final response = await _apiClient.get<Map<String, dynamic>>(
-        ApiEndpoints.me,
+        ApiEndpoints
+            .userMe, // Changed from 'me' to 'userMe' to use correct endpoint /users/me
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
-        final user = UserModel.fromJson(response.data!);
-        await _sessionManager.updateUser(user);
-        return user;
+        // API returns user nested in data.user, not directly in data
+        final userData = response.data!['user'] as Map<String, dynamic>?;
+        if (userData != null) {
+          final user = UserModel.fromJson(userData);
+          await _sessionManager.updateUser(user);
+          return user;
+        }
       }
 
       return null;
@@ -434,7 +453,7 @@ class AuthService {
   Future<AuthResult> refreshToken() async {
     try {
       Logger.userAction('JWT token refresh attempt');
-      
+
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.authRefresh,
         {},
@@ -445,10 +464,10 @@ class AuthService {
       if (response.success && response.data != null) {
         final responseData = response.data!;
         final token = responseData['access_token'] as String;
-        
+
         // Update token in session
         await _sessionManager.saveToken(token);
-        
+
         Logger.userAction('JWT token refreshed successfully');
         return AuthResult.success(message: 'Token refreshed successfully');
       } else {

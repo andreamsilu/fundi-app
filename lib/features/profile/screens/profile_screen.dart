@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/profile_model.dart';
 import '../services/profile_service.dart';
 import 'profile_edit_screen.dart';
@@ -8,9 +9,14 @@ import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../portfolio/providers/portfolio_provider.dart';
+import '../../portfolio/models/portfolio_model.dart';
+import '../../portfolio/screens/portfolio_details_screen.dart';
+import '../../portfolio/screens/portfolio_creation_screen.dart';
 
 /// Profile screen displaying user information
 /// Shows user details and provides access to edit functionality
+/// Integrates portfolio viewing for fundi users
 class ProfileScreen extends StatefulWidget {
   final String?
   userId; // Make userId optional since we get current user profile
@@ -32,10 +38,18 @@ class _ProfileScreenState extends State<ProfileScreen>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      // Update FAB visibility when tab changes
+      if (mounted) {
+        setState(() {});
+      }
+    });
     _setupAnimations();
     _loadProfile();
   }
@@ -67,6 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -132,6 +147,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             _errorMessage = 'Unable to load profile. Please try again.';
           }
         });
+
+        // Load portfolio if user is a fundi
+        if (profile != null && profile.isFundi) {
+          _loadPortfolio();
+        }
       }
     } catch (e) {
       print('ProfileScreen: Profile loading error: $e');
@@ -141,6 +161,24 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Load portfolio items for the current fundi user
+  Future<void> _loadPortfolio() async {
+    try {
+      if (_profile == null || !_profile!.isFundi) return;
+
+      final portfolioProvider = Provider.of<PortfolioProvider>(
+        context,
+        listen: false,
+      );
+      await portfolioProvider.loadPortfolios(
+        fundiId: _profile!.id,
+        refresh: true,
+      );
+    } catch (e) {
+      print('Error loading portfolio: $e');
     }
   }
 
@@ -206,11 +244,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
+    final isFundi = _profile?.isFundi ?? false;
+
     return Scaffold(
       appBar: widget.showAppBar
           ? AppBar(
               title: const Text('Profile'),
-              backgroundColor: Colors.transparent,
+              backgroundColor: AppTheme.primaryGreen,
+              foregroundColor: Colors.white,
+              iconTheme: const IconThemeData(color: Colors.white),
               elevation: 0,
               actions: [
                 IconButton(
@@ -218,6 +260,24 @@ class _ProfileScreenState extends State<ProfileScreen>
                   icon: const Icon(Icons.edit),
                 ),
               ],
+              bottom: isFundi
+                  ? TabBar(
+                      controller: _tabController,
+                      indicatorColor: context.primaryColor,
+                      labelColor: context.primaryColor,
+                      unselectedLabelColor: AppTheme.mediumGray,
+                      tabs: const [
+                        Tab(
+                          text: 'Profile',
+                          icon: Icon(Icons.person, size: 20),
+                        ),
+                        Tab(
+                          text: 'Portfolio',
+                          icon: Icon(Icons.work, size: 20),
+                        ),
+                      ],
+                    )
+                  : null,
             )
           : null,
       body: FadeTransition(
@@ -227,7 +287,35 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: _buildBody(authService),
         ),
       ),
+      floatingActionButton: isFundi ? _buildFloatingActionButton() : null,
     );
+  }
+
+  /// Build floating action button for adding portfolio items
+  Widget? _buildFloatingActionButton() {
+    // Only show FAB on portfolio tab
+    if (_tabController.index == 1) {
+      return FloatingActionButton.extended(
+        onPressed: _navigateToCreatePortfolio,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Work'),
+        backgroundColor: context.primaryColor,
+      );
+    }
+    return null;
+  }
+
+  /// Navigate to portfolio creation screen
+  Future<void> _navigateToCreatePortfolio() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PortfolioCreationScreen()),
+    );
+
+    if (result == true && mounted) {
+      // Reload portfolio after creation
+      _loadPortfolio();
+    }
   }
 
   Widget _buildBody(AuthService authService) {
@@ -280,6 +368,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
     }
 
+    // Use tabs for fundi users
+    if (_profile!.isFundi) {
+      return TabBarView(
+        controller: _tabController,
+        children: [_buildProfileTab(authService), _buildPortfolioTab()],
+      );
+    }
+
+    // Regular profile view for non-fundi users
+    return _buildProfileTab(authService);
+  }
+
+  /// Build profile information tab
+  Widget _buildProfileTab(AuthService authService) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -419,6 +521,186 @@ class _ProfileScreenState extends State<ProfileScreen>
 
           const SizedBox(height: 32),
         ],
+      ),
+    );
+  }
+
+  /// Build portfolio tab for fundi users
+  Widget _buildPortfolioTab() {
+    return Consumer<PortfolioProvider>(
+      builder: (context, portfolioProvider, child) {
+        if (portfolioProvider.isLoading) {
+          return const Center(child: LoadingWidget());
+        }
+
+        if (portfolioProvider.errorMessage != null) {
+          return Center(
+            child: AppErrorWidget(
+              message: portfolioProvider.errorMessage!,
+              onRetry: _loadPortfolio,
+            ),
+          );
+        }
+
+        final portfolios = portfolioProvider.portfolios;
+
+        if (portfolios.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.work_outline, size: 64, color: AppTheme.mediumGray),
+                const SizedBox(height: 16),
+                Text(
+                  'No Portfolio Items',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.mediumGray,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Start building your portfolio by adding your best work',
+                  style: TextStyle(color: AppTheme.mediumGray),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                AppButton(
+                  text: 'Add Your First Work',
+                  onPressed: _navigateToCreatePortfolio,
+                  icon: Icons.add,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: _loadPortfolio,
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: portfolios.length,
+            itemBuilder: (context, index) {
+              return _buildPortfolioCard(portfolios[index]);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build portfolio card widget
+  Widget _buildPortfolioCard(PortfolioModel portfolio) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PortfolioDetailsScreen(portfolio: portfolio),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Portfolio Image
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                  image: portfolio.images.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(portfolio.images.first),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: portfolio.images.isEmpty
+                    ? Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.lightGray,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.image,
+                          size: 40,
+                          color: AppTheme.mediumGray,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            // Portfolio Info
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      portfolio.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      portfolio.description,
+                      style: TextStyle(
+                        color: AppTheme.mediumGray,
+                        fontSize: 12,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Row(
+                      children: [
+                        if (portfolio.images.length > 1)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.photo_library,
+                                size: 14,
+                                color: AppTheme.mediumGray,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${portfolio.images.length}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.mediumGray,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -422,11 +422,13 @@ class PortfolioService {
       if (response.success && response.data != null) {
         return response.data!.cast<String>();
       } else {
-        return PortfolioCategory.values.map((e) => e.value).toList();
+        // Return empty list if API fails - no fallback
+        return [];
       }
     } catch (e) {
       Logger.apiError('GET', ApiEndpoints.categories, e);
-      return PortfolioCategory.values.map((e) => e.value).toList();
+      // Return empty list - force API dependency
+      return [];
     }
   }
 
@@ -481,23 +483,19 @@ class PortfolioService {
 
   /// Get fallback feed data when API fails
   FeedDataResult _getFallbackFeedData() {
-    Logger.userAction('Using fallback feed data');
+    Logger.userAction('API failed - returning empty feed data');
 
-    return FeedDataResult.success(
-      categories: PortfolioCategory.values.map((e) => e.value).toList(),
-      skills: _getDefaultSkills(),
-      locations: _getDefaultLocations(),
-    );
+    return FeedDataResult.success(categories: [], skills: [], locations: []);
   }
 
-  /// Get default skills list
+  /// Get default skills list - returns empty, forces API load
   List<String> _getDefaultSkills() {
-    return HardcodedData.portfolioSkills;
+    return [];
   }
 
-  /// Get default locations list
+  /// Get default locations list - returns empty, forces API load
   List<String> _getDefaultLocations() {
-    return HardcodedData.tanzaniaLocations;
+    return [];
   }
 
   /// Load feed data with retry mechanism
@@ -596,39 +594,100 @@ class PortfolioDetailResult {
     required this.message,
   });
 
-  /// Upload media files
-  Future<Map<String, dynamic>?> uploadMedia({
-    required List<String> filePaths,
-    required String type, // 'image', 'video', 'document'
-    String? description,
+  /// Upload media file to portfolio
+  /// This should be called for each file individually
+  Future<MediaUploadResult> uploadMedia({
+    required String portfolioId,
+    required File file,
+    required String mediaType, // 'image' or 'video'
+    int? orderIndex,
+    Function(int sent, int total)? onProgress,
   }) async {
     try {
       Logger.userAction(
-        'Uploading media files',
-        data: {'file_count': filePaths.length, 'type': type},
+        'Uploading portfolio media',
+        data: {'portfolio_id': portfolioId, 'media_type': mediaType},
       );
 
       final apiClient = ApiClient();
-      final response = await apiClient.post<Map<String, dynamic>>(
-        '/portfolio/media/upload',
-        {'type': type, if (description != null) 'description': description},
-        {},
+      final response = await apiClient.uploadFile<Map<String, dynamic>>(
+        ApiEndpoints.uploadPortfolioMedia,
+        file,
+        fieldName: 'file',
+        additionalData: {
+          'portfolio_id': portfolioId,
+          'media_type': mediaType,
+          if (orderIndex != null) 'order_index': orderIndex,
+        },
+        onSendProgress: onProgress,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
-        Logger.userAction('Media files uploaded successfully');
-        return response.data!;
+        Logger.userAction('Media uploaded successfully');
+        return MediaUploadResult.success(
+          mediaId: response.data!['id'].toString(),
+          fileUrl: response.data!['file_url'] as String,
+          filePath: response.data!['file_path'] as String,
+        );
       } else {
-        Logger.warning('Failed to upload media files: ${response.message}');
-        return null;
+        Logger.warning('Failed to upload media: ${response.message}');
+        return MediaUploadResult.failure(message: response.message);
       }
     } on ApiError catch (e) {
       Logger.error('Upload media API error', error: e);
-      return null;
+      return MediaUploadResult.failure(message: e.message);
     } catch (e) {
       Logger.error('Upload media unexpected error', error: e);
-      return null;
+      return MediaUploadResult.failure(message: 'Upload failed');
+    }
+  }
+
+  /// Upload multiple media files to portfolio
+  Future<List<MediaUploadResult>> uploadMultipleMedia({
+    required String portfolioId,
+    required List<File> files,
+    required String mediaType,
+    Function(int fileIndex, int sent, int total)? onProgress,
+  }) async {
+    final results = <MediaUploadResult>[];
+
+    for (var i = 0; i < files.length; i++) {
+      final result = await uploadMedia(
+        portfolioId: portfolioId,
+        file: files[i],
+        mediaType: mediaType,
+        orderIndex: i,
+        onProgress: onProgress != null
+            ? (sent, total) => onProgress(i, sent, total)
+            : null,
+      );
+      results.add(result);
+    }
+
+    return results;
+  }
+
+  /// Delete media file
+  Future<bool> deleteMedia(String mediaId) async {
+    try {
+      Logger.userAction('Deleting media', data: {'media_id': mediaId});
+
+      final apiClient = ApiClient();
+      final response = await apiClient.delete(
+        ApiEndpoints.getDeleteMediaEndpoint(mediaId),
+      );
+
+      if (response.success) {
+        Logger.userAction('Media deleted successfully');
+        return true;
+      } else {
+        Logger.warning('Failed to delete media: ${response.message}');
+        return false;
+      }
+    } catch (e) {
+      Logger.error('Delete media error', error: e);
+      return false;
     }
   }
 }
@@ -636,14 +695,34 @@ class PortfolioDetailResult {
 /// Media upload result wrapper
 class MediaUploadResult {
   final bool success;
-  final List<String> imageUrls;
-  final List<String> videoUrls;
+  final String? mediaId;
+  final String? fileUrl;
+  final String? filePath;
   final String message;
 
-  MediaUploadResult({
+  MediaUploadResult._({
     required this.success,
-    required this.imageUrls,
-    required this.videoUrls,
+    this.mediaId,
+    this.fileUrl,
+    this.filePath,
     required this.message,
   });
+
+  factory MediaUploadResult.success({
+    required String mediaId,
+    required String fileUrl,
+    required String filePath,
+  }) {
+    return MediaUploadResult._(
+      success: true,
+      mediaId: mediaId,
+      fileUrl: fileUrl,
+      filePath: filePath,
+      message: 'Upload successful',
+    );
+  }
+
+  factory MediaUploadResult.failure({required String message}) {
+    return MediaUploadResult._(success: false, message: message);
+  }
 }

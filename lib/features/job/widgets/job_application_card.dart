@@ -8,6 +8,7 @@ class JobApplicationCard extends StatelessWidget {
   final VoidCallback? onWithdraw;
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
+  final VoidCallback? onViewProfile;
   final bool showActions;
 
   const JobApplicationCard({
@@ -17,6 +18,7 @@ class JobApplicationCard extends StatelessWidget {
     this.onWithdraw,
     this.onAccept,
     this.onReject,
+    this.onViewProfile,
     this.showActions = false,
   });
 
@@ -128,8 +130,19 @@ class JobApplicationCard extends StatelessWidget {
 
                   // Action buttons
                   if (showActions) ...[
-                    Row(
+                    Wrap(
+                      spacing: 8,
                       children: [
+                        // View Fundi Profile button (for customers)
+                        if (onViewProfile != null)
+                          TextButton.icon(
+                            onPressed: onViewProfile,
+                            icon: const Icon(Icons.person_outline, size: 16),
+                            label: const Text('View Profile'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                            ),
+                          ),
                         if (application.status ==
                             JobApplicationStatus.pending) ...[
                           TextButton(
@@ -224,6 +237,7 @@ class JobApplicationListWidget extends StatelessWidget {
   final VoidCallback? onWithdraw;
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
+  final Function(JobApplicationModel)? onViewProfile;
   final bool showActions;
   final bool isLoading;
   final Future<void> Function()? onRefresh;
@@ -235,6 +249,7 @@ class JobApplicationListWidget extends StatelessWidget {
     this.onWithdraw,
     this.onAccept,
     this.onReject,
+    this.onViewProfile,
     this.showActions = false,
     this.isLoading = false,
     this.onRefresh,
@@ -290,6 +305,9 @@ class JobApplicationListWidget extends StatelessWidget {
             onWithdraw: onWithdraw,
             onAccept: onAccept,
             onReject: onReject,
+            onViewProfile: onViewProfile != null
+                ? () => onViewProfile!(application)
+                : null,
             showActions: showActions,
           );
         },

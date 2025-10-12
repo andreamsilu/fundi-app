@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/payment_config.dart';
 import '../../../core/theme/app_theme.dart';
-import '../services/payment_service.dart';
 import '../widgets/payment_action_card.dart';
 import 'payment_processing_screen.dart';
 
@@ -24,7 +23,6 @@ class PaymentActionScreen extends StatefulWidget {
 }
 
 class _PaymentActionScreenState extends State<PaymentActionScreen> {
-  final PaymentService _paymentService = PaymentService();
   List<PaymentAction> _availableActions = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -44,9 +42,12 @@ class _PaymentActionScreenState extends State<PaymentActionScreen> {
     try {
       // Get actions based on category filter
       if (widget.category != null) {
-        _availableActions = PaymentConfig.getActionsByCategory(widget.category!);
+        _availableActions = await PaymentConfig.getActionsByCategory(
+          widget.category!,
+        );
       } else {
-        _availableActions = PaymentConfig.actions.values.toList();
+        final actionsMap = await PaymentConfig.getAllActions();
+        _availableActions = actionsMap.values.toList();
       }
 
       setState(() {
@@ -62,10 +63,8 @@ class _PaymentActionScreenState extends State<PaymentActionScreen> {
 
   Future<void> _selectPaymentAction(PaymentAction action) async {
     try {
-      // Find the action key
-      final actionKey = PaymentConfig.actions.entries
-          .firstWhere((entry) => entry.value == action)
-          .key;
+      // Use the action key directly from the PaymentAction object
+      final actionKey = action.key;
 
       // Navigate to payment processing screen
       if (mounted) {
@@ -98,7 +97,7 @@ class _PaymentActionScreenState extends State<PaymentActionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.category != null 
+          widget.category != null
               ? '${widget.category!.toUpperCase()} Payments'
               : 'Payment Options',
         ),
@@ -111,9 +110,7 @@ class _PaymentActionScreenState extends State<PaymentActionScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
@@ -121,11 +118,7 @@ class _PaymentActionScreenState extends State<PaymentActionScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
@@ -147,11 +140,7 @@ class _PaymentActionScreenState extends State<PaymentActionScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.payment,
-              size: 64,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.payment, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
               'No payment options available',
@@ -181,7 +170,10 @@ class _PaymentActionScreenState extends State<PaymentActionScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppTheme.primaryGreen, AppTheme.primaryGreen.withOpacity(0.8)],
+          colors: [
+            AppTheme.primaryGreen,
+            AppTheme.primaryGreen.withOpacity(0.8),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -235,10 +227,7 @@ class _PaymentActionScreenState extends State<PaymentActionScreen> {
       children: [
         const Text(
           'Available Options',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         ListView.builder(

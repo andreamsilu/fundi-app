@@ -126,7 +126,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Set New Password'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: FadeTransition(

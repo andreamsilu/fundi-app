@@ -464,7 +464,7 @@ class PaymentService {
   }) async {
     try {
       // Validate action
-      final paymentAction = PaymentConfig.getAction(action);
+      final paymentAction = await PaymentConfig.getAction(action);
       if (paymentAction == null) {
         PaymentLogger.logPaymentError(
           error: 'Invalid payment action',

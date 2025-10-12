@@ -1,47 +1,50 @@
 import 'package:flutter/material.dart';
+import '../services/pricing_service.dart';
 
 /// Payment configuration for the application
-/// Centralizes all payment-related settings and actions
+/// ✅ IMPORTANT: Pricing is now fetched from API (admin panel controlled)
+/// This file only contains UI metadata (icons, colors, descriptions)
 class PaymentConfig {
-  // Payment actions configuration
-  static const Map<String, PaymentAction> actions = {
-    'job_post': PaymentAction(
-      amount: 1000,
+  // ✅ Payment actions metadata (NO HARDCODED PRICES)
+  // Prices are fetched from PricingService which calls API
+  static const Map<String, PaymentActionMetadata> actionMetadata = {
+    'job_post': PaymentActionMetadata(
+      key: 'job_posting',
       description: 'Job Posting Fee',
       icon: Icons.work,
       color: Colors.blue,
       category: 'job',
     ),
-    'premium_profile': PaymentAction(
-      amount: 500,
+    'premium_profile': PaymentActionMetadata(
+      key: 'premium_profile',
       description: 'Premium Profile Upgrade',
       icon: Icons.star,
       color: Colors.amber,
       category: 'profile',
     ),
-    'featured_job': PaymentAction(
-      amount: 2000,
+    'featured_job': PaymentActionMetadata(
+      key: 'featured_job',
       description: 'Featured Job Listing',
       icon: Icons.featured_play_list,
       color: Colors.purple,
       category: 'job',
     ),
-    'fundi_application': PaymentAction(
-      amount: 200,
+    'fundi_application': PaymentActionMetadata(
+      key: 'job_application',
       description: 'Fundi Application Fee',
       icon: Icons.person_add,
       color: Colors.green,
       category: 'application',
     ),
-    'subscription_monthly': PaymentAction(
-      amount: 5000,
+    'subscription_monthly': PaymentActionMetadata(
+      key: 'subscription_monthly',
       description: 'Monthly Subscription',
       icon: Icons.subscriptions,
       color: Colors.indigo,
       category: 'subscription',
     ),
-    'subscription_yearly': PaymentAction(
-      amount: 50000,
+    'subscription_yearly': PaymentActionMetadata(
+      key: 'subscription_yearly',
       description: 'Yearly Subscription',
       icon: Icons.calendar_today,
       color: Colors.deepPurple,
@@ -49,29 +52,51 @@ class PaymentConfig {
     ),
   };
 
+  /// Get payment action with current pricing from API
+  static Future<PaymentAction> getAction(String key) async {
+    final metadata = actionMetadata[key];
+    if (metadata == null) {
+      throw ArgumentError('Payment action not found: $key');
+    }
+
+    // ✅ Fetch current price from API
+    final pricingService = PricingService();
+    final price = await pricingService.getPriceFor(metadata.key);
+
+    return PaymentAction(
+      key: metadata.key,
+      amount: price,
+      description: metadata.description,
+      icon: metadata.icon,
+      color: metadata.color,
+      category: metadata.category,
+    );
+  }
+
+  /// Get all actions with current pricing
+  static Future<Map<String, PaymentAction>> getAllActions() async {
+    final pricingService = PricingService();
+    final pricing = await pricingService.getPricing();
+
+    final actions = <String, PaymentAction>{};
+    for (final entry in actionMetadata.entries) {
+      final price = pricing.getPrice(entry.value.key);
+      actions[entry.key] = PaymentAction(
+        key: entry.value.key,
+        amount: price,
+        description: entry.value.description,
+        icon: entry.value.icon,
+        color: entry.value.color,
+        category: entry.value.category,
+      );
+    }
+
+    return actions;
+  }
+
   // Currency configuration
   static const String defaultCurrency = 'TZS';
   static const String currencySymbol = 'TSh';
-
-  // Payment gateway configuration
-  static const String pesapalEnvironment = 'sandbox'; // or 'production'
-  static const String callbackUrl = '/payments/callback';
-  static const String cancelUrl = '/payments/cancel';
-
-  // Payment gateway URLs are provided by backend config; no hardcoded URLs here
-  static const Map<String, String> samplePaymentUrls = {};
-
-  // Payment endpoints (configured via backend .env)
-  static const Map<String, String> paymentEndpoints = {
-    'create_payment': '/payments/create',
-    'payment_config': '/payments/config',
-    'payment_callback': '/payments/callback',
-    'payment_status': '/payments/status',
-    'pesapal_process': '/payments/pesapal/process',
-    'mpesa_process': '/payments/mpesa/process',
-    'payment_history': '/payments/history',
-    'payment_retry': '/payments/retry',
-  };
 
   // Payment limits
   static const double minAmount = 100.0;
@@ -81,13 +106,11 @@ class PaymentConfig {
   static const Duration paymentTimeout = Duration(minutes: 30);
   static const Duration callbackTimeout = Duration(minutes: 5);
 
-  /// Get payment action by key
-  static PaymentAction? getAction(String key) {
-    return actions[key];
-  }
-
   /// Get all actions by category
-  static List<PaymentAction> getActionsByCategory(String category) {
+  static Future<List<PaymentAction>> getActionsByCategory(
+    String category,
+  ) async {
+    final actions = await getAllActions();
     return actions.values
         .where((action) => action.category == category)
         .toList();
@@ -95,7 +118,10 @@ class PaymentConfig {
 
   /// Get all available categories
   static List<String> getCategories() {
-    return actions.values.map((action) => action.category).toSet().toList();
+    return actionMetadata.values
+        .map((action) => action.category)
+        .toSet()
+        .toList();
   }
 
   /// Validate payment amount
@@ -107,26 +133,28 @@ class PaymentConfig {
   static String formatAmount(double amount) {
     return '$currencySymbol ${amount.toStringAsFixed(0)}';
   }
-
-  /// Get payment action display info
-  static PaymentActionDisplay getActionDisplay(String key) {
-    final action = getAction(key);
-    if (action == null) {
-      throw ArgumentError('Payment action not found: $key');
-    }
-
-    return PaymentActionDisplay(
-      title: action.description,
-      amount: formatAmount(action.amount),
-      icon: action.icon,
-      color: action.color,
-      category: action.category,
-    );
-  }
 }
 
-/// Payment action configuration
+/// Payment action metadata (UI only - no pricing)
+class PaymentActionMetadata {
+  final String key;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final String category;
+
+  const PaymentActionMetadata({
+    required this.key,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.category,
+  });
+}
+
+/// Payment action with current pricing (from API)
 class PaymentAction {
+  final String key;
   final double amount;
   final String description;
   final IconData icon;
@@ -134,12 +162,18 @@ class PaymentAction {
   final String category;
 
   const PaymentAction({
+    required this.key,
     required this.amount,
     required this.description,
     required this.icon,
     required this.color,
     required this.category,
   });
+
+  /// Format amount with currency
+  String get formattedAmount {
+    return 'TZS ${amount.toStringAsFixed(0)}';
+  }
 }
 
 /// Payment action display information
@@ -181,11 +215,12 @@ enum PaymentStatus {
   }
 }
 
-/// Payment gateway types
+/// Payment gateway types (Updated for ZenoPay)
 enum PaymentGateway {
-  pesapal('pesapal', 'Pesapal'),
+  zenopay('zenopay', 'ZenoPay Mobile Money'),
   mpesa('mpesa', 'M-Pesa'),
-  bank('bank', 'Bank Transfer');
+  tigopesa('tigopesa', 'Tigo Pesa'),
+  airtelmoney('airtelmoney', 'Airtel Money');
 
   const PaymentGateway(this.value, this.displayName);
 

@@ -7,9 +7,13 @@ import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/extensions/string_extensions.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../work_approval/providers/work_approval_provider.dart';
+import '../../work_approval/widgets/work_submission_card.dart';
+import '../../work_approval/models/work_submission_model.dart';
 
 /// Job details screen showing comprehensive job information
 /// Allows fundis to apply for jobs and customers to manage their jobs
+/// Integrates work approval for customers to review submissions
 class JobDetailsScreen extends StatefulWidget {
   final JobModel job;
 
@@ -30,12 +34,14 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   String? _errorMessage;
   String? _successMessage;
   bool _hasApplied = false;
+  List<WorkSubmissionModel> _workSubmissions = [];
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
     _checkApplicationStatus();
+    _loadWorkSubmissions();
   }
 
   void _setupAnimations() {
@@ -71,6 +77,129 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   Future<void> _checkApplicationStatus() async {
     // TODO: Check if current user has already applied for this job
     // This would typically involve checking the job applications
+  }
+
+  /// Load work submissions for this job (for customers)
+  Future<void> _loadWorkSubmissions() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (!authProvider.isCustomer) return;
+
+      final workApprovalProvider = Provider.of<WorkApprovalProvider>(
+        context,
+        listen: false,
+      );
+
+      // Filter work submissions for this specific job
+      await workApprovalProvider.loadPendingWorkSubmissions(refresh: true);
+
+      // Get submissions for this specific job
+      setState(() {
+        _workSubmissions = workApprovalProvider.pendingWorkSubmissions
+            .where((submission) => submission.jobId == widget.job.id)
+            .toList();
+      });
+    } catch (e) {
+      print('Error loading work submissions: $e');
+    }
+  }
+
+  /// Approve work submission
+  Future<void> _approveWorkSubmission(String submissionId) async {
+    try {
+      final workApprovalProvider = Provider.of<WorkApprovalProvider>(
+        context,
+        listen: false,
+      );
+
+      final result = await workApprovalProvider.approveWorkSubmission(
+        submissionId: submissionId,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: result['success'] ? Colors.green : Colors.red,
+          ),
+        );
+
+        if (result['success']) {
+          // Show rating dialog after successful approval
+          _showRatingDialog(submissionId);
+          // Reload submissions
+          _loadWorkSubmissions();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to approve work: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Reject work submission
+  Future<void> _rejectWorkSubmission(String submissionId, String reason) async {
+    try {
+      final workApprovalProvider = Provider.of<WorkApprovalProvider>(
+        context,
+        listen: false,
+      );
+
+      final result = await workApprovalProvider.rejectWorkSubmission(
+        submissionId: submissionId,
+        rejectionReason: reason,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: result['success'] ? Colors.orange : Colors.red,
+          ),
+        );
+
+        if (result['success']) {
+          // Reload submissions
+          _loadWorkSubmissions();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reject work: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Show rating dialog after work approval
+  void _showRatingDialog(String submissionId) {
+    // TODO: Integrate rating form here
+    // For now, just show a placeholder
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rate the Work'),
+        content: const Text(
+          'Work approved successfully! Rating functionality will be integrated here.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _applyForJob() async {
@@ -189,6 +318,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
 
                       const SizedBox(height: 24),
 
+                      // Work Submissions Section (for customers only)
+                      _buildWorkSubmissionsSection(),
+
                       // Action Buttons
                       _buildActionButtons(),
 
@@ -201,6 +333,84 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
           ),
         ),
       ),
+    );
+  }
+
+  /// Build work submissions section for customers
+  Widget _buildWorkSubmissionsSection() {
+    AuthProvider? authProvider;
+    try {
+      authProvider = Provider.of<AuthProvider>(context, listen: false);
+    } catch (_) {
+      authProvider = null;
+    }
+
+    if (!(authProvider?.isCustomer ?? false)) {
+      return const SizedBox.shrink();
+    }
+
+    if (_workSubmissions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.assignment_turned_in,
+                  color: context.primaryColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Work Submissions',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.darkGray,
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                '${_workSubmissions.length} Pending',
+                style: const TextStyle(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Work submissions list
+        ..._workSubmissions.map((submission) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: WorkSubmissionCard(
+              workSubmission: submission.toJson(),
+              onApprove: () => _approveWorkSubmission(submission.id),
+              onReject: (reason) =>
+                  _rejectWorkSubmission(submission.id, reason),
+            ),
+          );
+        }).toList(),
+
+        const SizedBox(height: 24),
+      ],
     );
   }
 
@@ -523,7 +733,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
           AppButton(
             text: 'View Applications',
             onPressed: () {
-              // TODO: Navigate to applications screen
+              Navigator.pushNamed(
+                context,
+                '/job-applications',
+                arguments: widget.job,
+              );
             },
             isFullWidth: true,
             icon: Icons.people,
@@ -586,7 +800,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
           AppButton(
             text: 'View Applications',
             onPressed: () {
-              // TODO: Navigate to applications screen
+              Navigator.pushNamed(
+                context,
+                '/job-applications',
+                arguments: widget.job,
+              );
             },
             isFullWidth: true,
             icon: Icons.people,
@@ -595,7 +813,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
           AppButton(
             text: 'Manage Job',
             onPressed: () {
-              // TODO: Navigate to job management screen
+              Navigator.pushNamed(
+                context,
+                '/job-applications',
+                arguments: widget.job,
+              );
             },
             type: ButtonType.secondary,
             isFullWidth: true,

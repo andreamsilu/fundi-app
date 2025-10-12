@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../services/auth_service.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/navigation_guard.dart';
-import '../../../core/app/app_initialization_service.dart';
-import '../../../core/config/env_config.dart';
-import '../../../core/config/api_config.dart';
-import '../../../core/constants/app_constants.dart';
 
 /// Login screen for user authentication
 /// Features email/password login with validation and error handling
@@ -67,30 +62,6 @@ class _LoginScreenState extends State<LoginScreen>
     _fadeController.dispose();
     _slideController.dispose();
     super.dispose();
-  }
-
-  Future<void> _testApiConfig() async {
-    setState(() {
-      _errorMessage = null;
-    });
-
-    try {
-      print('=== API Configuration Debug ===');
-      print('EnvConfig.get(API_BASE_URL): ${EnvConfig.get('API_BASE_URL')}');
-      print('ApiConfig.baseUrl: ${ApiConfig.baseUrl}');
-      print('AppConstants.baseUrl: ${AppConstants.baseUrl}');
-      print(
-        'AppInitializationService.isInitialized: ${AppInitializationService.isInitialized}',
-      );
-
-      setState(() {
-        _errorMessage = 'Check console for API config debug info';
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Debug error: $e';
-      });
-    }
   }
 
   Future<void> _handleLogin() async {
@@ -162,12 +133,12 @@ class _LoginScreenState extends State<LoginScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
 
                     // Logo and title
                     _buildHeader(),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
 
                     // Error message
                     if (_errorMessage != null) ...[
@@ -179,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen>
                           });
                         },
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                     ],
 
                     // Phone field
@@ -207,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen>
                       },
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
                     // Password field
                     AppInputField(
@@ -240,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen>
                       },
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
 
                     // Forgot password
                     Align(
@@ -253,19 +224,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 32),
-
-                    // Debug button to test configuration
-                    if (kDebugMode) ...[
-                      AppButton(
-                        text: 'Debug: Test API Config',
-                        onPressed: _testApiConfig,
-                        type: ButtonType.secondary,
-                        isFullWidth: true,
-                        size: ButtonSize.medium,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                    const SizedBox(height: 16),
 
                     // Login button
                     AppButton(
@@ -276,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen>
                       size: ButtonSize.large,
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Divider
                     Row(
@@ -294,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ],
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Register button
                     AppButton(
@@ -307,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen>
                       size: ButtonSize.large,
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
 
                     // Terms and privacy
                     Text(
@@ -332,55 +291,55 @@ class _LoginScreenState extends State<LoginScreen>
       children: [
         // App logo
         Container(
-          width: 80,
-          height: 80,
+          width: 70,
+          height: 70,
           decoration: BoxDecoration(
             color: context.primaryColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
                 color: context.primaryColor.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
-          child: const Icon(Icons.build, color: Colors.white, size: 40),
+          child: const Icon(Icons.build, color: Colors.white, size: 36),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
         // App name
         Text(
           'Fundi App',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
             color: context.primaryColor,
             fontWeight: FontWeight.bold,
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         // Subtitle
         Text(
           'Connect with skilled craftsmen',
           style: Theme.of(
             context,
-          ).textTheme.bodyLarge?.copyWith(color: AppTheme.mediumGray),
+          ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         // Welcome message
         Text(
           'Welcome back!',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: AppTheme.darkGray,
             fontWeight: FontWeight.w600,
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
         Text(
           'Sign in to continue',

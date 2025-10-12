@@ -178,15 +178,8 @@ class SessionManager {
         data: {'reason': reason ?? 'JWT token expired'},
       );
 
-      // Show token expiration dialog first
-      final navigationService = NavigationService();
-      await navigationService.showTokenExpirationDialog(
-        message: reason ?? 'Your session has expired. Please log in again.',
-        onOkPressed: () async {
-          // Clear session and redirect to login
-          await forceLogout(reason: reason);
-        },
-      );
+      // Directly clear session and redirect to login without showing dialog
+      await forceLogout(reason: reason);
     } catch (e) {
       Logger.error(
         'Session manager: Error handling token expiration',

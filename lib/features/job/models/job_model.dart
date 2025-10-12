@@ -151,9 +151,9 @@ class JobModel {
                 as String?, // Handle nested category or direct field
       location: json['location'] as String?, // Additional field for mobile
       customerName: json['customer'] != null
-          ? (json['customer'] as Map<String, dynamic>)['phone'] as String?
+          ? (json['customer'] as Map<String, dynamic>)['full_name'] as String?
           : json['customer_name']
-                as String?, // Handle nested customer or direct field
+                as String?, // Handle nested customer or direct field - now uses full_name
       customerImageUrl:
           json['customer_image_url'] as String?, // Additional field for mobile
       imageUrls: json['image_urls'] != null

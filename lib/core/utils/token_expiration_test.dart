@@ -81,26 +81,6 @@ class TokenExpirationTest {
     }
   }
 
-  /// Show token expiration dialog for testing
-  static Future<void> testTokenExpirationDialog() async {
-    try {
-      Logger.info('TokenExpirationTest: Testing token expiration dialog');
-
-      await _navigationService.showTokenExpirationDialog(
-        message: 'Test: This is a test token expiration dialog',
-        onOkPressed: () {
-          Logger.info('TokenExpirationTest: Dialog OK button pressed');
-        },
-      );
-
-      Logger.info(
-        'TokenExpirationTest: Token expiration dialog test completed',
-      );
-    } catch (e) {
-      Logger.error('TokenExpirationTest: Error during dialog test', error: e);
-    }
-  }
-
   /// Get comprehensive token information for debugging
   static Map<String, dynamic> getTokenDebugInfo() {
     try {
@@ -149,12 +129,6 @@ class TokenExpirationTest {
 
       // Test navigation redirect
       await testNavigationRedirect();
-
-      // Wait a bit between tests
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Test dialog
-      await testTokenExpirationDialog();
 
       Logger.info('TokenExpirationTest: All tests completed');
     } catch (e) {

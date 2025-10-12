@@ -122,8 +122,6 @@ class CategoryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-
-              // Job count section removed - not available in CategoryModel
             ],
           ),
         ),
@@ -401,3 +399,5 @@ class _CategorySearchWidgetState extends State<CategorySearchWidget> {
     );
   }
 }
+
+

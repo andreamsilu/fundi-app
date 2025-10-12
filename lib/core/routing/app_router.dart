@@ -12,21 +12,21 @@ import '../../features/auth/screens/otp_verification_screen.dart';
 import '../../features/auth/screens/new_password_screen.dart';
 import '../../features/dashboard/screens/main_dashboard.dart';
 import '../../features/profile/screens/profile_screen.dart';
-import '../../features/job/screens/job_creation_screen.dart';
+import '../../features/job/screens/job_creation_screen.dart'; // Now using wizard version
 import '../../features/job/screens/job_details_screen.dart';
+import '../../features/job/screens/job_list_screen.dart';
+import '../../features/job/screens/application_details_screen.dart';
+import '../../features/job/screens/job_applications_screen.dart';
 import '../../features/portfolio/screens/portfolio_creation_screen.dart';
-import '../../features/portfolio/screens/portfolio_gallery_screen.dart';
 import '../../features/portfolio/screens/portfolio_details_screen.dart';
-// Removed messaging and search screen imports as features were deleted
+import '../../features/search/screens/search_screen.dart';
+import '../../features/payment/screens/payment_main_screen.dart'; // Consolidated payment screen
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/fundi_application/screens/fundi_application_screen.dart';
 import '../../features/feeds/screens/fundi_feed_screen.dart';
-import '../../features/feeds/screens/job_feed_screen.dart';
-import '../../features/feeds/screens/fundi_profile_screen.dart';
+import '../../features/feeds/screens/comprehensive_fundi_profile_screen.dart';
 import '../../features/work_approval/screens/work_approval_screen.dart';
-import '../../features/home/screens/role_based_home_screen.dart';
-import '../../features/feeds/screens/fundi_feed_debug_screen.dart';
 
 /// Centralized routing configuration for the Fundi App
 /// Handles route definitions, navigation, and route guards
@@ -42,7 +42,6 @@ class AppRouter {
   static const String createJob = '/create-job';
   static const String jobDetails = '/job-details';
   static const String createPortfolio = '/create-portfolio';
-  static const String portfolioGallery = '/portfolio-gallery';
   static const String portfolioDetails = '/portfolio-details';
   static const String chat = '/chat';
   static const String search = '/search';
@@ -54,9 +53,10 @@ class AppRouter {
   static const String fundiProfile = '/fundi-profile';
   static const String workApproval = '/work-approval';
   static const String home = '/';
-  static const String customerHome = '/customer-home';
-  static const String fundiHome = '/fundi-home';
-  static const String fundiFeedDebug = '/fundi-feed-debug';
+  static const String paymentPlans = '/payment-plans';
+  static const String paymentManagement = '/payment-management';
+  static const String applicationDetails = '/application-details';
+  static const String jobApplications = '/job-applications';
 
   /// Route generation function for named routes
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -102,10 +102,6 @@ class AppRouter {
       case '/dashboard':
         return _buildRoute(const MainDashboard(), settings);
 
-      case '/customer-home':
-      case '/fundi-home':
-        return _buildRoute(const RoleBasedHomeScreen(), settings);
-
       case '/profile':
         return _buildRoute(
           ProfileScreen(userId: _getCurrentUserId(settings)),
@@ -128,13 +124,6 @@ class AppRouter {
       case '/create-portfolio':
         return _buildRoute(const PortfolioCreationScreen(), settings);
 
-      case '/portfolio-gallery':
-        final args = settings.arguments as String?;
-        return _buildRoute(
-          PortfolioGalleryScreen(portfolioId: args ?? ''),
-          settings,
-        );
-
       case '/portfolio-details':
         final args = settings.arguments as PortfolioModel?;
         if (args == null) {
@@ -155,10 +144,11 @@ class AppRouter {
         );
 
       case '/search':
-        // Search feature removed - show coming soon
+        final args = settings.arguments as Map<String, dynamic>?;
         return _buildRoute(
-          const Scaffold(
-            body: Center(child: Text('Search feature coming soon!')),
+          SearchScreen(
+            initialQuery: args?['query'] as String?,
+            initialTabIndex: args?['tabIndex'] as int? ?? 0,
           ),
           settings,
         );
@@ -176,7 +166,15 @@ class AppRouter {
         return _buildRoute(const FundiFeedScreen(), settings);
 
       case '/job-feed':
-        return _buildRoute(const JobFeedScreen(), settings);
+        // Consolidated: Use JobListScreen for job listings
+        return _buildRoute(
+          const JobListScreen(
+            title: 'Available Jobs',
+            showAppBar: true,
+            showFilterButton: true,
+          ),
+          settings,
+        );
 
       case '/fundi-profile':
         final args = settings.arguments as Map<String, dynamic>?;
@@ -186,13 +184,45 @@ class AppRouter {
             settings,
           );
         }
-        return _buildRoute(FundiProfileScreen(fundi: args!['fundi']), settings);
+        return _buildRoute(
+          ComprehensiveFundiProfileScreen(fundi: args!['fundi']),
+          settings,
+        );
 
       case '/work-approval':
         return _buildRoute(const WorkApprovalScreen(), settings);
 
-      case '/fundi-feed-debug':
-        return _buildRoute(const FundiFeedDebugScreen(), settings);
+      case '/payment-plans':
+        return _buildRoute(const PaymentMainScreen(initialTab: 0), settings);
+
+      case '/payment-management':
+        return _buildRoute(const PaymentMainScreen(initialTab: 1), settings);
+
+      case '/application-details':
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args?['applicationId'] == null) {
+          return _buildRoute(
+            const Scaffold(body: Center(child: Text('Application not found'))),
+            settings,
+          );
+        }
+        return _buildRoute(
+          ApplicationDetailsScreen(
+            applicationId: args!['applicationId'] as String,
+            jobId: args['jobId'] as String?,
+          ),
+          settings,
+        );
+
+      case '/job-applications':
+        final jobArgs = settings.arguments as JobModel?;
+        if (jobArgs == null) {
+          return _buildRoute(
+            const Scaffold(body: Center(child: Text('Job not found'))),
+            settings,
+          );
+        }
+        return _buildRoute(JobApplicationsScreen(job: jobArgs), settings);
 
       default:
         return _buildRoute(

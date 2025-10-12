@@ -3,6 +3,7 @@ import '../../../core/config/payment_config.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/payment_transaction_model.dart';
 import '../widgets/payment_transaction_details.dart';
+import 'payment_management_screen.dart';
 
 /// Screen displayed after successful payment
 /// Shows transaction details and next steps
@@ -55,11 +56,7 @@ class PaymentSuccessScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(
-            Icons.check_circle,
-            size: 64,
-            color: Colors.white,
-          ),
+          const Icon(Icons.check_circle, size: 64, color: Colors.white),
           const SizedBox(height: 16),
           const Text(
             'Payment Successful!',
@@ -72,10 +69,7 @@ class PaymentSuccessScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             actionData.description,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.white70,
-            ),
+            style: const TextStyle(fontSize: 16, color: Colors.white70),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -108,10 +102,7 @@ class PaymentSuccessScreen extends StatelessWidget {
           children: [
             const Text(
               'Transaction Details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             PaymentTransactionDetails(transaction: transaction),
@@ -130,10 +121,7 @@ class PaymentSuccessScreen extends StatelessWidget {
           children: [
             const Text(
               'What\'s Next?',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildNextStepItem(
@@ -173,11 +161,7 @@ class PaymentSuccessScreen extends StatelessWidget {
             color: AppTheme.primaryGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Icon(
-            icon,
-            color: AppTheme.primaryGreen,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppTheme.primaryGreen, size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -193,10 +177,7 @@ class PaymentSuccessScreen extends StatelessWidget {
               ),
               Text(
                 description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -208,19 +189,21 @@ class PaymentSuccessScreen extends StatelessWidget {
   Widget _buildActionButtons(BuildContext context) {
     return Column(
       children: [
+        // Primary Action - Smart Navigation
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+            onPressed: () => _handleSmartNavigation(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryGreen,
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            child: const Text(
-              'Continue',
-              style: TextStyle(
+            child: Text(
+              _getActionButtonText(),
+              style: const TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
           ),
@@ -300,6 +283,55 @@ class PaymentSuccessScreen extends StatelessWidget {
         return 'Your subscription is now active and ready to use';
       default:
         return 'Your action has been completed successfully';
+    }
+  }
+
+  /// Smart navigation based on transaction type
+  void _handleSmartNavigation(BuildContext context) {
+    final transactionType = transaction.transactionType.toLowerCase();
+    final metadata = transaction.metadata;
+
+    // Subscription payment - go to subscription management
+    if (transactionType.contains('subscription') ||
+        metadata?['plan_id'] != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PaymentManagementScreen(),
+        ),
+      );
+    }
+    // Job-related payment - go to My Jobs
+    else if (transactionType.contains('job') ||
+        transactionType.contains('post') ||
+        metadata?['job_id'] != null) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/dashboard',
+        (route) => false,
+      );
+    }
+    // Payment history for other payments
+    else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PaymentManagementScreen(),
+        ),
+      );
+    }
+  }
+
+  /// Get button text based on transaction type
+  String _getActionButtonText() {
+    final transactionType = transaction.transactionType.toLowerCase();
+
+    if (transactionType.contains('subscription')) {
+      return 'View My Subscription';
+    } else if (transactionType.contains('job')) {
+      return 'View My Jobs';
+    } else {
+      return 'View Payment History';
     }
   }
 }

@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../auth/services/auth_service.dart';
 import 'package:provider/provider.dart';
-import '../../portfolio/providers/portfolio_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/animated_card.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../job/screens/job_list_screen.dart';
-import '../../portfolio/screens/portfolio_screen.dart';
 // Messaging feature removed - not implemented in API
 import '../../profile/screens/profile_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../help/screens/help_screen.dart';
 import '../../fundi_application/screens/fundi_application_screen.dart';
 import '../../feeds/screens/fundi_feed_screen.dart';
+import '../../feeds/screens/comprehensive_fundi_profile_screen.dart';
 import '../services/dashboard_service.dart';
 import '../models/dashboard_model.dart';
-import 'placeholder_screen.dart';
+import '../../../core/utils/role_guard.dart';
+import '../../auth/models/user_model.dart';
 
 /// Main dashboard screen with role-based navigation
 /// Provides different views for customers, fundis, and admins
@@ -39,6 +39,41 @@ class _MainDashboardState extends State<MainDashboard>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+
+    // Check for route arguments to auto-switch tabs
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null) {
+        _handleRouteArguments(args);
+      }
+    });
+  }
+
+  /// Handle route arguments for auto-navigation (using role-based navigation)
+  void _handleRouteArguments(Map<String, dynamic> args) {
+    final authService = AuthService();
+    final userRole =
+        authService.currentUser?.roles.firstOrNull ?? UserRole.customer;
+
+    // Switch to Applied Jobs tab (for fundis after applying)
+    if (args['switchToAppliedJobs'] == true && userRole == UserRole.fundi) {
+      setState(() {
+        _currentIndex = 1; // Applied Jobs tab for fundis (index 1)
+      });
+    }
+    // Switch to My Jobs tab (for customers after posting)
+    else if (args['switchToMyJobs'] == true && userRole == UserRole.customer) {
+      setState(() {
+        _currentIndex = 0; // My Jobs tab for customers (index 0)
+      });
+    }
+    // Switch to specific tab index
+    else if (args['initialTab'] != null) {
+      setState(() {
+        _currentIndex = args['initialTab'] as int;
+      });
+    }
   }
 
   @override
@@ -67,75 +102,79 @@ class _MainDashboardState extends State<MainDashboard>
     );
   }
 
-  /// Get screens based on user role (customers and fundis only)
+  /// Get screens based on user role (customers, fundis, and admins)
   List<Widget> _getScreens(AuthService authService) {
-    if (authService.currentUser?.isCustomer ?? false) {
-      return [
-        const JobListScreen(
-          title: 'Available Jobs',
-          showAppBar: false,
-        ), // Home - Available jobs
-        const FundiFeedScreen(), // Find Fundis
-        const JobListScreen(
-          title: 'My Jobs',
-          showFilterButton: false,
-          showAppBar: false,
-        ), // My Jobs - Posted jobs
-        const ProfileScreen(showAppBar: false), // Profile
-      ];
-    } else {
-      // Fundi
-      return [
-        const JobListScreen(
-          title: 'Find Jobs',
-          showAppBar: false,
-        ), // Home - Available jobs
-        const JobListScreen(
-          title: 'Applied Jobs',
-          showFilterButton: false,
-          showAppBar: false,
-        ), // Applied Jobs - Applied jobs
-        const ProfileScreen(showAppBar: false), // Profile
-      ];
+    final userRole =
+        authService.currentUser?.roles.firstOrNull ?? UserRole.customer;
+
+    switch (userRole) {
+      case UserRole.customer:
+        // CUSTOMER: Can't browse all jobs, only see their own posted jobs
+        return [
+          const JobListScreen(
+            title: 'My Jobs',
+            showFilterButton: false,
+            showAppBar: false,
+          ), // Home - Their posted jobs ONLY
+          const FundiFeedScreen(), // Find Fundis to hire
+          const NotificationsScreen(), // Notifications - has its own AppBar
+          const ProfileScreen(showAppBar: false), // Profile
+        ];
+
+      case UserRole.fundi:
+        // FUNDI: Can browse all available jobs to find work
+        return [
+          const JobListScreen(
+            title: 'Available Jobs',
+            showAppBar: false,
+          ), // Home - Browse ALL available jobs
+          const JobListScreen(
+            title: 'Applied Jobs',
+            showFilterButton: false,
+            showAppBar: false,
+          ), // My Applications
+          const ProfileScreen(showAppBar: false), // Profile
+        ];
+
+      case UserRole.admin:
+        // ADMIN: Access to admin dashboard and user management
+        return [
+          const DashboardHomeScreen(), // Admin dashboard
+          const Center(
+            child: Text(
+              'Admin Panel - Coming Soon',
+            ), // Placeholder for admin panel
+          ),
+          const Center(
+            child: Text(
+              'User Management - Coming Soon',
+            ), // Placeholder for users
+          ),
+          const ProfileScreen(showAppBar: false), // Profile
+        ];
     }
   }
 
-  /// Build dynamic AppBar based on current page
+  /// Build dynamic AppBar based on current page (using RoleGuard)
   PreferredSizeWidget _buildAppBar(AuthService authService) {
-    String title;
+    // Get user role
+    final userRole =
+        authService.currentUser?.roles.firstOrNull ?? UserRole.customer;
 
-    switch (_currentIndex) {
-      case 0:
-        if (authService.currentUser?.isCustomer ?? false) {
-          title = 'Available Jobs';
-        } else {
-          title = 'Find Jobs';
-        }
-        break;
-      case 1:
-        if (authService.currentUser?.isCustomer ?? false) {
-          title = 'Find Fundis';
-        } else {
-          title = 'Applied Jobs';
-        }
-        break;
-      case 2:
-        if (authService.currentUser?.isCustomer ?? false) {
-          title = 'My Jobs';
-        } else {
-          title = 'Profile';
-        }
-        break;
-      case 3:
-        title = 'Profile';
-        break;
-      default:
-        title = 'Fundi';
+    // Get bottom nav items from RoleGuard
+    final bottomNavItems = RoleGuard.getBottomNavItemsForRole(userRole);
+
+    // Get title from current bottom nav item
+    String title = 'Dashboard';
+    if (_currentIndex < bottomNavItems.length) {
+      title = bottomNavItems[_currentIndex].label;
     }
 
     return AppBar(
       title: Text(title),
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppTheme.primaryGreen,
+      foregroundColor: Colors.white,
+      iconTheme: const IconThemeData(color: Colors.white),
       elevation: 0,
       actions: [
         IconButton(
@@ -184,51 +223,23 @@ class _MainDashboardState extends State<MainDashboard>
     );
   }
 
-  /// Get bottom navigation items based on user role
+  /// Get bottom navigation items based on user role (using RoleGuard)
   List<BottomNavigationBarItem> _getBottomNavItems(AuthService authService) {
-    if (authService.currentUser?.isCustomer ?? false) {
-      return [
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.people_outline),
-          activeIcon: Icon(Icons.people),
-          label: 'Find Fundis',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.work_outline),
-          activeIcon: Icon(Icons.work),
-          label: 'My Jobs',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ];
-    } else {
-      // Fundi
-      return [
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.search),
-          activeIcon: Icon(Icons.search),
-          label: 'Find Jobs',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.assignment_outlined),
-          activeIcon: Icon(Icons.assignment),
-          label: 'Applied',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ];
-    }
+    // Get user role from AuthService
+    final userRole =
+        authService.currentUser?.roles.firstOrNull ?? UserRole.customer;
+
+    // Get bottom nav items from RoleGuard based on role
+    final bottomNavItems = RoleGuard.getBottomNavItemsForRole(userRole);
+
+    // Convert BottomNavItem to BottomNavigationBarItem
+    return bottomNavItems.map((item) {
+      return BottomNavigationBarItem(
+        icon: Icon(item.icon),
+        activeIcon: Icon(item.activeIcon),
+        label: item.label,
+      );
+    }).toList();
   }
 
   /// Build drawer menu with additional options
@@ -244,26 +255,20 @@ class _MainDashboardState extends State<MainDashboard>
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                // Portfolio Section
-                _buildDrawerSection(
-                  title: 'Portfolio',
-                  children: [
-                    _buildDrawerItem(
-                      icon: Icons.work_outline,
-                      title: 'View Portfolio',
-                      onTap: () => _navigateToPortfolio(),
-                    ),
-                    if (authService.currentUser?.isFundi ?? false) ...[
+                // Portfolio Section - Only for Fundis (Portfolio is part of profile)
+                if (authService.currentUser?.isFundi ?? false) ...[
+                  _buildDrawerSection(
+                    title: 'My Profile',
+                    children: [
                       _buildDrawerItem(
-                        icon: Icons.add_circle_outline,
-                        title: 'Add Portfolio',
-                        onTap: () => _navigateToAddPortfolio(),
+                        icon: Icons.person_outline,
+                        title: 'View My Profile',
+                        onTap: () => _navigateToMyProfile(),
                       ),
                     ],
-                  ],
-                ),
-
-                const Divider(),
+                  ),
+                  const Divider(),
+                ],
 
                 // Feed Section
                 _buildDrawerSection(
@@ -458,30 +463,24 @@ class _MainDashboardState extends State<MainDashboard>
     );
   }
 
-  /// Build floating action button based on user role
+  /// Build floating action button based on user role (using RoleGuard)
   Widget? _buildFloatingActionButton(AuthService authService) {
-    if (authService.currentUser?.isCustomer ?? false) {
+    final userRole =
+        authService.currentUser?.roles.firstOrNull ?? UserRole.customer;
+
+    // Only customers get FAB for posting jobs
+    if (userRole == UserRole.customer) {
       return FloatingActionButton(
         heroTag: "main_dashboard_fab_customer",
-        onPressed: () {
-          // Navigate to create job screen
-          _navigateToCreateJob();
-        },
+        onPressed: _navigateToCreateJob,
         backgroundColor: AppTheme.primaryGreen,
         child: const Icon(Icons.add, color: AppTheme.white),
-      );
-    } else {
-      // Fundi
-      return FloatingActionButton(
-        heroTag: "main_dashboard_fab_fundi",
-        onPressed: () {
-          // Navigate to add portfolio screen
-          _navigateToAddPortfolio();
-        },
-        backgroundColor: AppTheme.primaryGreen,
-        child: const Icon(Icons.add_a_photo, color: AppTheme.white),
+        tooltip: 'Post a Job',
       );
     }
+
+    // No FAB for fundis and admins
+    return null;
   }
 
   /// Navigate to create job screen
@@ -495,30 +494,33 @@ class _MainDashboardState extends State<MainDashboard>
     }
   }
 
-  /// Navigate to add portfolio screen
-  void _navigateToAddPortfolio() {
-    print('MainDashboard: Navigating to create portfolio screen');
-    try {
-      Navigator.pushNamed(context, '/create-portfolio');
-      print('MainDashboard: Portfolio navigation successful');
-    } catch (e) {
-      print('MainDashboard: Portfolio navigation error: $e');
-    }
-  }
+  /// Navigate to current user's profile (fundis can manage portfolio here)
+  void _navigateToMyProfile() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUser = authService.currentUser;
 
-  /// Navigate to portfolio screen
-  void _navigateToPortfolio() {
-    print('MainDashboard: Navigating to portfolio screen');
+    if (currentUser == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('User not found')));
+      return;
+    }
+
+    print('MainDashboard: Navigating to my profile');
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChangeNotifierProvider(
-          create: (_) => PortfolioProvider(),
-          child: const PortfolioScreen(),
+        builder: (context) => ComprehensiveFundiProfileScreen(
+          fundi: {
+            'id': currentUser.id,
+            'full_name': currentUser.fullName,
+            'email': currentUser.email,
+            'role': currentUser.roles.first.value,
+          },
         ),
       ),
     );
-    print('MainDashboard: Portfolio navigation successful');
+    print('MainDashboard: Profile navigation successful');
   }
 
   /// Navigate to messages screen
@@ -543,16 +545,10 @@ class _MainDashboardState extends State<MainDashboard>
       print('MainDashboard: Notifications navigation successful');
     } catch (e) {
       print('MainDashboard: Notifications navigation error: $e');
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Notifications',
-            message:
-                'Notifications feature is coming soon! You\'ll receive updates about jobs and messages here.',
-            icon: Icons.notifications_outlined,
-          ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open notifications at this time'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -566,16 +562,10 @@ class _MainDashboardState extends State<MainDashboard>
       print('MainDashboard: Settings navigation successful');
     } catch (e) {
       print('MainDashboard: Settings navigation error: $e');
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Settings',
-            message:
-                'Settings feature is coming soon! You\'ll be able to customize your app preferences here.',
-            icon: Icons.settings_outlined,
-          ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open settings at this time'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -592,16 +582,10 @@ class _MainDashboardState extends State<MainDashboard>
       print('MainDashboard: Help navigation successful');
     } catch (e) {
       print('MainDashboard: Help navigation error: $e');
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Help & Support',
-            message:
-                'Help feature is coming soon! You\'ll find FAQs and support options here.',
-            icon: Icons.help_outline,
-          ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open help at this time'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -618,16 +602,10 @@ class _MainDashboardState extends State<MainDashboard>
       print('MainDashboard: Fundi application navigation successful');
     } catch (e) {
       print('MainDashboard: Fundi application navigation error: $e');
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Become a Fundi',
-            message:
-                'Fundi application feature is coming soon! You\'ll be able to apply to become a fundi here.',
-            icon: Icons.build_circle,
-          ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open fundi application at this time'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -649,16 +627,10 @@ class _MainDashboardState extends State<MainDashboard>
       print('MainDashboard: Work approval navigation successful');
     } catch (e) {
       print('MainDashboard: Work approval navigation error: $e');
-      // Show placeholder screen instead of error
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PlaceholderScreen(
-            title: 'Work Approval',
-            message:
-                'Work approval feature is coming soon! You\'ll be able to approve completed work here.',
-            icon: Icons.approval,
-          ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open work approval at this time'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -668,21 +640,28 @@ class _MainDashboardState extends State<MainDashboard>
   void _handleLogout(AuthService authService) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Logout'),
           content: const Text('Are you sure you want to logout?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                // Close dialog first
+                Navigator.of(dialogContext).pop();
+
+                // Perform logout
                 await authService.logout();
-                if (mounted) {
-                  Navigator.of(context).pushReplacementNamed('/login');
+
+                // Navigate to login using the main widget's context, not dialog context
+                if (mounted && context.mounted) {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/login', (route) => false);
                 }
               },
               child: const Text('Logout'),
@@ -960,22 +939,12 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
                 Navigator.pushNamed(context, '/fundi-feed');
               },
             ),
-            const SizedBox(height: 12),
-            _buildActionButton(
-              context,
-              'Debug Fundi Feed',
-              'Debug version of fundi feed',
-              Icons.bug_report,
-              () {
-                Navigator.pushNamed(context, '/fundi-feed-debug');
-              },
-            ),
           ] else if (authService.currentUser?.isFundi ?? false) ...[
             _buildActionButton(
               context,
-              'Find Jobs',
+              'Available Jobs',
               'Discover new opportunities',
-              Icons.search,
+              Icons.work_outline,
               () {
                 Navigator.pushNamed(context, '/job-feed');
               },
@@ -987,7 +956,8 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen>
               'Showcase your best work',
               Icons.add_a_photo,
               () {
-                // TODO: Navigate to portfolio update
+                // Navigate to profile (portfolio is part of profile for fundis)
+                Navigator.pushNamed(context, '/profile');
               },
             ),
           ],

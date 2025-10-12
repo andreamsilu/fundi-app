@@ -65,10 +65,32 @@ class ApiClient {
     await _sessionManager.initialize();
   }
 
+  /// Helper method to check if endpoint is an authentication endpoint
+  bool _isAuthEndpoint(String path) {
+    return path.contains('/auth/login') ||
+        path.contains('/auth/register') ||
+        path.contains('/auth/send-otp') ||
+        path.contains('/auth/verify-otp') ||
+        path.contains('/auth/forgot-password') ||
+        path.contains('/auth/reset-password');
+  }
+
   /// Create authentication interceptor for JWT tokens
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
+        // Skip token validation for authentication endpoints
+        final path = options.path;
+        final isAuthEndpoint = _isAuthEndpoint(path);
+
+        if (isAuthEndpoint) {
+          Logger.debug(
+            'ApiClient: Skipping token validation for auth endpoint: $path',
+          );
+          handler.next(options);
+          return;
+        }
+
         // Check if token is valid before making request
         if (!_jwtTokenManager.isTokenValid()) {
           Logger.warning(
@@ -94,7 +116,20 @@ class ApiClient {
         handler.next(options);
       },
       onError: (error, handler) async {
-        // Handle JWT token expiration and other auth errors
+        // Skip session clearing for authentication endpoints
+        // (401 on login just means invalid credentials, not expired session)
+        final path = error.requestOptions.path;
+        final isAuthEndpoint = _isAuthEndpoint(path);
+
+        if (isAuthEndpoint) {
+          Logger.debug(
+            'ApiClient: Auth endpoint error, not clearing session: $path',
+          );
+          handler.next(error);
+          return;
+        }
+
+        // Handle JWT token expiration and other auth errors for protected endpoints
         final statusCode = error.response?.statusCode;
         if (statusCode == 401) {
           Logger.warning(

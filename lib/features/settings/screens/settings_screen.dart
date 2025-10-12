@@ -1,553 +1,285 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/settings_model.dart';
-import '../services/settings_service.dart';
-import '../../../shared/widgets/loading_widget.dart';
-import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
+import 'settings_account_screen.dart';
+import 'settings_privacy_screen.dart';
+import 'settings_notifications_screen.dart';
 
-/// Settings screen for managing user preferences and app configuration
-/// Provides comprehensive settings management
-class SettingsScreen extends StatefulWidget {
+/// Main Settings Screen - Categorized List
+/// Replaces the 568-line monolithic settings screen
+/// Categories: Account, Privacy & Security, Notifications, Appearance, About
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
-
-  bool _isLoading = false;
-  String? _errorMessage;
-  SettingsModel _settings = SettingsModel.defaultSettings();
-
-  @override
-  void initState() {
-    super.initState();
-    _setupAnimations();
-    _loadSettings();
-  }
-
-  void _setupAnimations() {
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-
-    _fadeController.forward();
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadSettings() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final result = await SettingsService().getSettings();
-      if (result.success) {
-        setState(() {
-          _settings = result.settings ?? SettingsModel.defaultSettings();
-        });
-      } else {
-        setState(() {
-          _errorMessage = result.message;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load settings. Please try again.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _updateSettings() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final result = await SettingsService().updateSettings(_settings);
-      if (result.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Settings updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        setState(() {
-          _errorMessage = result.message;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to update settings. Please try again.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _updateSettings,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
-          ),
-        ],
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: FadeTransition(opacity: _fadeAnimation, child: _buildContent()),
-    );
-  }
-
-  Widget _buildContent() {
-    if (_isLoading) {
-      return const Center(
-        child: LoadingWidget(message: 'Loading settings...', size: 50),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: ErrorBanner(
-          message: _errorMessage!,
-          onDismiss: () {
-            setState(() {
-              _errorMessage = null;
-            });
-          },
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
         children: [
-          // Profile Section
-          _buildSectionHeader('Profile'),
-          _buildProfileSection(),
+          // User Info Header
+          _buildUserHeader(context),
 
-          const SizedBox(height: 24),
+          const Divider(height: 1),
 
-          // Notifications Section
-          _buildSectionHeader('Notifications'),
-          _buildNotificationsSection(),
+          // Account Settings
+          _buildSettingsTile(
+            context,
+            icon: Icons.person_outline,
+            title: 'Account',
+            subtitle: 'Manage your account details',
+            onTap: () => _navigateTo(context, const SettingsAccountScreen()),
+          ),
 
-          const SizedBox(height: 24),
+          // Privacy & Security
+          _buildSettingsTile(
+            context,
+            icon: Icons.security,
+            title: 'Privacy & Security',
+            subtitle: 'Control your privacy settings',
+            onTap: () => _navigateTo(context, const SettingsPrivacyScreen()),
+          ),
 
-          // Privacy Section
-          _buildSectionHeader('Privacy & Security'),
-          _buildPrivacySection(),
+          // Notifications
+          _buildSettingsTile(
+            context,
+            icon: Icons.notifications_outlined,
+            title: 'Notifications',
+            subtitle: 'Manage notification preferences',
+            onTap: () =>
+                _navigateTo(context, const SettingsNotificationsScreen()),
+          ),
 
-          const SizedBox(height: 24),
+          const Divider(height: 1),
 
-          // App Settings Section
-          _buildSectionHeader('App Settings'),
-          _buildAppSettingsSection(),
+          // Appearance (inline toggle)
+          _buildAppearanceSection(context),
 
-          const SizedBox(height: 24),
+          const Divider(height: 1),
 
-          // Account Section
-          _buildSectionHeader('Account'),
-          _buildAccountSection(),
+          // Payment & Subscription
+          _buildSettingsTile(
+            context,
+            icon: Icons.payment,
+            title: 'Payment & Subscription',
+            subtitle: 'Manage payments and plans',
+            onTap: () => Navigator.pushNamed(context, '/payment-management'),
+          ),
+
+          const Divider(height: 1),
+
+          // About & Legal
+          _buildSettingsTile(
+            context,
+            icon: Icons.info_outline,
+            title: 'About & Legal',
+            subtitle: 'App version, terms, privacy policy',
+            onTap: () => _showAboutDialog(context),
+          ),
+
+          const Divider(height: 1),
+
+          // Logout
+          _buildSettingsTile(
+            context,
+            icon: Icons.logout,
+            title: 'Logout',
+            subtitle: 'Sign out of your account',
+            onTap: () => _showLogoutDialog(context),
+            isDestructive: true,
+          ),
 
           const SizedBox(height: 32),
+
+          // Version Info
+          Center(
+            child: Text(
+              'Version 1.0.0',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ),
+
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
+  Widget _buildUserHeader(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.user;
+        return Container(
+          padding: const EdgeInsets.all(20),
+          color: AppTheme.primaryGreen.withOpacity(0.1),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: AppTheme.primaryGreen,
+                child: Text(
+                  user?.firstName?.substring(0, 1).toUpperCase() ?? 'U',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user?.fullName ?? 'User',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user?.email ?? '',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.edit, color: AppTheme.primaryGreen),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSettingsTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isDestructive
+              ? Colors.red.withOpacity(0.1)
+              : AppTheme.primaryGreen.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          color: isDestructive ? Colors.red : AppTheme.primaryGreen,
+        ),
+      ),
+      title: Text(
         title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: AppTheme.darkGray,
+          color: isDestructive ? Colors.red : AppTheme.darkGray,
         ),
       ),
-    );
-  }
-
-  Widget _buildProfileSection() {
-    return Card(
-      child: Column(
-        children: [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: context.primaryColor.withValues(alpha: 0.1),
-              child: Icon(Icons.person, color: context.primaryColor),
-            ),
-            title: const Text('Profile Information'),
-            subtitle: const Text('Manage your personal details'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // TODO: Navigate to profile edit screen
-            },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: context.primaryColor.withValues(alpha: 0.1),
-              child: Icon(Icons.work_outline, color: context.primaryColor),
-            ),
-            title: const Text('Professional Information'),
-            subtitle: const Text('Update your skills and experience'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // TODO: Navigate to professional info screen
-            },
-          ),
-        ],
+      subtitle: Text(subtitle),
+      trailing: Icon(
+        Icons.arrow_forward_ios,
+        size: 16,
+        color: Colors.grey[400],
       ),
+      onTap: onTap,
     );
   }
 
-  Widget _buildNotificationsSection() {
-    return Card(
-      child: Column(
-        children: [
-          SwitchListTile(
-            title: const Text('Push Notifications'),
-            subtitle: const Text('Receive notifications on your device'),
-            value: _settings.pushNotifications,
-            onChanged: (value) {
-              setState(() {
-                _settings = _settings.copyWith(pushNotifications: value);
-              });
-            },
+  Widget _buildAppearanceSection(BuildContext context) {
+    return Column(
+      children: [
+        ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.palette, color: AppTheme.primaryGreen),
           ),
-          const Divider(height: 1),
-          SwitchListTile(
-            title: const Text('Email Notifications'),
-            subtitle: const Text('Receive notifications via email'),
-            value: _settings.emailNotifications,
-            onChanged: (value) {
-              setState(() {
-                _settings = _settings.copyWith(emailNotifications: value);
-              });
-            },
+          title: const Text(
+            'Appearance',
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
-          const Divider(height: 1),
-          SwitchListTile(
-            title: const Text('Job Alerts'),
-            subtitle: const Text('Get notified about new job opportunities'),
-            value: _settings.jobAlerts,
-            onChanged: (value) {
-              setState(() {
-                _settings = _settings.copyWith(jobAlerts: value);
-              });
-            },
+          subtitle: const Text('Theme and display settings'),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 72),
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('Dark Mode'),
+                value: false, // TODO: Connect to theme provider
+                onChanged: (value) {
+                  // TODO: Toggle dark mode
+                },
+                dense: true,
+              ),
+              SwitchListTile(
+                title: const Text('Compact View'),
+                value: false, // TODO: Connect to settings
+                onChanged: (value) {
+                  // TODO: Toggle compact view
+                },
+                dense: true,
+              ),
+            ],
           ),
-          const Divider(height: 1),
-          SwitchListTile(
-            title: const Text('Message Notifications'),
-            subtitle: const Text('Get notified about new messages'),
-            value: _settings.messageNotifications,
-            onChanged: (value) {
-              setState(() {
-                _settings = _settings.copyWith(messageNotifications: value);
-              });
-            },
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildPrivacySection() {
-    return Card(
-      child: Column(
-        children: [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: context.primaryColor.withValues(alpha: 0.1),
-              child: Icon(Icons.visibility, color: context.primaryColor),
-            ),
-            title: const Text('Profile Visibility'),
-            subtitle: const Text('Control who can see your profile'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              _showProfileVisibilityDialog();
-            },
-          ),
-          const Divider(height: 1),
-          SwitchListTile(
-            title: const Text('Show Online Status'),
-            subtitle: const Text('Let others know when you\'re online'),
-            value: _settings.showOnlineStatus,
-            onChanged: (value) {
-              setState(() {
-                _settings = _settings.copyWith(showOnlineStatus: value);
-              });
-            },
-          ),
-          const Divider(height: 1),
-          SwitchListTile(
-            title: const Text('Location Sharing'),
-            subtitle: const Text('Share your location with other users'),
-            value: _settings.locationSharing,
-            onChanged: (value) {
-              setState(() {
-                _settings = _settings.copyWith(locationSharing: value);
-              });
-            },
-          ),
-        ],
-      ),
+  void _navigateTo(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Fundi App',
+      applicationVersion: '1.0.0',
+      applicationLegalese: '© 2025 Fundi App. All rights reserved.',
+      children: [
+        const SizedBox(height: 16),
+        const Text('Connect skilled craftsmen with customers'),
+        const SizedBox(height: 16),
+        TextButton(
+          onPressed: () {
+            // TODO: Open terms of service
+          },
+          child: const Text('Terms of Service'),
+        ),
+        TextButton(
+          onPressed: () {
+            // TODO: Open privacy policy
+          },
+          child: const Text('Privacy Policy'),
+        ),
+      ],
     );
   }
 
-  Widget _buildAppSettingsSection() {
-    return Card(
-      child: Column(
-        children: [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: context.primaryColor.withValues(alpha: 0.1),
-              child: Icon(Icons.language, color: context.primaryColor),
-            ),
-            title: const Text('Language'),
-            subtitle: Text(_settings.languageString),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              _showLanguageDialog();
-            },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: context.primaryColor.withValues(alpha: 0.1),
-              child: Icon(Icons.palette, color: context.primaryColor),
-            ),
-            title: const Text('Theme'),
-            subtitle: Text(_settings.theme.name),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              _showThemeDialog();
-            },
-          ),
-          const Divider(height: 1),
-          SwitchListTile(
-            title: const Text('Dark Mode'),
-            subtitle: const Text('Use dark theme'),
-            value: _settings.theme == AppTheme.dark,
-            onChanged: (value) {
-              setState(() {
-                _settings = _settings.copyWith(
-                  theme: value ? AppTheme.dark : AppTheme.light,
-                );
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAccountSection() {
-    return Card(
-      child: Column(
-        children: [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.orange.withValues(alpha: 0.1),
-              child: const Icon(Icons.security, color: Colors.orange),
-            ),
-            title: const Text('Change Password'),
-            subtitle: const Text('Update your account password'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // TODO: Navigate to change password screen
-            },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.blue.withValues(alpha: 0.1),
-              child: const Icon(Icons.phone, color: Colors.blue),
-            ),
-            title: const Text('Phone Number'),
-            subtitle: const Text('Update your phone number'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // TODO: Navigate to phone update screen
-            },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.red.withValues(alpha: 0.1),
-              child: const Icon(Icons.logout, color: Colors.red),
-            ),
-            title: const Text('Sign Out'),
-            subtitle: const Text('Sign out of your account'),
-            onTap: () {
-              _showSignOutDialog();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showProfileVisibilityDialog() {
+  void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Profile Visibility'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text('Public'),
-              subtitle: const Text('Anyone can see your profile'),
-              value: 'public',
-              groupValue: _settings.profileVisibility,
-              onChanged: (value) {
-                setState(() {
-                  _settings = _settings.copyWith(profileVisibility: value!);
-                });
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Private'),
-              subtitle: const Text('Only you can see your profile'),
-              value: 'private',
-              groupValue: _settings.profileVisibility,
-              onChanged: (value) {
-                setState(() {
-                  _settings = _settings.copyWith(profileVisibility: value!);
-                });
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLanguageDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Language'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text('English'),
-              value: 'English',
-              groupValue: _settings.language.toString(),
-              onChanged: (value) {
-                setState(() {
-                  _settings = _settings.copyWith(languageString: value!);
-                });
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Swahili'),
-              value: 'Swahili',
-              groupValue: _settings.language.toString(),
-              onChanged: (value) {
-                setState(() {
-                  _settings = _settings.copyWith(languageString: value!);
-                });
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showThemeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Theme'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<AppTheme>(
-              title: const Text('Light'),
-              value: AppTheme.light,
-              groupValue: _settings.theme,
-              onChanged: (value) {
-                setState(() {
-                  _settings = _settings.copyWith(theme: value!);
-                });
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<AppTheme>(
-              title: const Text('Dark'),
-              value: AppTheme.dark,
-              groupValue: _settings.theme,
-              onChanged: (value) {
-                setState(() {
-                  _settings = _settings.copyWith(theme: value!);
-                });
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showSignOutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -557,8 +289,13 @@ class _SettingsScreenState extends State<SettingsScreen>
             onPressed: () {
               Navigator.pop(context);
               Provider.of<AuthProvider>(context, listen: false).logout();
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
             },
-            child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

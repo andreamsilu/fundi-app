@@ -16,6 +16,7 @@ class RoleGuard {
       case '/notifications':
       case '/settings':
       case '/help':
+      case '/portfolio-details':
         return true;
 
       // Customer-only routes
@@ -24,8 +25,6 @@ class RoleGuard {
 
       // Fundi-only routes
       case '/create-portfolio':
-      case '/portfolio-gallery':
-      case '/portfolio-details':
         return userRoles.contains(UserRole.fundi);
 
       // Admin-only routes (if any)
@@ -35,12 +34,14 @@ class RoleGuard {
       // Job-related routes (both customers and fundis can access)
       case '/create-job':
       case '/job-details':
-        return userRoles.contains(UserRole.customer) || userRoles.contains(UserRole.fundi);
+        return userRoles.contains(UserRole.customer) ||
+            userRoles.contains(UserRole.fundi);
 
       // Search and messaging (both customers and fundis can access)
       case '/search':
       case '/chat':
-        return userRoles.contains(UserRole.customer) || userRoles.contains(UserRole.fundi);
+        return userRoles.contains(UserRole.customer) ||
+            userRoles.contains(UserRole.fundi);
 
       // Default: deny access
       default:
@@ -49,15 +50,21 @@ class RoleGuard {
   }
 
   /// Check if user can access a specific route based on a single role (backward compatibility)
-  static bool canAccessRouteWithSingleRole(String routeName, UserRole userRole) {
+  static bool canAccessRouteWithSingleRole(
+    String routeName,
+    UserRole userRole,
+  ) {
     return canAccessRoute(routeName, [userRole]);
   }
 
   /// Check if user can access route with context
-  static bool canAccessRouteWithContext(BuildContext context, String routeName) {
+  static bool canAccessRouteWithContext(
+    BuildContext context,
+    String routeName,
+  ) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     if (user == null) {
       return false;
     }
@@ -87,7 +94,7 @@ class RoleGuard {
   static String getRedirectRouteWithContext(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     if (user == null) {
       return '/login';
     }
@@ -99,7 +106,7 @@ class RoleGuard {
   static bool hasRole(BuildContext context, UserRole requiredRole) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     return user?.roles.contains(requiredRole) ?? false;
   }
 
@@ -107,9 +114,9 @@ class RoleGuard {
   static bool hasAnyRole(BuildContext context, List<UserRole> requiredRoles) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     if (user == null) return false;
-    
+
     return requiredRoles.any((role) => user.roles.contains(role));
   }
 
@@ -171,7 +178,7 @@ class RoleGuard {
             route: '/dashboard',
             icon: Icons.home,
             label: 'Home',
-            description: 'Find Jobs',
+            description: 'Available Jobs',
           ),
           NavigationItem(
             route: '/search',
@@ -217,6 +224,90 @@ class RoleGuard {
     }
   }
 
+  /// Get bottom navigation items for a specific role (for BottomNavigationBar)
+  /// Returns fewer items optimized for bottom navigation (3-4 items max)
+  static List<BottomNavItem> getBottomNavItemsForRole(UserRole role) {
+    switch (role) {
+      case UserRole.customer:
+        return [
+          BottomNavItem(
+            icon: Icons.work_outline,
+            activeIcon: Icons.work,
+            label: 'My Jobs',
+            route: '/my-jobs',
+          ),
+          BottomNavItem(
+            icon: Icons.people_outline,
+            activeIcon: Icons.people,
+            label: 'Find Fundis',
+            route: '/fundi-feed',
+          ),
+          BottomNavItem(
+            icon: Icons.notifications_outlined,
+            activeIcon: Icons.notifications,
+            label: 'Alerts',
+            route: '/notifications',
+          ),
+          BottomNavItem(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: 'Profile',
+            route: '/profile',
+          ),
+        ];
+
+      case UserRole.fundi:
+        return [
+          BottomNavItem(
+            icon: Icons.work_outline,
+            activeIcon: Icons.work,
+            label: 'Available Jobs',
+            route: '/dashboard',
+          ),
+          BottomNavItem(
+            icon: Icons.assignment_outlined,
+            activeIcon: Icons.assignment,
+            label: 'Applied',
+            route: '/applied-jobs',
+          ),
+          BottomNavItem(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: 'Profile',
+            route: '/profile',
+          ),
+        ];
+
+      case UserRole.admin:
+        return [
+          BottomNavItem(
+            icon: Icons.dashboard_outlined,
+            activeIcon: Icons.dashboard,
+            label: 'Dashboard',
+            route: '/dashboard',
+          ),
+          BottomNavItem(
+            icon: Icons.admin_panel_settings_outlined,
+            activeIcon: Icons.admin_panel_settings,
+            label: 'Admin',
+            route: '/admin',
+          ),
+          BottomNavItem(
+            icon: Icons.people_outline,
+            activeIcon: Icons.people,
+            label: 'Users',
+            route: '/admin-users',
+          ),
+          BottomNavItem(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: 'Profile',
+            route: '/profile',
+          ),
+        ];
+    }
+  }
+
   /// Show access denied dialog
   static void showAccessDeniedDialog(BuildContext context, {String? message}) {
     showDialog(
@@ -254,14 +345,18 @@ class RoleGuard {
     } else {
       showAccessDeniedDialog(context);
       if (fallbackRoute != null) {
-        return Navigator.pushNamed<T>(context, fallbackRoute, arguments: arguments);
+        return Navigator.pushNamed<T>(
+          context,
+          fallbackRoute,
+          arguments: arguments,
+        );
       }
       return Future.value(null);
     }
   }
 }
 
-/// Navigation item model
+/// Navigation item model (for drawer/menu navigation)
 class NavigationItem {
   final String route;
   final IconData icon;
@@ -274,6 +369,23 @@ class NavigationItem {
     required this.icon,
     required this.label,
     required this.description,
+    this.isEnabled = true,
+  });
+}
+
+/// Bottom navigation item model (for BottomNavigationBar)
+class BottomNavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final String route;
+  final bool isEnabled;
+
+  const BottomNavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.route,
     this.isEnabled = true,
   });
 }

@@ -45,7 +45,7 @@ class NotificationService {
       } else {
         return NotificationResult(
           success: false,
-          message: response.message ?? 'Failed to load notifications. Please try again.',
+          message: response.message,
         );
       }
     } catch (e) {
@@ -68,7 +68,7 @@ class NotificationService {
       } else {
         return ServiceResult(
           success: false,
-          message: response.message ?? 'Failed to mark notification as read.',
+          message: response.message,
         );
       }
     } catch (e) {
@@ -93,7 +93,7 @@ class NotificationService {
       } else {
         return ServiceResult(
           success: false,
-          message: response.message ?? 'Failed to mark all notifications as read.',
+          message: response.message,
         );
       }
     } catch (e) {
@@ -116,7 +116,7 @@ class NotificationService {
       } else {
         return ServiceResult(
           success: false,
-          message: response.message ?? 'Failed to delete notification.',
+          message: response.message,
         );
       }
     } catch (e) {
@@ -139,7 +139,7 @@ class NotificationService {
       } else {
         return ServiceResult(
           success: false,
-          message: response.message ?? 'Failed to clear all notifications.',
+          message: response.message,
         );
       }
     } catch (e) {
@@ -164,7 +164,7 @@ class NotificationService {
       } else {
         return NotificationSettingsResult(
           success: false,
-          message: response.message ?? 'Failed to load notification settings.',
+          message: response.message,
         );
       }
     } catch (e) {
@@ -191,7 +191,7 @@ class NotificationService {
       } else {
         return ServiceResult(
           success: false,
-          message: response.message ?? 'Failed to update notification settings.',
+          message: response.message,
         );
       }
     } catch (e) {

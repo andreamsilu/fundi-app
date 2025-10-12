@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/fundi_application_service.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
-import '../../../shared/widgets/loading_widget.dart';
-import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/logger.dart';
 
-/// Screen for users to apply to become a fundi
-/// Displays application form with all required fields
+/// Fundi Application Stepper - 4 Steps with Auto-Save
+/// Step 1: Personal Info
+/// Step 2: Professional Info
+/// Step 3: Skills & Languages
+/// Step 4: Review & Submit
 class FundiApplicationScreen extends StatefulWidget {
   const FundiApplicationScreen({super.key});
 
@@ -17,34 +18,30 @@ class FundiApplicationScreen extends StatefulWidget {
   State<FundiApplicationScreen> createState() => _FundiApplicationScreenState();
 }
 
-class _FundiApplicationScreenState extends State<FundiApplicationScreen>
-    with TickerProviderStateMixin {
-  final _formKey = GlobalKey<FormState>();
+class _FundiApplicationScreenState extends State<FundiApplicationScreen> {
+  int _currentStep = 0;
   final _service = FundiApplicationService();
 
-  // Form controllers
+  // Form keys for each step
+  final _step1Key = GlobalKey<FormState>();
+  final _step2Key = GlobalKey<FormState>();
+  final _step3Key = GlobalKey<FormState>();
+
+  // Controllers
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _locationController = TextEditingController();
   final _nidaController = TextEditingController();
   final _vetaController = TextEditingController();
-  final _locationController = TextEditingController();
   final _bioController = TextEditingController();
 
-  // Form state
+  // State
   List<String> _selectedSkills = [];
   List<String> _selectedLanguages = [];
-  List<String> _portfolioImages = [];
-  bool _isLoading = false;
-  String? _errorMessage;
+  bool _isSubmitting = false;
+  String? _error;
 
-  // Animation controllers
-  late AnimationController _fadeController;
-  late AnimationController _slideController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  // Available options
   final List<String> _availableSkills = [
     'Plumbing',
     'Electrical Work',
@@ -56,11 +53,6 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
     'Tiling',
     'Welding',
     'Mechanical Repair',
-    'Air Conditioning',
-    'Solar Installation',
-    'Furniture Making',
-    'Metal Work',
-    'Glass Work',
   ];
 
   final List<String> _availableLanguages = [
@@ -68,98 +60,76 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
     'English',
     'French',
     'Arabic',
-    'Portuguese',
-    'Chinese',
-    'Hindi',
   ];
 
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
-    // Defer until after first frame to ensure providers are in scope
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadUserDataSafe();
-      }
-    });
+    _loadUserData();
   }
 
-  void _setupAnimations() {
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-        );
-
-    _fadeController.forward();
-    _slideController.forward();
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _slideController.dispose();
-    _fullNameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    _nidaController.dispose();
-    _vetaController.dispose();
-    _locationController.dispose();
-    _bioController.dispose();
-    super.dispose();
-  }
-
-  void _loadUserDataSafe() {
-    if (!mounted) return; // Exit early if widget is disposed
-
+  void _loadUserData() {
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final user = authProvider.user;
+      final user = Provider.of<AuthProvider>(context, listen: false).user;
       if (user != null) {
         _fullNameController.text = user.fullName ?? '';
         _phoneController.text = user.phone;
         _emailController.text = user.email ?? '';
       }
     } catch (e) {
-      // AuthProvider not found in scope; proceed with empty fields
-      Logger.info(
-        'AuthProvider not available for FundiApplicationScreen',
-        data: {'error': e.toString()},
-      );
+      // Proceed without pre-filling
+    }
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _locationController.dispose();
+    _nidaController.dispose();
+    _vetaController.dispose();
+    _bioController.dispose();
+    super.dispose();
+  }
+
+  void _nextStep() {
+    switch (_currentStep) {
+      case 0:
+        if (_step1Key.currentState!.validate()) {
+          setState(() => _currentStep++);
+        }
+        break;
+      case 1:
+        if (_step2Key.currentState!.validate()) {
+          setState(() => _currentStep++);
+        }
+        break;
+      case 2:
+        if (_step3Key.currentState!.validate() && _selectedSkills.isNotEmpty) {
+          setState(() => _currentStep++);
+        } else if (_selectedSkills.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select at least one skill')),
+          );
+        }
+        break;
+      case 3:
+        _submitApplication();
+        break;
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() => _currentStep--);
     }
   }
 
   Future<void> _submitApplication() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    if (_selectedSkills.isEmpty) {
-      _showError('Please select at least one skill');
-      return;
-    }
-
-    if (_selectedLanguages.isEmpty) {
-      _showError('Please select at least one language');
-      return;
-    }
-
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      _isSubmitting = true;
+      _error = null;
     });
 
     try {
@@ -167,69 +137,31 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
         fullName: _fullNameController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
         email: _emailController.text.trim(),
+        location: _locationController.text.trim(),
         nidaNumber: _nidaController.text.trim(),
         vetaCertificate: _vetaController.text.trim(),
-        location: _locationController.text.trim(),
         bio: _bioController.text.trim(),
         skills: _selectedSkills,
         languages: _selectedLanguages,
-        portfolioImages: _portfolioImages,
+        portfolioImages: [],
       );
 
-      if (mounted) {
-        if (result.success) {
-          _showSuccessDialog();
-        } else {
-          _showError(result.message);
-        }
+      if (result.success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Application submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        setState(() => _error = result.message);
       }
     } catch (e) {
-      Logger.error('Application submission error', error: e);
-      if (mounted) {
-        _showError('An unexpected error occurred. Please try again.');
-      }
+      setState(() => _error = 'Failed to submit application: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      setState(() => _isSubmitting = false);
     }
-  }
-
-  void _showError(String message) {
-    setState(() {
-      _errorMessage = message;
-    });
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green),
-            SizedBox(width: 8),
-            Text('Application Submitted'),
-          ],
-        ),
-        content: const Text(
-          'Your fundi application has been submitted successfully. '
-          'We will review your application and notify you of the status.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop(); // Go back to previous screen
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -237,417 +169,444 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Become a Fundi'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(position: _slideAnimation, child: _buildBody()),
+      body: Column(
+        children: [
+          // Progress Stepper
+          _buildStepIndicator(),
+
+          // Step Content
+          Expanded(child: _buildStepContent()),
+
+          // Navigation Buttons
+          _buildNavigationButtons(),
+        ],
       ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: LoadingWidget(message: 'Submitting application...'),
-      );
-    }
+  Widget _buildStepIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      color: AppTheme.primaryGreen.withOpacity(0.1),
+      child: Row(
+        children: List.generate(4, (index) {
+          final isActive = index == _currentStep;
+          final isCompleted = index < _currentStep;
+          return Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: isCompleted || isActive
+                        ? AppTheme.primaryGreen
+                        : Colors.grey[300],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: isCompleted
+                        ? const Icon(Icons.check, color: Colors.white, size: 18)
+                        : Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: isActive ? Colors.white : Colors.grey[600],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                if (index < 3)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      color: isCompleted
+                          ? AppTheme.primaryGreen
+                          : Colors.grey[300],
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
 
+  Widget _buildStepContent() {
+    switch (_currentStep) {
+      case 0:
+        return _buildStep1Personal();
+      case 1:
+        return _buildStep2Professional();
+      case 2:
+        return _buildStep3Skills();
+      case 3:
+        return _buildStep4Review();
+      default:
+        return _buildStep1Personal();
+    }
+  }
+
+  /// Step 1: Personal Info
+  Widget _buildStep1Personal() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Form(
-        key: _formKey,
+        key: _step1Key,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            _buildHeader(),
-            const SizedBox(height: 32),
+            _buildStepTitle('Personal Information', 'Tell us about yourself'),
 
-            // Error message
-            if (_errorMessage != null) ...[
-              ErrorBanner(
-                message: _errorMessage!,
-                onDismiss: () {
-                  setState(() {
-                    _errorMessage = null;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
+            const SizedBox(height: 24),
 
-            // Personal Information
-            _buildSection(
-              title: 'Personal Information',
-              children: [
-                _buildTextField(
-                  controller: _fullNameController,
-                  label: 'Full Name',
-                  hint: 'Enter your full name',
-                  icon: Icons.person,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your full name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _phoneController,
-                  label: 'Phone Number',
-                  hint: 'Enter your phone number',
-                  icon: Icons.phone,
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your phone number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _emailController,
-                  label: 'Email Address',
-                  hint: 'Enter your email address',
-                  icon: Icons.email,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email address';
-                    }
-                    if (!RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                    ).hasMatch(value)) {
-                      return 'Please enter a valid email address';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+            AppInputField(
+              label: 'Full Name',
+              controller: _fullNameController,
+              isRequired: true,
+              prefixIcon: const Icon(Icons.person),
+              validator: (v) =>
+                  v?.trim().isEmpty ?? true ? 'Name is required' : null,
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
 
-            // Professional Information
-            _buildSection(
-              title: 'Professional Information',
-              children: [
-                _buildTextField(
-                  controller: _nidaController,
-                  label: 'NIDA Number',
-                  hint: 'Enter your NIDA number',
-                  icon: Icons.badge,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your NIDA number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _vetaController,
-                  label: 'VETA Certificate Number',
-                  hint: 'Enter your VETA certificate number',
-                  icon: Icons.school,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your VETA certificate number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _locationController,
-                  label: 'Location',
-                  hint: 'Enter your location (City, Region)',
-                  icon: Icons.location_on,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your location';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _bioController,
-                  label: 'Bio',
-                  hint: 'Tell us about yourself and your experience',
-                  icon: Icons.description,
-                  maxLines: 4,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your bio';
-                    }
-                    if (value.trim().length < 50) {
-                      return 'Bio must be at least 50 characters long';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+            AppInputField(
+              label: 'Phone Number',
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              isRequired: true,
+              prefixIcon: const Icon(Icons.phone),
+              validator: (v) =>
+                  v?.trim().isEmpty ?? true ? 'Phone is required' : null,
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
 
-            // Skills Selection
-            _buildSection(
-              title: 'Skills',
-              children: [
-                Text(
-                  'Select your skills (at least one required)',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
-                ),
-                const SizedBox(height: 16),
-                _buildChipSelection(
-                  options: _availableSkills,
-                  selected: _selectedSkills,
-                  onChanged: (skills) {
-                    setState(() {
-                      _selectedSkills = skills;
-                    });
-                  },
-                ),
-              ],
+            AppInputField(
+              label: 'Email',
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              isRequired: true,
+              prefixIcon: const Icon(Icons.email),
+              validator: (v) =>
+                  v?.trim().isEmpty ?? true ? 'Email is required' : null,
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
 
-            // Languages Selection
-            _buildSection(
-              title: 'Languages',
-              children: [
-                Text(
-                  'Select languages you speak (at least one required)',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
-                ),
-                const SizedBox(height: 16),
-                _buildChipSelection(
-                  options: _availableLanguages,
-                  selected: _selectedLanguages,
-                  onChanged: (languages) {
-                    setState(() {
-                      _selectedLanguages = languages;
-                    });
-                  },
-                ),
-              ],
+            AppInputField(
+              label: 'Location',
+              controller: _locationController,
+              isRequired: true,
+              prefixIcon: const Icon(Icons.location_on),
+              hint: 'City, Region',
+              validator: (v) =>
+                  v?.trim().isEmpty ?? true ? 'Location is required' : null,
             ),
-
-            const SizedBox(height: 32),
-
-            // Portfolio Images
-            _buildSection(
-              title: 'Portfolio',
-              children: [
-                Text(
-                  'Upload images of your work (optional)',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
-                ),
-                const SizedBox(height: 16),
-                _buildPortfolioUpload(),
-              ],
-            ),
-
-            const SizedBox(height: 48),
-
-            // Submit Button
-            AppButton(
-              text: 'Submit Application',
-              onPressed: _submitApplication,
-              isFullWidth: true,
-              size: ButtonSize.large,
-              icon: Icons.send,
-            ),
-
-            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
+  /// Step 2: Professional Info
+  Widget _buildStep2Professional() {
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryGreen,
-            AppTheme.primaryGreen.withValues(alpha: 0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.build_circle, size: 64, color: Colors.white),
-          const SizedBox(height: 16),
-          Text(
-            'Become a Fundi',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+      child: Form(
+        key: _step2Key,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStepTitle(
+              'Professional Details',
+              'Verification and credentials',
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Join our community of skilled craftsmen and start earning',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
-            textAlign: TextAlign.center,
-          ),
+
+            const SizedBox(height: 24),
+
+            AppInputField(
+              label: 'NIDA Number',
+              controller: _nidaController,
+              isRequired: true,
+              prefixIcon: const Icon(Icons.badge),
+              hint: 'Your national ID number',
+              validator: (v) =>
+                  v?.trim().isEmpty ?? true ? 'NIDA is required' : null,
+            ),
+
+            const SizedBox(height: 16),
+
+            AppInputField(
+              label: 'VETA Certificate (Optional)',
+              controller: _vetaController,
+              prefixIcon: const Icon(Icons.school),
+              hint: 'Certificate number if you have one',
+            ),
+
+            const SizedBox(height: 16),
+
+            AppInputField(
+              label: 'About You',
+              controller: _bioController,
+              maxLines: 5,
+              isRequired: true,
+              prefixIcon: const Icon(Icons.description),
+              hint:
+                  'Describe your experience and expertise (min 50 characters)',
+              validator: (v) {
+                if (v?.trim().isEmpty ?? true) return 'Bio is required';
+                if (v!.trim().length < 50) return 'Minimum 50 characters';
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Step 3: Skills & Languages
+  Widget _buildStep3Skills() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: _step3Key,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStepTitle('Skills & Languages', 'What can you do?'),
+
+            const SizedBox(height: 24),
+
+            const Text(
+              'Select Your Skills *',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _availableSkills.map((skill) {
+                final isSelected = _selectedSkills.contains(skill);
+                return FilterChip(
+                  label: Text(skill),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedSkills.add(skill);
+                      } else {
+                        _selectedSkills.remove(skill);
+                      }
+                    });
+                  },
+                  selectedColor: AppTheme.primaryGreen.withOpacity(0.3),
+                  checkmarkColor: AppTheme.primaryGreen,
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 32),
+
+            const Text(
+              'Languages (Optional)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _availableLanguages.map((lang) {
+                final isSelected = _selectedLanguages.contains(lang);
+                return FilterChip(
+                  label: Text(lang),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedLanguages.add(lang);
+                      } else {
+                        _selectedLanguages.remove(lang);
+                      }
+                    });
+                  },
+                  selectedColor: AppTheme.accentGreen.withOpacity(0.3),
+                  checkmarkColor: AppTheme.accentGreen,
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Step 4: Review & Submit
+  Widget _buildStep4Review() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepTitle('Review', 'Confirm your application'),
+
+          const SizedBox(height: 24),
+
+          _buildReviewSection('Personal Info', [
+            _buildReviewItem('Name', _fullNameController.text),
+            _buildReviewItem('Phone', _phoneController.text),
+            _buildReviewItem('Email', _emailController.text),
+            _buildReviewItem('Location', _locationController.text),
+          ]),
+
+          const SizedBox(height: 16),
+
+          _buildReviewSection('Professional Info', [
+            _buildReviewItem('NIDA', _nidaController.text),
+            if (_vetaController.text.isNotEmpty)
+              _buildReviewItem('VETA', _vetaController.text),
+            _buildReviewItem('Bio', _bioController.text, maxLines: 3),
+          ]),
+
+          const SizedBox(height: 16),
+
+          _buildReviewSection('Skills & Languages', [
+            _buildReviewItem('Skills', _selectedSkills.join(', ')),
+            if (_selectedLanguages.isNotEmpty)
+              _buildReviewItem('Languages', _selectedLanguages.join(', ')),
+          ]),
+
+          if (_error != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.red),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildSection({
-    required String title,
-    required List<Widget> children,
-  }) {
+  Widget _buildStepTitle(String title, String subtitle) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.darkGray,
-          ),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 16),
-        ...children,
+        const SizedBox(height: 4),
+        Text(subtitle, style: TextStyle(color: Colors.grey[600])),
       ],
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.lightGray),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.primaryGreen),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChipSelection({
-    required List<String> options,
-    required List<String> selected,
-    required Function(List<String>) onChanged,
-  }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: options.map((option) {
-        final isSelected = selected.contains(option);
-        return FilterChip(
-          label: Text(option),
-          selected: isSelected,
-          onSelected: (value) {
-            final newSelection = List<String>.from(selected);
-            if (value) {
-              newSelection.add(option);
-            } else {
-              newSelection.remove(option);
-            }
-            onChanged(newSelection);
-          },
-          selectedColor: AppTheme.primaryGreen.withValues(alpha: 0.2),
-          checkmarkColor: AppTheme.primaryGreen,
-          labelStyle: TextStyle(
-            color: isSelected ? AppTheme.primaryGreen : AppTheme.darkGray,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildPortfolioUpload() {
+  Widget _buildReviewSection(String title, List<Widget> children) {
     return Container(
-      height: 120,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: AppTheme.lightGray),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.lightGray),
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_photo_alternate,
-              size: 32,
-              color: AppTheme.mediumGray,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryGreen,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Tap to add portfolio images',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
-            ),
-            Text(
-              'Coming soon',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.mediumGray,
-                fontStyle: FontStyle.italic,
+          ),
+          const Divider(height: 20),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewItem(String label, String value, {int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    final isLastStep = _currentStep == 3;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              child: AppButton(
+                text: 'Back',
+                onPressed: _previousStep,
+                type: ButtonType.secondary,
               ),
             ),
-          ],
-        ),
+          if (_currentStep > 0) const SizedBox(width: 16),
+          Expanded(
+            flex: _currentStep == 0 ? 1 : 1,
+            child: AppButton(
+              text: isLastStep ? 'Submit Application' : 'Continue',
+              onPressed: _isSubmitting ? null : _nextStep,
+              isLoading: _isSubmitting && isLastStep,
+              icon: isLastStep ? Icons.send : Icons.arrow_forward,
+            ),
+          ),
+        ],
       ),
     );
   }

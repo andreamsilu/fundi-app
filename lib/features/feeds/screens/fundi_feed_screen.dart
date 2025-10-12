@@ -5,14 +5,16 @@ import '../widgets/enhanced_fundi_filters.dart';
 import '../widgets/autocomplete_search_field.dart';
 import '../models/fundi_model.dart';
 import '../../auth/services/auth_service.dart';
-import 'fundi_profile_screen.dart';
+import 'comprehensive_fundi_profile_screen.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 
 class FundiFeedScreen extends StatefulWidget {
   final bool showAppBar;
+  final String? initialSearch;
 
-  const FundiFeedScreen({Key? key, this.showAppBar = false}) : super(key: key);
+  const FundiFeedScreen({Key? key, this.showAppBar = false, this.initialSearch})
+    : super(key: key);
 
   @override
   State<FundiFeedScreen> createState() => _FundiFeedScreenState();
@@ -44,6 +46,12 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+
+    // Set initial search query if provided
+    if (widget.initialSearch != null && widget.initialSearch!.isNotEmpty) {
+      _searchQuery = widget.initialSearch!;
+    }
+
     _loadFundis();
   }
 
@@ -235,7 +243,7 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => FundiProfileScreen(fundi: fundi),
+          builder: (context) => ComprehensiveFundiProfileScreen(fundi: fundi),
         ),
       );
     } catch (e) {
@@ -261,6 +269,7 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
               title: const Text('Find Fundis'),
               backgroundColor: Theme.of(context).primaryColor,
               foregroundColor: Colors.white,
+              iconTheme: const IconThemeData(color: Colors.white),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.filter_list),

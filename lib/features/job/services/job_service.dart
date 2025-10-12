@@ -1,3 +1,4 @@
+import 'dart:io';
 import '../models/job_model.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
@@ -529,6 +530,77 @@ class JobService {
       return ApplicationResult.failure(message: 'An unexpected error occurred');
     }
   }
+
+  /// Upload job media file
+  Future<JobMediaUploadResult> uploadJobMedia({
+    required String jobId,
+    required File file,
+    required String mediaType, // 'image' or 'video'
+    int? orderIndex,
+    Function(int sent, int total)? onProgress,
+  }) async {
+    try {
+      Logger.userAction(
+        'Uploading job media',
+        data: {'job_id': jobId, 'media_type': mediaType},
+      );
+
+      final response = await _apiClient.uploadFile<Map<String, dynamic>>(
+        ApiEndpoints.uploadJobMedia,
+        file,
+        fieldName: 'file',
+        additionalData: {
+          'job_id': jobId,
+          'media_type': mediaType,
+          if (orderIndex != null) 'order_index': orderIndex,
+        },
+        onSendProgress: onProgress,
+        fromJson: (data) => data as Map<String, dynamic>,
+      );
+
+      if (response.success && response.data != null) {
+        Logger.userAction('Job media uploaded successfully');
+        return JobMediaUploadResult.success(
+          mediaId: response.data!['id'].toString(),
+          fileUrl: response.data!['file_url'] as String,
+          filePath: response.data!['file_path'] as String,
+        );
+      } else {
+        Logger.warning('Failed to upload job media: ${response.message}');
+        return JobMediaUploadResult.failure(message: response.message);
+      }
+    } on ApiError catch (e) {
+      Logger.error('Upload job media API error', error: e);
+      return JobMediaUploadResult.failure(message: e.message);
+    } catch (e) {
+      Logger.error('Upload job media unexpected error', error: e);
+      return JobMediaUploadResult.failure(message: 'Upload failed: $e');
+    }
+  }
+
+  /// Upload multiple job images
+  Future<List<JobMediaUploadResult>> uploadJobImages({
+    required String jobId,
+    required List<File> imageFiles,
+    Function(int fileIndex, int sent, int total)? onProgress,
+  }) async {
+    final results = <JobMediaUploadResult>[];
+
+    for (var i = 0; i < imageFiles.length; i++) {
+      final result = await uploadJobMedia(
+        jobId: jobId,
+        file: imageFiles[i],
+        mediaType: 'image',
+        orderIndex: i,
+        onProgress: onProgress != null
+            ? (sent, total) => onProgress(i, sent, total)
+            : null,
+      );
+      results.add(result);
+    }
+
+    return results;
+  }
 }
 
 /// Job result wrapper
@@ -654,3 +726,39 @@ class ApplicationListResult {
     );
   }
 }
+
+/// Job media upload result wrapper
+class JobMediaUploadResult {
+  final bool success;
+  final String? mediaId;
+  final String? fileUrl;
+  final String? filePath;
+  final String message;
+
+  JobMediaUploadResult._({
+    required this.success,
+    this.mediaId,
+    this.fileUrl,
+    this.filePath,
+    required this.message,
+  });
+
+  factory JobMediaUploadResult.success({
+    required String mediaId,
+    required String fileUrl,
+    required String filePath,
+  }) {
+    return JobMediaUploadResult._(
+      success: true,
+      mediaId: mediaId,
+      fileUrl: fileUrl,
+      filePath: filePath,
+      message: 'Upload successful',
+    );
+  }
+
+  factory JobMediaUploadResult.failure({required String message}) {
+    return JobMediaUploadResult._(success: false, message: message);
+  }
+}
+

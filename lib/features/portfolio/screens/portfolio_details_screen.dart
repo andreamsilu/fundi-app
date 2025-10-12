@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/portfolio_model.dart';
 import '../../../shared/widgets/button_widget.dart';
-import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/extensions/string_extensions.dart';
 import '../../auth/providers/auth_provider.dart';
 
 /// Portfolio details screen showing comprehensive portfolio information
@@ -389,7 +387,8 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
                 radius: 25,
                 backgroundColor: context.primaryColor.withValues(alpha: 0.1),
                 child: Text(
-                  widget.portfolio.fundiName?.substring(0, 1).toUpperCase() ?? 'F',
+                  widget.portfolio.fundiName?.substring(0, 1).toUpperCase() ??
+                      'F',
                   style: TextStyle(
                     color: context.primaryColor,
                     fontWeight: FontWeight.bold,
@@ -471,7 +470,12 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
               AppButton(
                 text: 'View More Work',
                 onPressed: () {
-                  // TODO: Navigate to fundi's portfolio gallery
+                  // Navigate to fundi's profile (portfolio is part of profile)
+                  Navigator.pushNamed(
+                    context,
+                    '/profile',
+                    arguments: {'userId': widget.portfolio.fundiId},
+                  );
                 },
                 type: ButtonType.secondary,
                 isFullWidth: true,

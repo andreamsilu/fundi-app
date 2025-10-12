@@ -159,7 +159,7 @@ class PortfolioModel {
             ? imageUrls
             : null, // Additional field for mobile
         videoUrls: json['video_urls'] != null
-            ? List<String>.from(json['video_urls'] as List)
+            ? (json['video_urls'] as List).map((e) => e.toString()).toList()
             : null, // Additional field for mobile
         location: json['location'] as String?, // Additional field for mobile
         clientName:
@@ -264,96 +264,6 @@ class PortfolioModel {
   }
 }
 
-/// Portfolio category enumeration
-enum PortfolioCategory {
-  general('General'),
-  plumbing('Plumbing'),
-  electrical('Electrical'),
-  carpentry('Carpentry'),
-  masonry('Masonry'),
-  painting('Painting'),
-  roofing('Roofing'),
-  flooring('Flooring'),
-  hvac('HVAC'),
-  landscaping('Landscaping'),
-  automotive('Automotive'),
-  electronics('Electronics'),
-  furniture('Furniture'),
-  metalwork('Metalwork'),
-  other('Other');
-
-  const PortfolioCategory(this.value);
-  final String value;
-
-  static PortfolioCategory fromString(String value) {
-    switch (value.toLowerCase()) {
-      case 'general':
-        return PortfolioCategory.general;
-      case 'plumbing':
-        return PortfolioCategory.plumbing;
-      case 'electrical':
-        return PortfolioCategory.electrical;
-      case 'carpentry':
-        return PortfolioCategory.carpentry;
-      case 'masonry':
-        return PortfolioCategory.masonry;
-      case 'painting':
-        return PortfolioCategory.painting;
-      case 'roofing':
-        return PortfolioCategory.roofing;
-      case 'flooring':
-        return PortfolioCategory.flooring;
-      case 'hvac':
-        return PortfolioCategory.hvac;
-      case 'landscaping':
-        return PortfolioCategory.landscaping;
-      case 'automotive':
-        return PortfolioCategory.automotive;
-      case 'electronics':
-        return PortfolioCategory.electronics;
-      case 'furniture':
-        return PortfolioCategory.furniture;
-      case 'metalwork':
-        return PortfolioCategory.metalwork;
-      case 'other':
-        return PortfolioCategory.other;
-      default:
-        return PortfolioCategory.other;
-    }
-  }
-
-  String get displayName {
-    switch (this) {
-      case PortfolioCategory.general:
-        return 'General';
-      case PortfolioCategory.plumbing:
-        return 'Plumbing';
-      case PortfolioCategory.electrical:
-        return 'Electrical';
-      case PortfolioCategory.carpentry:
-        return 'Carpentry';
-      case PortfolioCategory.masonry:
-        return 'Masonry';
-      case PortfolioCategory.painting:
-        return 'Painting';
-      case PortfolioCategory.roofing:
-        return 'Roofing';
-      case PortfolioCategory.flooring:
-        return 'Flooring';
-      case PortfolioCategory.hvac:
-        return 'HVAC';
-      case PortfolioCategory.landscaping:
-        return 'Landscaping';
-      case PortfolioCategory.automotive:
-        return 'Automotive';
-      case PortfolioCategory.electronics:
-        return 'Electronics';
-      case PortfolioCategory.furniture:
-        return 'Furniture';
-      case PortfolioCategory.metalwork:
-        return 'Metalwork';
-      case PortfolioCategory.other:
-        return 'Other';
-    }
-  }
-}
+/// Portfolio category enumeration - REMOVED
+/// All categories now loaded dynamically from API
+/// No hardcoded categories allowed

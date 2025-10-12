@@ -208,52 +208,8 @@ class NavigationService {
     return route?.settings.name;
   }
 
-  /// Show dialog with token expiration message
-  Future<void> showTokenExpirationDialog({
-    String? message,
-    VoidCallback? onOkPressed,
-  }) async {
-    try {
-      final context = currentContext;
-      if (context == null) {
-        Logger.error(
-          'Navigation service: No context available for showing token expiration dialog',
-        );
-        return;
-      }
-
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Session Expired'),
-            content: Text(
-              message ?? 'Your session has expired. Please log in again.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  onOkPressed?.call();
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    } catch (e) {
-      Logger.error(
-        'Navigation service: Failed to show token expiration dialog',
-        error: e,
-      );
-    }
-  }
-
   /// Reset navigation state
   void reset() {
     _isRedirecting = false;
   }
 }
-

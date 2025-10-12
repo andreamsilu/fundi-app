@@ -15,7 +15,6 @@ The `NavigationService` provides global navigation capabilities and handles redi
 **Key Features:**
 - Global navigation key for app-wide navigation
 - `redirectToLogin()` method to clear navigation stack and redirect to login
-- `showTokenExpirationDialog()` to display user-friendly expiration messages
 - Prevents duplicate redirects with `_isRedirecting` flag
 
 **Usage:**
@@ -32,7 +31,7 @@ await navigationService.redirectToLogin(
 Enhanced session manager that handles token expiration and user logout.
 
 **Key Methods:**
-- `handleTokenExpiration()` - Shows dialog and redirects to login
+- `handleTokenExpiration()` - Directly redirects to login on token expiration
 - `forceLogout()` - Clears session and redirects to login
 - `clearSession()` - Removes all stored authentication data
 
@@ -90,10 +89,9 @@ graph TD
     F -->|200-299| G[Success]
     F -->|401| H[Handle Unauthorized]
     F -->|403| I[Handle Forbidden]
-    D --> J[Show Dialog]
-    J --> K[Redirect to Login]
-    H --> J
-    I --> J
+    D --> K[Redirect to Login]
+    H --> K
+    I --> K
 ```
 
 ### 2. Token Expiration Handling Process
@@ -103,17 +101,12 @@ graph TD
    - During API request interceptor in `ApiClient`
    - On 401/403 API responses
 
-2. **User Notification**: A dialog is shown to inform the user:
-   - "Session Expired" title
-   - Customizable message explaining the situation
-   - OK button to proceed
-
-3. **Session Cleanup**: All stored authentication data is cleared:
+2. **Session Cleanup**: All stored authentication data is cleared:
    - JWT token removed from storage
    - User data cleared
    - Session state reset
 
-4. **Navigation**: User is redirected to login screen:
+3. **Navigation**: User is redirected to login screen:
    - Navigation stack is cleared
    - Login screen is displayed
    - User must authenticate again
@@ -130,19 +123,6 @@ MaterialApp(
   navigatorKey: NavigationService().navigatorKey,
   // ... other properties
 )
-```
-
-### Token Expiration Dialog
-
-The system shows a user-friendly dialog when tokens expire:
-
-```dart
-await navigationService.showTokenExpirationDialog(
-  message: 'Your session has expired. Please log in again.',
-  onOkPressed: () async {
-    await sessionManager.forceLogout();
-  },
-);
 ```
 
 ### Automatic Token Validation
@@ -196,11 +176,10 @@ The system includes comprehensive error handling:
 ## Best Practices
 
 1. **Consistent Messaging**: Use consistent error messages across the app
-2. **User Feedback**: Always inform users when sessions expire
-3. **Security**: Clear all authentication data on expiration
-4. **Navigation**: Clear navigation stack to prevent back navigation
-5. **Testing**: Regularly test token expiration scenarios
-6. **Monitoring**: Monitor token expiration events for insights
+2. **Security**: Clear all authentication data on expiration
+3. **Navigation**: Clear navigation stack to prevent back navigation
+4. **Testing**: Regularly test token expiration scenarios
+5. **Monitoring**: Monitor token expiration events for insights
 
 ## Troubleshooting
 

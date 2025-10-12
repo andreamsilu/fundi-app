@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../features/feeds/services/feeds_service.dart';
+import '../models/fundi_model.dart';
+import '../models/comprehensive_fundi_profile.dart';
 
 class RequestFundiDialog extends StatefulWidget {
-  final dynamic fundi;
+  final dynamic fundi; // Can be FundiModel or ComprehensiveFundiProfile
   final VoidCallback? onRequestSent;
 
   const RequestFundiDialog({Key? key, required this.fundi, this.onRequestSent})
@@ -24,15 +26,14 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
   String _selectedCategory = '';
   String _budgetType = 'fixed';
   bool _isSubmitting = false;
+  bool _isLoadingCategories = true;
+  List<dynamic> _categories = [];
 
-  final List<Map<String, String>> _categories = [
-    {'id': '1', 'name': 'Plumbing'},
-    {'id': '2', 'name': 'Electrical'},
-    {'id': '3', 'name': 'Carpentry'},
-    {'id': '4', 'name': 'Painting'},
-    {'id': '5', 'name': 'Masonry'},
-    {'id': '6', 'name': 'Roofing'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
 
   @override
   void dispose() {
@@ -41,6 +42,41 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
     _budgetController.dispose();
     _deadlineController.dispose();
     super.dispose();
+  }
+
+  /// Load categories from API
+  Future<void> _loadCategories() async {
+    try {
+      final result = await _feedsService.getJobCategories();
+      if (mounted) {
+        setState(() {
+          if (result['success'] == true && result['categories'] != null) {
+            _categories = result['categories'];
+            _isLoadingCategories = false;
+          } else {
+            _categories = [];
+            _isLoadingCategories = false;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _categories = [];
+          _isLoadingCategories = false;
+        });
+      }
+    }
+  }
+
+  /// Get fundi name from either FundiModel or ComprehensiveFundiProfile
+  String _getFundiName() {
+    if (widget.fundi is FundiModel) {
+      return (widget.fundi as FundiModel).name;
+    } else if (widget.fundi is ComprehensiveFundiProfile) {
+      return (widget.fundi as ComprehensiveFundiProfile).fullName;
+    }
+    return 'Unknown';
   }
 
   Future<void> _selectDeadline() async {
@@ -70,17 +106,12 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
       return;
     }
 
-    // Validate fundi ID
-    final fundiId = widget.fundi?['id']?.toString();
-    if (fundiId == null || fundiId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid fundi information'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    // Get fundi ID - handle both FundiModel and ComprehensiveFundiProfile
+    final fundiId = widget.fundi is FundiModel
+        ? (widget.fundi as FundiModel).id
+        : widget.fundi is ComprehensiveFundiProfile
+        ? (widget.fundi as ComprehensiveFundiProfile).id
+        : '';
 
     setState(() {
       _isSubmitting = true;
@@ -124,10 +155,20 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        constraints: const BoxConstraints(maxHeight: 600),
+        constraints: BoxConstraints(
+          minHeight: screenHeight * 0.6, // Minimum 60% of screen height
+          maxHeight: screenHeight * 0.9, // 90% of screen height
+          minWidth: screenWidth > 500 ? 500 : screenWidth * 0.9,
+          maxWidth: screenWidth > 900
+              ? 900
+              : screenWidth * 0.98, // Responsive width
+        ),
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -146,11 +187,9 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
                           context,
                         ).primaryColor.withOpacity(0.1),
                         child: Text(
-                          (widget.fundi?['name']?.toString() ??
-                                  widget.fundi?['full_name']?.toString() ??
-                                  'Unknown')
-                              .substring(0, 1)
-                              .toUpperCase(),
+                          _getFundiName().isNotEmpty
+                              ? _getFundiName().substring(0, 1).toUpperCase()
+                              : 'U',
                           style: TextStyle(
                             color: Theme.of(context).primaryColor,
                             fontWeight: FontWeight.bold,
@@ -170,9 +209,9 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
                               ),
                             ),
                             Text(
-                              widget.fundi?['name']?.toString() ??
-                                  widget.fundi?['full_name']?.toString() ??
-                                  'Unknown Fundi',
+                              _getFundiName().isNotEmpty
+                                  ? _getFundiName()
+                                  : 'Unknown Fundi',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 14,
@@ -210,15 +249,32 @@ class _RequestFundiDialogState extends State<RequestFundiDialog> {
                   // Category
                   DropdownButtonFormField<String>(
                     value: _selectedCategory.isEmpty ? null : _selectedCategory,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Category *',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      suffixIcon: _isLoadingCategories
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                padding: EdgeInsets.all(12.0),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : null,
                     ),
                     items: _categories.map((category) {
-                      return DropdownMenuItem(
-                        value: category['id'],
-                        child: Text(category['name']!),
-                      );
+                      // Handle both Map and object responses from API
+                      final id = category is Map
+                          ? (category['id']?.toString() ?? '')
+                          : category.toString();
+                      final name = category is Map
+                          ? (category['name']?.toString() ?? id)
+                          : category.toString();
+
+                      return DropdownMenuItem(value: id, child: Text(name));
                     }).toList(),
                     onChanged: (value) {
                       setState(() {

@@ -198,16 +198,22 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _handleSave,
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
             child: _isLoading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text('Save'),
           ),

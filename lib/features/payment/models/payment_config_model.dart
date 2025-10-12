@@ -18,6 +18,7 @@ class PaymentConfigModel {
     final actions = actionsJson
         .map(
           (actionJson) => PaymentAction(
+            key: actionJson['key'] as String,
             amount: (actionJson['amount'] as num).toDouble(),
             description: actionJson['description'] as String,
             icon: Icons.work, // Default icon, should be mapped from server
@@ -83,8 +84,9 @@ class PaymentConfigModel {
   }
 
   /// Merge with default configuration
-  PaymentConfigModel mergeWithDefaults() {
-    final defaultActions = PaymentConfig.actions.values.toList();
+  Future<PaymentConfigModel> mergeWithDefaults() async {
+    final defaultActionsMap = await PaymentConfig.getAllActions();
+    final defaultActions = defaultActionsMap.values.toList();
     final mergedActions = <PaymentAction>[];
 
     // Add default actions
