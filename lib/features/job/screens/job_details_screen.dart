@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/job_model.dart';
 import '../services/job_service.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/extensions/string_extensions.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../../work_approval/providers/work_approval_provider.dart';
+import '../../auth/services/auth_service.dart';
+import '../../work_approval/services/work_approval_service.dart';
 import '../../work_approval/widgets/work_submission_card.dart';
 import '../../work_approval/models/work_submission_model.dart';
 
@@ -29,6 +28,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  final WorkApprovalService _workApprovalService = WorkApprovalService();
 
   bool _isApplying = false;
   String? _errorMessage;
@@ -75,30 +76,43 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   }
 
   Future<void> _checkApplicationStatus() async {
-    // TODO: Check if current user has already applied for this job
-    // This would typically involve checking the job applications
+    try {
+      final authService = AuthService();
+
+      // Only check if user is a fundi
+      if (!(authService.currentUser?.isFundi ?? false)) return;
+
+      final jobService = JobService();
+      final hasApplied = await jobService.hasAppliedToJob(widget.job.id);
+
+      if (mounted) {
+        setState(() {
+          _hasApplied = hasApplied;
+        });
+      }
+    } catch (e) {
+      print('Error checking application status: $e');
+    }
   }
 
   /// Load work submissions for this job (for customers)
   Future<void> _loadWorkSubmissions() async {
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (!authProvider.isCustomer) return;
+      final authService = AuthService();
+      if (!(authService.currentUser?.isCustomer ?? false)) return;
 
-      final workApprovalProvider = Provider.of<WorkApprovalProvider>(
-        context,
-        listen: false,
+      // Get work submissions for this specific job
+      final result = await _workApprovalService.getPendingWorkSubmissions(
+        jobId: widget.job.id,
       );
 
-      // Filter work submissions for this specific job
-      await workApprovalProvider.loadPendingWorkSubmissions(refresh: true);
-
-      // Get submissions for this specific job
-      setState(() {
-        _workSubmissions = workApprovalProvider.pendingWorkSubmissions
-            .where((submission) => submission.jobId == widget.job.id)
-            .toList();
-      });
+      if (result['success'] == true && mounted) {
+        final submissions =
+            result['workSubmissions'] as List<WorkSubmissionModel>? ?? [];
+        setState(() {
+          _workSubmissions = submissions;
+        });
+      }
     } catch (e) {
       print('Error loading work submissions: $e');
     }
@@ -107,12 +121,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   /// Approve work submission
   Future<void> _approveWorkSubmission(String submissionId) async {
     try {
-      final workApprovalProvider = Provider.of<WorkApprovalProvider>(
-        context,
-        listen: false,
-      );
-
-      final result = await workApprovalProvider.approveWorkSubmission(
+      final result = await _workApprovalService.approveWorkSubmission(
         submissionId: submissionId,
       );
 
@@ -146,12 +155,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   /// Reject work submission
   Future<void> _rejectWorkSubmission(String submissionId, String reason) async {
     try {
-      final workApprovalProvider = Provider.of<WorkApprovalProvider>(
-        context,
-        listen: false,
-      );
-
-      final result = await workApprovalProvider.rejectWorkSubmission(
+      final result = await _workApprovalService.rejectWorkSubmission(
         submissionId: submissionId,
         rejectionReason: reason,
       );
@@ -338,14 +342,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
 
   /// Build work submissions section for customers
   Widget _buildWorkSubmissionsSection() {
-    AuthProvider? authProvider;
-    try {
-      authProvider = Provider.of<AuthProvider>(context, listen: false);
-    } catch (_) {
-      authProvider = null;
-    }
+    final authService = AuthService();
 
-    if (!(authProvider?.isCustomer ?? false)) {
+    if (!(authService.currentUser?.isCustomer ?? false)) {
       return const SizedBox.shrink();
     }
 
@@ -707,14 +706,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   }
 
   Widget _buildActionButtons() {
-    AuthProvider? authProvider;
-    try {
-      authProvider = Provider.of<AuthProvider>(context, listen: false);
-    } catch (_) {
-      authProvider = null;
-    }
-    final bool isCustomer = authProvider?.isCustomer ?? false;
-    final bool isFundi = authProvider?.isFundi ?? false;
+    final authService = AuthService();
+    final bool isCustomer = authService.currentUser?.isCustomer ?? false;
+    final bool isFundi = authService.currentUser?.isFundi ?? false;
 
     if (isCustomer) {
       // Customer actions
@@ -774,12 +768,27 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
             ),
           ] else ...[
             AppButton(
-              text: 'Apply for Job',
-              onPressed: _isApplying ? null : _applyForJob,
+              text: _hasApplied ? 'Already Applied' : 'Apply for Job',
+              onPressed: _hasApplied
+                  ? null
+                  : (_isApplying ? null : _applyForJob),
               isLoading: _isApplying,
               isFullWidth: true,
-              icon: Icons.send,
+              icon: _hasApplied ? Icons.check_circle : Icons.send,
             ),
+            if (_hasApplied)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'You have already applied for this job',
+                  style: TextStyle(
+                    color: AppTheme.primaryGreen,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
           ],
           const SizedBox(height: 12),
           AppButton(

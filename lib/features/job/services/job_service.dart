@@ -447,6 +447,62 @@ class JobService {
     }
   }
 
+  /// Get user's own job applications
+  Future<ApplicationListResult> getMyApplications() async {
+    try {
+      Logger.userAction('Fetch my applications');
+
+      final response = await _apiClient.get<List<dynamic>>(
+        ApiEndpoints.myApplications,
+        fromJson: (data) => data as List<dynamic>,
+      );
+
+      if (response.success && response.data != null) {
+        final applications = response.data!
+            .map(
+              (appData) =>
+                  JobApplicationModel.fromJson(appData as Map<String, dynamic>),
+            )
+            .toList();
+
+        Logger.userAction(
+          'My applications fetched successfully',
+          data: {'count': applications.length},
+        );
+
+        return ApplicationListResult.success(
+          applications: applications,
+          message: response.message,
+        );
+      } else {
+        Logger.warning('Fetch my applications failed: ${response.message}');
+        return ApplicationListResult.failure(message: response.message);
+      }
+    } on ApiError catch (e) {
+      Logger.error('Fetch my applications API error', error: e);
+      return ApplicationListResult.failure(message: e.message);
+    } catch (e) {
+      Logger.error('Fetch my applications unexpected error', error: e);
+      return ApplicationListResult.failure(
+        message: 'An unexpected error occurred',
+      );
+    }
+  }
+
+  /// Check if current user has applied to a specific job
+  Future<bool> hasAppliedToJob(String jobId) async {
+    try {
+      final result = await getMyApplications();
+      if (result.success) {
+        return result.applications.any((app) => app.jobId == jobId);
+      }
+      return false;
+    } catch (e) {
+      Logger.error('Check application status error', error: e);
+      return false;
+    }
+  }
+
   /// Accept a job application
   Future<ApplicationResult> acceptApplication(
     String jobId,
@@ -761,4 +817,3 @@ class JobMediaUploadResult {
     return JobMediaUploadResult._(success: false, message: message);
   }
 }
-

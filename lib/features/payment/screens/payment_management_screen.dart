@@ -7,6 +7,7 @@ import '../models/payment_transaction_model.dart';
 import '../models/user_subscription_model.dart';
 // Removed payment_card import - using local widget instead
 import 'payment_plans_screen.dart';
+import 'payment_receipt_screen.dart';
 
 /// Payment Management Screen
 /// Displays user's payment transactions and subscription management
@@ -422,10 +423,7 @@ class _PaymentManagementScreenState extends State<PaymentManagementScreen>
             if (subscription != null) ...[
               _buildDetailRow('Status', subscription.statusDisplay),
               const Divider(),
-              _buildDetailRow(
-                'Start Date',
-                _formatDate(subscription.startsAt),
-              ),
+              _buildDetailRow('Start Date', _formatDate(subscription.startsAt)),
               if (subscription.expiresAt != null) ...[
                 const Divider(),
                 _buildDetailRow(
@@ -557,12 +555,37 @@ class _PaymentManagementScreenState extends State<PaymentManagementScreen>
               _buildDetailRow('Reference', payment.referenceId!),
             ],
             const SizedBox(height: 20),
+            if (payment.isCompleted) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            PaymentReceiptScreen(transactionId: payment.id),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.receipt),
+                  label: const Text('View Receipt'),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryGreen,
+                  backgroundColor: payment.isCompleted
+                      ? Colors.grey
+                      : AppTheme.primaryGreen,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Close'),

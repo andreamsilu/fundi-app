@@ -3,6 +3,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../job/widgets/job_card.dart';
 import '../../feeds/widgets/fundi_card.dart';
+import '../services/search_service.dart';
+import '../../job/models/job_model.dart';
+import '../../feeds/models/fundi_model.dart';
 
 /// Unified Search Screen - Single search box for everything
 /// Auto-detects search intent (Jobs vs Fundis)
@@ -17,12 +20,14 @@ class SearchUnifiedScreen extends StatefulWidget {
 class _SearchUnifiedScreenState extends State<SearchUnifiedScreen> {
   final _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  final SearchService _searchService = SearchService();
 
   bool _isSearching = false;
   List<String> _recentSearches = [];
   String _searchType = 'all'; // 'all', 'jobs', 'fundis'
 
-  List<dynamic> _results = [];
+  List<JobModel> _jobResults = [];
+  List<FundiModel> _fundiResults = [];
 
   @override
   void initState() {
@@ -38,17 +43,20 @@ class _SearchUnifiedScreenState extends State<SearchUnifiedScreen> {
     super.dispose();
   }
 
-  void _loadRecentSearches() {
-    // TODO: Load from shared preferences
-    setState(() {
-      _recentSearches = ['Plumber', 'Carpenter', 'Electrician'];
-    });
+  Future<void> _loadRecentSearches() async {
+    final searches = await _searchService.getRecentSearches();
+    if (mounted) {
+      setState(() {
+        _recentSearches = searches;
+      });
+    }
   }
 
-  void _search(String query) {
+  Future<void> _search(String query) async {
     if (query.trim().isEmpty) {
       setState(() {
-        _results = [];
+        _jobResults = [];
+        _fundiResults = [];
         _isSearching = false;
       });
       return;
@@ -56,26 +64,59 @@ class _SearchUnifiedScreenState extends State<SearchUnifiedScreen> {
 
     setState(() => _isSearching = true);
 
-    // TODO: Implement actual search
-    // For now, simulating search
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          _isSearching = false;
-          // Auto-detect if searching for jobs or fundis
-          _autoDetectSearchType(query);
-        });
-      }
-    });
+    try {
+      // Auto-detect search type
+      _autoDetectSearchType(query);
 
-    // Save to recent searches
-    if (!_recentSearches.contains(query)) {
-      setState(() {
-        _recentSearches.insert(0, query);
-        if (_recentSearches.length > 5) {
-          _recentSearches = _recentSearches.take(5).toList();
+      // Search based on type
+      if (_searchType == 'jobs') {
+        final result = await _searchService.searchJobs(query: query);
+        if (mounted) {
+          setState(() {
+            _jobResults = result.results;
+            _fundiResults = [];
+            _isSearching = false;
+          });
         }
-      });
+      } else if (_searchType == 'fundis') {
+        final result = await _searchService.searchFundis(query: query);
+        if (mounted) {
+          setState(() {
+            _fundiResults = result.results;
+            _jobResults = [];
+            _isSearching = false;
+          });
+        }
+      } else {
+        // Search both
+        final jobsResultFuture = _searchService.searchJobs(query: query);
+        final fundisResultFuture = _searchService.searchFundis(query: query);
+
+        final jobsResult = await jobsResultFuture;
+        final fundisResult = await fundisResultFuture;
+
+        if (mounted) {
+          setState(() {
+            _jobResults = jobsResult.results;
+            _fundiResults = fundisResult.results;
+            _isSearching = false;
+          });
+        }
+      }
+
+      // Save to recent searches
+      await _searchService.saveRecentSearch(query);
+      await _loadRecentSearches();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSearching = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Search failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -130,7 +171,8 @@ class _SearchUnifiedScreenState extends State<SearchUnifiedScreen> {
                 onPressed: () {
                   _searchController.clear();
                   setState(() {
-                    _results = [];
+                    _jobResults = [];
+                    _fundiResults = [];
                   });
                 },
               )
@@ -161,7 +203,7 @@ class _SearchUnifiedScreenState extends State<SearchUnifiedScreen> {
     }
 
     // Show results
-    if (_results.isNotEmpty) {
+    if (_jobResults.isNotEmpty || _fundiResults.isNotEmpty) {
       return _buildResults();
     }
 
@@ -196,8 +238,9 @@ class _SearchUnifiedScreenState extends State<SearchUnifiedScreen> {
             const Spacer(),
             if (_recentSearches.isNotEmpty)
               TextButton(
-                onPressed: () {
-                  setState(() => _recentSearches.clear());
+                onPressed: () async {
+                  await _searchService.clearRecentSearches();
+                  await _loadRecentSearches();
                 },
                 child: const Text('Clear All'),
               ),
@@ -223,8 +266,9 @@ class _SearchUnifiedScreenState extends State<SearchUnifiedScreen> {
               title: Text(search),
               trailing: IconButton(
                 icon: const Icon(Icons.close, size: 18),
-                onPressed: () {
-                  setState(() => _recentSearches.remove(search));
+                onPressed: () async {
+                  await _searchService.removeRecentSearch(search);
+                  await _loadRecentSearches();
                 },
               ),
               onTap: () {
@@ -303,8 +347,54 @@ class _SearchUnifiedScreenState extends State<SearchUnifiedScreen> {
 
         const SizedBox(height: 16),
 
-        // Results (placeholder)
-        const Text('Search results will appear here...'),
+        // Job Results
+        if (_jobResults.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(Icons.work, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Jobs (${_jobResults.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._jobResults.map((job) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: JobCard(job: job),
+            );
+          }).toList(),
+          if (_fundiResults.isNotEmpty) const SizedBox(height: 24),
+        ],
+
+        // Fundi Results
+        if (_fundiResults.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(Icons.person, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Fundis (${_fundiResults.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._fundiResults.map((fundi) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: FundiCard(fundi: fundi),
+            );
+          }).toList(),
+        ],
       ],
     );
   }

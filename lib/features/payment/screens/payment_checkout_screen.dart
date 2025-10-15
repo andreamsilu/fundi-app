@@ -4,6 +4,7 @@ import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../models/payment_plan_model.dart';
 import '../services/payment_service.dart';
+import 'payment_receipt_screen.dart';
 
 /// Simplified Payment Checkout Screen
 /// Handles all payment flows in one unified screen
@@ -60,29 +61,69 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
     });
 
     try {
-      final metadata = {
-        'phone_number': _phoneController.text.trim(),
-        'amount': double.parse(_amountController.text.trim()),
-        if (widget.plan != null) 'plan_id': widget.plan!.id.toString(),
-        if (widget.metadata != null) ...widget.metadata!,
-      };
-
-      final result = await PaymentService().createPayment(
-        action: widget.action,
-        metadata: metadata,
+      print(
+        'PaymentCheckoutScreen: Processing payment - action: ${widget.action}',
       );
+      final paymentService = PaymentService();
 
-      if (result.success && result.transaction != null) {
-        setState(() {
-          _paymentComplete = true;
-          _transactionId = result.transaction!.id.toString();
-        });
+      // Handle different payment actions
+      if (widget.action == 'subscription' && widget.plan != null) {
+        print('PaymentCheckoutScreen: Subscribing to plan ${widget.plan!.id}');
+        // Subscribe to a plan
+        final result = await paymentService.subscribe(planId: widget.plan!.id);
+
+        print(
+          'PaymentCheckoutScreen: Subscribe result - success: ${result.success}',
+        );
+        if (result.success && result.subscription != null) {
+          print(
+            'PaymentCheckoutScreen: Subscription successful - ID: ${result.subscription!.id}',
+          );
+          setState(() {
+            _paymentComplete = true;
+            _transactionId = result.subscription!.id.toString();
+          });
+        } else {
+          print(
+            'PaymentCheckoutScreen: Subscription failed - ${result.message}',
+          );
+          setState(() {
+            _error = result.message;
+          });
+        }
       } else {
-        setState(() {
-          _error = result.message;
-        });
+        // Pay-per-use payment
+        final amount = double.parse(_amountController.text.trim());
+        print(
+          'PaymentCheckoutScreen: Pay-per-use payment - action: ${widget.action}, amount: $amount',
+        );
+
+        final result = await paymentService.processPayPerUse(
+          action: widget.action,
+          amount: amount,
+          referenceId: widget.metadata?['reference_id'],
+        );
+
+        print(
+          'PaymentCheckoutScreen: Pay-per-use result - success: ${result.success}',
+        );
+        if (result.success && result.transaction != null) {
+          print(
+            'PaymentCheckoutScreen: Payment successful - ID: ${result.transaction!.id}',
+          );
+          setState(() {
+            _paymentComplete = true;
+            _transactionId = result.transaction!.id.toString();
+          });
+        } else {
+          print('PaymentCheckoutScreen: Payment failed - ${result.message}');
+          setState(() {
+            _error = result.message;
+          });
+        }
       }
     } catch (e) {
+      print('PaymentCheckoutScreen: Payment error - $e');
       setState(() {
         _error = 'Payment failed: $e';
       });
@@ -286,9 +327,17 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
             ),
             const SizedBox(height: 12),
             TextButton(
-              onPressed: () {
-                // TODO: View receipt
-              },
+              onPressed: _transactionId != null
+                  ? () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => PaymentReceiptScreen(
+                            transactionId: int.parse(_transactionId!),
+                          ),
+                        ),
+                      );
+                    }
+                  : null,
               child: const Text('View Receipt'),
             ),
           ],
@@ -370,7 +419,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
               children: [
                 Icon(Icons.phone_android, color: AppTheme.primaryGreen),
                 const SizedBox(width: 12),
-                const Text('Mobile Money (M-Pesa, Tigo Pesa)'),
+                const Expanded(child: Text('Mobile Money (M-Pesa, Tigo Pesa)')),
               ],
             ),
             value: 'mobile_money',
@@ -385,7 +434,7 @@ class _PaymentCheckoutScreenState extends State<PaymentCheckoutScreen> {
               children: [
                 Icon(Icons.credit_card, color: AppTheme.primaryGreen),
                 const SizedBox(width: 12),
-                const Text('Credit/Debit Card'),
+                const Expanded(child: Text('Credit/Debit Card')),
               ],
             ),
             value: 'card',

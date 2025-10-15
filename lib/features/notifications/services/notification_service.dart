@@ -29,9 +29,7 @@ class NotificationService {
         final data = response.data!;
         final notificationsData = data['data'] as List<dynamic>? ?? [];
         final notifications = notificationsData
-            .map(
-              (notification) => NotificationModel.fromJson(notification),
-            )
+            .map((notification) => NotificationModel.fromJson(notification))
             .toList();
 
         return NotificationResult(
@@ -43,10 +41,7 @@ class NotificationService {
           totalPages: data['last_page'] ?? 1,
         );
       } else {
-        return NotificationResult(
-          success: false,
-          message: response.message,
-        );
+        return NotificationResult(success: false, message: response.message);
       }
     } catch (e) {
       return NotificationResult(
@@ -66,10 +61,7 @@ class NotificationService {
       if (response.success) {
         return ServiceResult(success: true);
       } else {
-        return ServiceResult(
-          success: false,
-          message: response.message,
-        );
+        return ServiceResult(success: false, message: response.message);
       }
     } catch (e) {
       return ServiceResult(
@@ -91,10 +83,7 @@ class NotificationService {
       if (response.success) {
         return ServiceResult(success: true);
       } else {
-        return ServiceResult(
-          success: false,
-          message: response.message,
-        );
+        return ServiceResult(success: false, message: response.message);
       }
     } catch (e) {
       return ServiceResult(
@@ -114,15 +103,48 @@ class NotificationService {
       if (response.success) {
         return ServiceResult(success: true);
       } else {
-        return ServiceResult(
-          success: false,
-          message: response.message,
-        );
+        return ServiceResult(success: false, message: response.message);
       }
     } catch (e) {
       return ServiceResult(
         success: false,
         message: 'Failed to delete notification. Please try again.',
+      );
+    }
+  }
+
+  /// Delete multiple notifications
+  /// Returns a result with success=true if at least one deletion succeeded
+  Future<ServiceResult> deleteNotifications(
+    List<String> notificationIds,
+  ) async {
+    if (notificationIds.isEmpty) {
+      return ServiceResult(success: true);
+    }
+
+    int successCount = 0;
+    int failCount = 0;
+
+    for (final id in notificationIds) {
+      final result = await deleteNotification(id);
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      return ServiceResult(
+        success: true,
+        message: failCount > 0
+            ? '$successCount notifications deleted, $failCount failed'
+            : 'All notifications deleted successfully',
+      );
+    } else {
+      return ServiceResult(
+        success: false,
+        message: 'Failed to delete notifications',
       );
     }
   }
@@ -137,10 +159,7 @@ class NotificationService {
       if (response.success) {
         return ServiceResult(success: true);
       } else {
-        return ServiceResult(
-          success: false,
-          message: response.message,
-        );
+        return ServiceResult(success: false, message: response.message);
       }
     } catch (e) {
       return ServiceResult(
@@ -189,10 +208,7 @@ class NotificationService {
       if (response.success) {
         return ServiceResult(success: true);
       } else {
-        return ServiceResult(
-          success: false,
-          message: response.message,
-        );
+        return ServiceResult(success: false, message: response.message);
       }
     } catch (e) {
       return ServiceResult(
@@ -214,10 +230,7 @@ class NotificationService {
       if (response.success) {
         return ServiceResult(success: true);
       } else {
-        return ServiceResult(
-          success: false,
-          message: response.message,
-        );
+        return ServiceResult(success: false, message: response.message);
       }
     } catch (e) {
       return ServiceResult(

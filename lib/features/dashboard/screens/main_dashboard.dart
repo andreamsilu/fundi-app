@@ -19,7 +19,8 @@ import '../../../core/utils/role_guard.dart';
 import '../../auth/models/user_model.dart';
 
 /// Main dashboard screen with role-based navigation
-/// Provides different views for customers, fundis, and admins
+/// Provides different views for customers and fundis
+/// Note: Admin not supported on mobile - use web admin panel
 class MainDashboard extends StatefulWidget {
   const MainDashboard({super.key});
 
@@ -65,7 +66,7 @@ class _MainDashboardState extends State<MainDashboard>
     // Switch to My Jobs tab (for customers after posting)
     else if (args['switchToMyJobs'] == true && userRole == UserRole.customer) {
       setState(() {
-        _currentIndex = 0; // My Jobs tab for customers (index 0)
+        _currentIndex = 1; // My Jobs tab for customers (now index 1)
       });
     }
     // Switch to specific tab index
@@ -102,7 +103,8 @@ class _MainDashboardState extends State<MainDashboard>
     );
   }
 
-  /// Get screens based on user role (customers, fundis, and admins)
+  /// Get screens based on user role (customers and fundis only)
+  /// Note: Admin role not supported on mobile - use web admin panel
   List<Widget> _getScreens(AuthService authService) {
     final userRole =
         authService.currentUser?.roles.firstOrNull ?? UserRole.customer;
@@ -111,14 +113,13 @@ class _MainDashboardState extends State<MainDashboard>
       case UserRole.customer:
         // CUSTOMER: Can't browse all jobs, only see their own posted jobs
         return [
+          const FundiFeedScreen(), // Find Fundis to hire (Tab 0)
           const JobListScreen(
             title: 'My Jobs',
             showFilterButton: false,
             showAppBar: false,
-          ), // Home - Their posted jobs ONLY
-          const FundiFeedScreen(), // Find Fundis to hire
-          const NotificationsScreen(), // Notifications - has its own AppBar
-          const ProfileScreen(showAppBar: false), // Profile
+          ), // Their posted jobs (Tab 1)
+          const ProfileScreen(showAppBar: false), // Profile (Tab 2)
         ];
 
       case UserRole.fundi:
@@ -137,20 +138,15 @@ class _MainDashboardState extends State<MainDashboard>
         ];
 
       case UserRole.admin:
-        // ADMIN: Access to admin dashboard and user management
+        // Admin not supported on mobile - fallback to customer view
         return [
-          const DashboardHomeScreen(), // Admin dashboard
-          const Center(
-            child: Text(
-              'Admin Panel - Coming Soon',
-            ), // Placeholder for admin panel
-          ),
-          const Center(
-            child: Text(
-              'User Management - Coming Soon',
-            ), // Placeholder for users
-          ),
-          const ProfileScreen(showAppBar: false), // Profile
+          const FundiFeedScreen(), // Find Fundis (Tab 0)
+          const JobListScreen(
+            title: 'My Jobs',
+            showFilterButton: false,
+            showAppBar: false,
+          ), // My Jobs (Tab 1)
+          const ProfileScreen(showAppBar: false), // Profile (Tab 2)
         ];
     }
   }
@@ -180,12 +176,7 @@ class _MainDashboardState extends State<MainDashboard>
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const NotificationsScreen(),
-              ),
-            );
+            Navigator.pushNamed(context, '/notifications');
           },
         ),
       ],
@@ -320,6 +311,25 @@ class _MainDashboardState extends State<MainDashboard>
                   ),
                   const Divider(),
                 ],
+
+                const Divider(),
+
+                // Payment Section
+                _buildDrawerSection(
+                  title: 'Payments',
+                  children: [
+                    _buildDrawerItem(
+                      icon: Icons.card_membership,
+                      title: 'Payment Plans',
+                      onTap: () => _navigateToPaymentPlans(),
+                    ),
+                    _buildDrawerItem(
+                      icon: Icons.history,
+                      title: 'Payment History',
+                      onTap: () => _navigateToPaymentHistory(),
+                    ),
+                  ],
+                ),
 
                 const Divider(),
 
@@ -496,7 +506,7 @@ class _MainDashboardState extends State<MainDashboard>
 
   /// Navigate to current user's profile (fundis can manage portfolio here)
   void _navigateToMyProfile() {
-    final authService = Provider.of<AuthService>(context, listen: false);
+    final authService = AuthService();
     final currentUser = authService.currentUser;
 
     if (currentUser == null) {
@@ -507,41 +517,42 @@ class _MainDashboardState extends State<MainDashboard>
     }
 
     print('MainDashboard: Navigating to my profile');
-    Navigator.push(
+    Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (context) => ComprehensiveFundiProfileScreen(
-          fundi: {
-            'id': currentUser.id,
-            'full_name': currentUser.fullName,
-            'email': currentUser.email,
-            'role': currentUser.roles.first.value,
-          },
-        ),
-      ),
+      '/fundi-profile',
+      arguments: {
+        'fundi': {
+          'id': currentUser.id,
+          'full_name': currentUser.fullName,
+          'email': currentUser.email,
+          'role': currentUser.roles.first.value,
+        },
+      },
     );
     print('MainDashboard: Profile navigation successful');
   }
 
   /// Navigate to messages screen
   void _navigateToMessages() {
-    // Messaging feature not implemented in API
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Messaging feature is coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    try {
+      print('MainDashboard: Navigating to messages screen');
+      Navigator.pushNamed(context, '/messages');
+    } catch (e) {
+      print('MainDashboard: Messages navigation error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Messaging feature is coming soon!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   /// Navigate to notifications screen
   void _navigateToNotifications() {
     try {
       print('MainDashboard: Navigating to notifications screen');
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-      );
+      Navigator.pushNamed(context, '/notifications');
       print('MainDashboard: Notifications navigation successful');
     } catch (e) {
       print('MainDashboard: Notifications navigation error: $e');
@@ -575,10 +586,7 @@ class _MainDashboardState extends State<MainDashboard>
   void _navigateToHelp() {
     try {
       print('MainDashboard: Navigating to help screen');
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const HelpScreen()),
-      );
+      Navigator.pushNamed(context, '/help');
       print('MainDashboard: Help navigation successful');
     } catch (e) {
       print('MainDashboard: Help navigation error: $e');
@@ -595,10 +603,7 @@ class _MainDashboardState extends State<MainDashboard>
   void _navigateToFundiApplication() {
     try {
       print('MainDashboard: Navigating to fundi application screen');
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const FundiApplicationScreen()),
-      );
+      Navigator.pushNamed(context, '/fundi-application');
       print('MainDashboard: Fundi application navigation successful');
     } catch (e) {
       print('MainDashboard: Fundi application navigation error: $e');
@@ -615,8 +620,9 @@ class _MainDashboardState extends State<MainDashboard>
   void _navigateToFundiFeed() {
     // Switch to the existing bottom tab to avoid duplicate screens
     setState(() {
-      _currentIndex = 1; // Customers: index 1 is Find Fundis
+      _currentIndex = 0; // Customers: index 0 is Find Fundis (now first tab)
     });
+    Navigator.pop(context); // Close drawer
   }
 
   /// Navigate to work approval screen
@@ -630,6 +636,40 @@ class _MainDashboardState extends State<MainDashboard>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unable to open work approval at this time'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Navigate to payment plans screen
+  void _navigateToPaymentPlans() {
+    try {
+      print('MainDashboard: Navigating to payment plans screen');
+      Navigator.pushNamed(context, '/payment-plans');
+      print('MainDashboard: Payment plans navigation successful');
+    } catch (e) {
+      print('MainDashboard: Payment plans navigation error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open payment plans at this time'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Navigate to payment history screen
+  void _navigateToPaymentHistory() {
+    try {
+      print('MainDashboard: Navigating to payment history screen');
+      Navigator.pushNamed(context, '/payment-management');
+      print('MainDashboard: Payment history navigation successful');
+    } catch (e) {
+      print('MainDashboard: Payment history navigation error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open payment history at this time'),
           backgroundColor: Colors.red,
         ),
       );

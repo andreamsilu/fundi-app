@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../providers/work_approval_provider.dart';
+import '../../auth/services/auth_service.dart';
+import '../services/work_approval_service.dart';
+import '../models/work_submission_model.dart';
 import '../widgets/portfolio_approval_card.dart';
 import '../widgets/work_submission_card.dart';
 import '../../../shared/widgets/loading_widget.dart';
@@ -16,17 +16,18 @@ class WorkApprovalScreen extends StatefulWidget {
 class _WorkApprovalScreenState extends State<WorkApprovalScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final WorkApprovalService _workApprovalService = WorkApprovalService();
+  final AuthService _authService = AuthService();
+
+  bool _isLoading = false;
+  List<dynamic> _pendingPortfolioItems = [];
+  List<WorkSubmissionModel> _pendingWorkSubmissions = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Initialize work approval data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<WorkApprovalProvider>().initialize();
-      }
-    });
+    _loadData();
   }
 
   @override
@@ -35,14 +36,37 @@ class _WorkApprovalScreenState extends State<WorkApprovalScreen>
     super.dispose();
   }
 
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final portfolioResult = await _workApprovalService
+          .getPendingPortfolioItems();
+      final submissionsResult = await _workApprovalService
+          .getPendingWorkSubmissions();
+
+      if (mounted) {
+        setState(() {
+          _pendingPortfolioItems = portfolioResult['portfolioItems'] ?? [];
+          _pendingWorkSubmissions = submissionsResult['workSubmissions'] ?? [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _refreshData() async {
-    await context.read<WorkApprovalProvider>().refreshAll();
+    await _loadData();
   }
 
   Future<void> _approvePortfolioItem(String itemId) async {
-    final result = await context
-        .read<WorkApprovalProvider>()
-        .approvePortfolioItem(itemId: itemId);
+    final result = await _workApprovalService.approvePortfolioItem(
+      itemId: itemId,
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -51,13 +75,17 @@ class _WorkApprovalScreenState extends State<WorkApprovalScreen>
           backgroundColor: result['success'] ? Colors.green : Colors.red,
         ),
       );
+      if (result['success']) {
+        await _loadData();
+      }
     }
   }
 
   Future<void> _rejectPortfolioItem(String itemId, String reason) async {
-    final result = await context
-        .read<WorkApprovalProvider>()
-        .rejectPortfolioItem(itemId: itemId, rejectionReason: reason);
+    final result = await _workApprovalService.rejectPortfolioItem(
+      itemId: itemId,
+      rejectionReason: reason,
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,13 +94,16 @@ class _WorkApprovalScreenState extends State<WorkApprovalScreen>
           backgroundColor: result['success'] ? Colors.orange : Colors.red,
         ),
       );
+      if (result['success']) {
+        await _loadData();
+      }
     }
   }
 
   Future<void> _approveWorkSubmission(String submissionId) async {
-    final result = await context
-        .read<WorkApprovalProvider>()
-        .approveWorkSubmission(submissionId: submissionId);
+    final result = await _workApprovalService.approveWorkSubmission(
+      submissionId: submissionId,
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,16 +112,17 @@ class _WorkApprovalScreenState extends State<WorkApprovalScreen>
           backgroundColor: result['success'] ? Colors.green : Colors.red,
         ),
       );
+      if (result['success']) {
+        await _loadData();
+      }
     }
   }
 
   Future<void> _rejectWorkSubmission(String submissionId, String reason) async {
-    final result = await context
-        .read<WorkApprovalProvider>()
-        .rejectWorkSubmission(
-          submissionId: submissionId,
-          rejectionReason: reason,
-        );
+    final result = await _workApprovalService.rejectWorkSubmission(
+      submissionId: submissionId,
+      rejectionReason: reason,
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -99,79 +131,57 @@ class _WorkApprovalScreenState extends State<WorkApprovalScreen>
           backgroundColor: result['success'] ? Colors.orange : Colors.red,
         ),
       );
+      if (result['success']) {
+        await _loadData();
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AuthProvider, WorkApprovalProvider>(
-      builder: (context, authProvider, workApprovalProvider, child) {
-        if (!authProvider.isCustomer) {
-          return const Scaffold(
-            body: Center(child: Text('Only customers can approve work')),
-          );
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Work Approval'),
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
-            bottom: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.white,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              tabs: const [
-                Tab(text: 'Portfolio Items', icon: Icon(Icons.work_outline)),
-                Tab(
-                  text: 'Work Submissions',
-                  icon: Icon(Icons.assignment_turned_in),
-                ),
-              ],
-            ),
-          ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              // Portfolio Items Tab
-              _buildPortfolioItemsTab(workApprovalProvider),
-              // Work Submissions Tab
-              _buildWorkSubmissionsTab(workApprovalProvider),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPortfolioItemsTab(WorkApprovalProvider provider) {
-    if (provider.isLoadingPortfolioItems &&
-        provider.pendingPortfolioItems.isEmpty) {
-      return const Center(child: LoadingWidget());
-    }
-
-    if (provider.portfolioItemsError != null &&
-        provider.pendingPortfolioItems.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              provider.portfolioItemsError!,
-              style: const TextStyle(color: Colors.red),
-            ),
-            ElevatedButton(
-              onPressed: () =>
-                  provider.loadPendingPortfolioItems(refresh: true),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+    if (!(_authService.currentUser?.isCustomer ?? false)) {
+      return const Scaffold(
+        body: Center(child: Text('Only customers can approve work')),
       );
     }
 
-    if (provider.pendingPortfolioItems.isEmpty) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Work Approval'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
+            Tab(text: 'Portfolio Items', icon: Icon(Icons.work_outline)),
+            Tab(
+              text: 'Work Submissions',
+              icon: Icon(Icons.assignment_turned_in),
+            ),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Portfolio Items Tab
+          _buildPortfolioItemsTab(),
+          // Work Submissions Tab
+          _buildWorkSubmissionsTab(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortfolioItemsTab() {
+    if (_isLoading && _pendingPortfolioItems.isEmpty) {
+      return const Center(child: LoadingWidget());
+    }
+
+    if (_pendingPortfolioItems.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -196,57 +206,26 @@ class _WorkApprovalScreenState extends State<WorkApprovalScreen>
       onRefresh: _refreshData,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount:
-            provider.pendingPortfolioItems.length +
-            (provider.isLoadingMorePortfolioItems ? 1 : 0),
+        itemCount: _pendingPortfolioItems.length,
         itemBuilder: (context, index) {
-          if (index == provider.pendingPortfolioItems.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          final item = provider.pendingPortfolioItems[index];
+          final item = _pendingPortfolioItems[index];
           return PortfolioApprovalCard(
-            portfolioItem: item.toJson(),
-            onApprove: () => _approvePortfolioItem(item.id),
-            onReject: (reason) => _rejectPortfolioItem(item.id, reason),
+            portfolioItem: item,
+            onApprove: () => _approvePortfolioItem(item['id'].toString()),
+            onReject: (reason) =>
+                _rejectPortfolioItem(item['id'].toString(), reason),
           );
         },
       ),
     );
   }
 
-  Widget _buildWorkSubmissionsTab(WorkApprovalProvider provider) {
-    if (provider.isLoadingWorkSubmissions &&
-        provider.pendingWorkSubmissions.isEmpty) {
+  Widget _buildWorkSubmissionsTab() {
+    if (_isLoading && _pendingWorkSubmissions.isEmpty) {
       return const Center(child: LoadingWidget());
     }
 
-    if (provider.workSubmissionsError != null &&
-        provider.pendingWorkSubmissions.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              provider.workSubmissionsError!,
-              style: const TextStyle(color: Colors.red),
-            ),
-            ElevatedButton(
-              onPressed: () =>
-                  provider.loadPendingWorkSubmissions(refresh: true),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (provider.pendingWorkSubmissions.isEmpty) {
+    if (_pendingWorkSubmissions.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -271,20 +250,9 @@ class _WorkApprovalScreenState extends State<WorkApprovalScreen>
       onRefresh: _refreshData,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount:
-            provider.pendingWorkSubmissions.length +
-            (provider.isLoadingMoreWorkSubmissions ? 1 : 0),
+        itemCount: _pendingWorkSubmissions.length,
         itemBuilder: (context, index) {
-          if (index == provider.pendingWorkSubmissions.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          final submission = provider.pendingWorkSubmissions[index];
+          final submission = _pendingWorkSubmissions[index];
           return WorkSubmissionCard(
             workSubmission: submission.toJson(),
             onApprove: () => _approveWorkSubmission(submission.id),

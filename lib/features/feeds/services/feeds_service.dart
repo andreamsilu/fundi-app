@@ -19,19 +19,31 @@ class FeedsService {
   /// - limit: Number of items per page
   /// - searchQuery: Search term for fundi name or skills
   /// - location: Filter by location
+  /// - category: Filter by profession/category
   /// - skills: Filter by specific skills
   /// - minRating: Minimum rating filter
   /// - isAvailable: Filter by availability status
   /// - isVerified: Filter by verification status
+  /// - minHourlyRate: Minimum hourly rate filter
+  /// - maxHourlyRate: Maximum hourly rate filter
+  /// - minExperience: Minimum years of experience filter
+  /// - sortBy: Sort field (rating, experience, hourly_rate, reviews, created_at)
+  /// - sortOrder: Sort order (asc, desc)
   Future<Map<String, dynamic>> getFundis({
     int page = 1,
     int limit = 20,
     String? searchQuery,
     String? location,
+    String? category,
     List<String>? skills,
     double? minRating,
     bool? isAvailable,
     bool? isVerified,
+    double? minHourlyRate,
+    double? maxHourlyRate,
+    int? minExperience,
+    String? sortBy,
+    String? sortOrder,
     bool useCache = true,
   }) async {
     try {
@@ -40,10 +52,15 @@ class FeedsService {
           page == 1 &&
           searchQuery == null &&
           location == null &&
+          category == null &&
           skills == null &&
           minRating == null &&
           isAvailable == null &&
-          isVerified == null) {
+          isVerified == null &&
+          minHourlyRate == null &&
+          maxHourlyRate == null &&
+          minExperience == null &&
+          sortBy == null) {
         final cachedData = await _cacheService.getCachedApiResponse(
           'fundis_page_1',
         );
@@ -61,6 +78,9 @@ class FeedsService {
       if (location != null && location.isNotEmpty) {
         queryParams['location'] = location;
       }
+      if (category != null && category.isNotEmpty) {
+        queryParams['category'] = category;
+      }
       if (skills != null && skills.isNotEmpty) {
         queryParams['skills'] = skills.join(',');
       }
@@ -72,6 +92,21 @@ class FeedsService {
       }
       if (isVerified != null) {
         queryParams['isVerified'] = isVerified;
+      }
+      if (minHourlyRate != null) {
+        queryParams['minHourlyRate'] = minHourlyRate;
+      }
+      if (maxHourlyRate != null) {
+        queryParams['maxHourlyRate'] = maxHourlyRate;
+      }
+      if (minExperience != null) {
+        queryParams['minExperience'] = minExperience;
+      }
+      if (sortBy != null && sortBy.isNotEmpty) {
+        queryParams['sortBy'] = sortBy;
+      }
+      if (sortOrder != null && sortOrder.isNotEmpty) {
+        queryParams['sortOrder'] = sortOrder;
       }
 
       print('FeedsService: Making API call to ${ApiEndpoints.feedsFundis}');
@@ -103,10 +138,15 @@ class FeedsService {
             page == 1 &&
             searchQuery == null &&
             location == null &&
+            category == null &&
             skills == null &&
             minRating == null &&
             isAvailable == null &&
-            isVerified == null) {
+            isVerified == null &&
+            minHourlyRate == null &&
+            maxHourlyRate == null &&
+            minExperience == null &&
+            sortBy == null) {
           await _cacheService.cacheApiResponse('fundis_page_1', response.data);
         }
 

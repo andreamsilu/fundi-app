@@ -4,7 +4,6 @@ import 'dart:async';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/constants/api_endpoints.dart';
-import '../../../core/constants/hardcoded_data.dart';
 import '../models/portfolio_model.dart';
 
 /// Feed data model for categories, skills, and locations
@@ -488,15 +487,7 @@ class PortfolioService {
     return FeedDataResult.success(categories: [], skills: [], locations: []);
   }
 
-  /// Get default skills list - returns empty, forces API load
-  List<String> _getDefaultSkills() {
-    return [];
-  }
 
-  /// Get default locations list - returns empty, forces API load
-  List<String> _getDefaultLocations() {
-    return [];
-  }
 
   /// Load feed data with retry mechanism
   Future<FeedDataResult> loadFeedDataWithRetry({int maxRetries = 3}) async {

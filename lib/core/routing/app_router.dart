@@ -23,6 +23,7 @@ import '../../features/search/screens/search_screen.dart';
 import '../../features/payment/screens/payment_main_screen.dart'; // Consolidated payment screen
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/help/screens/help_screen.dart';
 import '../../features/fundi_application/screens/fundi_application_screen.dart';
 import '../../features/feeds/screens/fundi_feed_screen.dart';
 import '../../features/feeds/screens/comprehensive_fundi_profile_screen.dart';
@@ -47,6 +48,8 @@ class AppRouter {
   static const String search = '/search';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
+  static const String help = '/help';
+  static const String messages = '/messages';
   static const String fundiApplication = '/fundi-application';
   static const String fundiFeed = '/fundi-feed';
   static const String jobFeed = '/job-feed';
@@ -158,6 +161,18 @@ class AppRouter {
 
       case '/settings':
         return _buildRoute(const SettingsScreen(), settings);
+
+      case '/help':
+        return _buildRoute(const HelpScreen(), settings);
+
+      case '/messages':
+        // TODO: Implement messaging screen when backend is ready
+        return _buildRoute(
+          const Scaffold(
+            body: Center(child: Text('Messaging feature coming soon')),
+          ),
+          settings,
+        );
 
       case '/fundi-application':
         return _buildRoute(const FundiApplicationScreen(), settings);

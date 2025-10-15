@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/payment_config.dart';
-import '../../../core/theme/app_theme.dart';
 
 /// Card widget for displaying payment actions
 /// Shows action details with icon, amount, and description

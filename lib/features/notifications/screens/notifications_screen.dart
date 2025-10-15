@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/loading_widget.dart';
-import '../providers/notification_provider.dart';
 import '../models/notification_model.dart';
 import '../widgets/notification_card.dart';
+import '../services/notification_service.dart';
 
 /// Enhanced Notifications Screen with Grouping and Batch Actions
 /// Groups notifications by: Today, Yesterday, This Week, Older
@@ -17,8 +16,47 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  final NotificationService _notificationService = NotificationService();
   bool _isSelectionMode = false;
   Set<String> _selectedIds = {};
+
+  bool _isLoading = false;
+  List<NotificationModel> _notifications = [];
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final result = await _notificationService.getNotifications();
+      if (mounted) {
+        setState(() {
+          if (result.success) {
+            _notifications = result.notifications;
+          } else {
+            _error = result.message;
+          }
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load notifications: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,16 +95,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ],
       ),
-      body: Consumer<NotificationProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading && provider.notifications.isEmpty) {
-            return const Center(child: LoadingWidget());
-          }
-
-          final notifications = provider.notifications;
-
-          if (notifications.isEmpty) {
-            return Center(
+      body: _isLoading && _notifications.isEmpty
+          ? const Center(child: LoadingWidget())
+          : _error != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(_error!, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadNotifications,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _notifications.isEmpty
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -84,26 +132,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                 ],
               ),
-            );
-          }
-
-          // Group notifications by date
-          final grouped = _groupNotificationsByDate(notifications);
-
-          return RefreshIndicator(
-            onRefresh: () => provider.loadNotifications(refresh: true),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: grouped.keys.length,
-              itemBuilder: (context, index) {
-                final group = grouped.keys.elementAt(index);
-                final items = grouped[group]!;
-                return _buildGroup(group, items);
-              },
+            )
+          : RefreshIndicator(
+              onRefresh: _loadNotifications,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _groupNotificationsByDate(
+                  _notifications,
+                ).keys.length,
+                itemBuilder: (context, index) {
+                  final grouped = _groupNotificationsByDate(_notifications);
+                  final group = grouped.keys.elementAt(index);
+                  final items = grouped[group]!;
+                  return _buildGroup(group, items);
+                },
+              ),
             ),
-          );
-        },
-      ),
     );
   }
 
@@ -252,13 +296,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              // TODO: Implement batch delete
+            onPressed: () async {
               Navigator.pop(context);
-              setState(() {
-                _selectedIds.clear();
-                _isSelectionMode = false;
-              });
+
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) =>
+                    const Center(child: CircularProgressIndicator()),
+              );
+
+              // Delete selected notifications
+              final result = await _notificationService.deleteNotifications(
+                _selectedIds.toList(),
+              );
+
+              if (mounted) {
+                Navigator.pop(context); // Close loading
+
+                if (result.success) {
+                  // Refresh notifications
+                  await _loadNotifications();
+
+                  setState(() {
+                    _selectedIds.clear();
+                    _isSelectionMode = false;
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result.message ?? 'Notifications deleted successfully',
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result.message ?? 'Failed to delete notifications',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -267,20 +351,71 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  void _markAllRead() {
-    // TODO: Implement mark all as read
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('All notifications marked as read')),
-    );
+  Future<void> _markAllRead() async {
+    final result = await _notificationService.markAllAsRead();
+
+    if (mounted) {
+      if (result.success) {
+        // Refresh notifications
+        await _loadNotifications();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All notifications marked as read'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Failed to mark all as read'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void _deleteNotification(String id) {
-    // TODO: Implement single delete
+  Future<void> _deleteNotification(String id) async {
+    final result = await _notificationService.deleteNotification(id);
+
+    if (mounted) {
+      if (result.success) {
+        // Refresh notifications
+        await _loadNotifications();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notification deleted'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Failed to delete notification'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void _markAsRead(String id) {
-    // TODO: Implement mark as read
-    final provider = Provider.of<NotificationProvider>(context, listen: false);
-    provider.markAsRead(id);
+  Future<void> _markAsRead(String id) async {
+    final result = await _notificationService.markAsRead(id);
+
+    if (mounted) {
+      if (result.success) {
+        // Refresh notifications
+        await _loadNotifications();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Failed to mark as read'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

@@ -465,16 +465,6 @@ class PaymentService {
     try {
       // Validate action
       final paymentAction = await PaymentConfig.getAction(action);
-      if (paymentAction == null) {
-        PaymentLogger.logPaymentError(
-          error: 'Invalid payment action',
-          transactionId: 'unknown',
-          context: {'action': action},
-        );
-        return TransactionResult.failure(
-          message: 'Invalid payment action: $action',
-        );
-      }
 
       // Validate amount
       if (!PaymentConfig.isValidAmount(paymentAction.amount)) {

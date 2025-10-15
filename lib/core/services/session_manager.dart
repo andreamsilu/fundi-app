@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/app_constants.dart';
 import '../utils/logger.dart';
 import '../../features/auth/models/user_model.dart';
@@ -8,12 +9,16 @@ import 'dart:convert';
 
 /// Session manager for handling user authentication state
 /// Manages token storage, user data, and session persistence
+/// Uses flutter_secure_storage for secure token storage
 class SessionManager {
   static final SessionManager _instance = SessionManager._internal();
   factory SessionManager() => _instance;
   SessionManager._internal();
 
   SharedPreferences? _prefs;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
   String? _authToken;
   UserModel? _currentUser;
   bool _isInitialized = false;
@@ -24,7 +29,25 @@ class SessionManager {
 
     try {
       _prefs = await SharedPreferences.getInstance();
-      _authToken = _prefs?.getString(AppConstants.tokenKey);
+
+      // Read token from secure storage
+      _authToken = await _secureStorage.read(key: AppConstants.tokenKey);
+
+      // Migrate old token from SharedPreferences if exists
+      if (_authToken == null) {
+        final oldToken = _prefs?.getString(AppConstants.tokenKey);
+        if (oldToken != null) {
+          Logger.info(
+            'Migrating token from SharedPreferences to secure storage',
+          );
+          await _secureStorage.write(
+            key: AppConstants.tokenKey,
+            value: oldToken,
+          );
+          await _prefs?.remove(AppConstants.tokenKey);
+          _authToken = oldToken;
+        }
+      }
 
       final userDataString = _prefs?.getString(AppConstants.userKey);
       if (userDataString != null) {
@@ -63,14 +86,14 @@ class SessionManager {
   /// Check if session manager is initialized
   bool get isInitialized => _isInitialized;
 
-  /// Save authentication token
+  /// Save authentication token to secure storage
   Future<void> saveToken(String token) async {
     try {
       _authToken = token;
-      // TODO: Migrate to flutter_secure_storage for tokens (SharedPreferences is not encrypted)
-      await _prefs?.setString(AppConstants.tokenKey, token);
+      // Store token in secure storage (encrypted)
+      await _secureStorage.write(key: AppConstants.tokenKey, value: token);
       Logger.auth(
-        'Token saved successfully',
+        'Token saved successfully to secure storage',
         data: {
           'tokenLength': token.length,
           'tokenPreview': token.substring(0, 6) + '***',
@@ -137,9 +160,13 @@ class SessionManager {
     try {
       _authToken = null;
       _currentUser = null;
-      await _prefs?.remove(AppConstants.tokenKey);
+      // Clear token from secure storage
+      await _secureStorage.delete(key: AppConstants.tokenKey);
+      // Clear user data from SharedPreferences
       await _prefs?.remove(AppConstants.userKey);
-      Logger.auth('Session cleared successfully');
+      // Also clear old token from SharedPreferences if it exists
+      await _prefs?.remove(AppConstants.tokenKey);
+      Logger.auth('Session cleared successfully from secure storage');
     } catch (e) {
       Logger.error('Failed to clear session', error: e);
       throw Exception('Failed to clear session data');

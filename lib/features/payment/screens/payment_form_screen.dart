@@ -30,7 +30,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   void initState() {
     super.initState();
     _descriptionController.text = widget.description ?? '';
-    
+
     // Pre-fill with user data if available
     final authProvider = context.read<AuthProvider>();
     if (authProvider.user != null) {
@@ -50,10 +50,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Payment'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Payment'), elevation: 0),
       body: Consumer<PaymentProvider>(
         builder: (context, paymentProvider, child) {
           return SingleChildScrollView(
@@ -65,19 +62,21 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                 children: [
                   // Payment summary
                   _buildPaymentSummary(),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Payment form
                   _buildPaymentForm(),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Process payment button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: paymentProvider.isLoading ? null : _processPayment,
+                      onPressed: paymentProvider.isLoading
+                          ? null
+                          : _processPayment,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -90,7 +89,9 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : Text(
@@ -102,9 +103,9 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
                             ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Payment methods info
                   _buildPaymentMethodsInfo(),
                 ],
@@ -131,12 +132,12 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
         children: [
           Text(
             'Payment Summary',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -146,22 +147,19 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
               ),
               Text(
                 widget.paymentType.toUpperCase(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Amount:',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text('Amount:', style: Theme.of(context).textTheme.bodyMedium),
               Text(
                 _formatAmount(widget.amount),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -182,12 +180,12 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
       children: [
         Text(
           'Payment Details',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        
+
         // Phone number
         TextFormField(
           controller: _phoneController,
@@ -208,9 +206,9 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
             return null;
           },
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Email
         TextFormField(
           controller: _emailController,
@@ -231,9 +229,9 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
             return null;
           },
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Description
         TextFormField(
           controller: _descriptionController,
@@ -261,17 +259,13 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.blue[600],
-                size: 20,
-              ),
+              Icon(Icons.info_outline, color: Colors.blue[600], size: 20),
               const SizedBox(width: 8),
               Text(
                 'Payment Methods',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -282,7 +276,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
           ),
           const SizedBox(height: 4),
           const Text(
-            '• Mobile Money (M-Pesa, Tigo Pesa, Airtel Money)\n'
+            '• http://88.223.92.135:8002/api, Tigo Pesa, Airtel Money)\n'
             '• Bank Cards (Visa, Mastercard)\n'
             '• Bank Transfers',
             style: TextStyle(fontSize: 12),
@@ -296,11 +290,11 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final paymentProvider = context.read<PaymentProvider>();
-    
+
     final result = await paymentProvider.processPayment(
       amount: widget.amount,
       paymentType: widget.paymentType,
-      
+
       phoneNumber: _phoneController.text.trim(),
       email: _emailController.text.trim(),
       description: _descriptionController.text.trim().isNotEmpty

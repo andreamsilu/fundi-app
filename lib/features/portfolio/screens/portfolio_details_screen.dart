@@ -25,7 +25,6 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
   late Animation<Offset> _slideAnimation;
 
   String? _errorMessage;
-  bool _isLoading = false;
   int _currentImageIndex = 0;
 
   @override
@@ -515,7 +514,6 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
 
   Future<void> _deletePortfolio() async {
     setState(() {
-      _isLoading = true;
       _errorMessage = null;
     });
 
@@ -525,7 +523,6 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
 
       // For now, just show success message
       setState(() {
-        _isLoading = false;
       });
 
       if (mounted) {
@@ -539,7 +536,6 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
       }
     } catch (e) {
       setState(() {
-        _isLoading = false;
         _errorMessage = 'Failed to delete portfolio. Please try again.';
       });
     }

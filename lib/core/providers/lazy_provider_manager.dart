@@ -80,7 +80,7 @@ class LazyProviderManager {
 
     _providers[PaymentProvider] = ChangeNotifierProvider(
       create: (_) => PaymentProvider(),
-      lazy: true,
+      lazy: false, // Payment screens need immediate access
     );
 
     _providers[RatingProvider] = ChangeNotifierProvider(

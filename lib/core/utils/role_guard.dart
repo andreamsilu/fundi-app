@@ -225,17 +225,12 @@ class RoleGuard {
   }
 
   /// Get bottom navigation items for a specific role (for BottomNavigationBar)
-  /// Returns fewer items optimized for bottom navigation (3-4 items max)
+  /// Returns fewer items optimized for bottom navigation (3 items max)
+  /// Note: Admin role not supported on mobile app
   static List<BottomNavItem> getBottomNavItemsForRole(UserRole role) {
     switch (role) {
       case UserRole.customer:
         return [
-          BottomNavItem(
-            icon: Icons.work_outline,
-            activeIcon: Icons.work,
-            label: 'My Jobs',
-            route: '/my-jobs',
-          ),
           BottomNavItem(
             icon: Icons.people_outline,
             activeIcon: Icons.people,
@@ -243,10 +238,10 @@ class RoleGuard {
             route: '/fundi-feed',
           ),
           BottomNavItem(
-            icon: Icons.notifications_outlined,
-            activeIcon: Icons.notifications,
-            label: 'Alerts',
-            route: '/notifications',
+            icon: Icons.work_outline,
+            activeIcon: Icons.work,
+            label: 'My Jobs',
+            route: '/my-jobs',
           ),
           BottomNavItem(
             icon: Icons.person_outline,
@@ -279,32 +274,9 @@ class RoleGuard {
         ];
 
       case UserRole.admin:
-        return [
-          BottomNavItem(
-            icon: Icons.dashboard_outlined,
-            activeIcon: Icons.dashboard,
-            label: 'Dashboard',
-            route: '/dashboard',
-          ),
-          BottomNavItem(
-            icon: Icons.admin_panel_settings_outlined,
-            activeIcon: Icons.admin_panel_settings,
-            label: 'Admin',
-            route: '/admin',
-          ),
-          BottomNavItem(
-            icon: Icons.people_outline,
-            activeIcon: Icons.people,
-            label: 'Users',
-            route: '/admin-users',
-          ),
-          BottomNavItem(
-            icon: Icons.person_outline,
-            activeIcon: Icons.person,
-            label: 'Profile',
-            route: '/profile',
-          ),
-        ];
+        // Admin not supported on mobile - use web admin panel instead
+        // Fallback to customer navigation
+        return getBottomNavItemsForRole(UserRole.customer);
     }
   }
 

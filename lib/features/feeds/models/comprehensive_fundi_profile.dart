@@ -5,7 +5,6 @@ import 'package:fundi/features/rating/models/rating_model.dart';
 /// Comprehensive fundi profile model that combines all fundi-related data
 /// This model aggregates data from multiple sources for a complete fundi profile
 class ComprehensiveFundiProfile {
-
   /// Ultra-safe boolean parsing that handles any type of input
   static bool _parseBooleanSafely(dynamic value) {
     try {
@@ -20,12 +19,15 @@ class ComprehensiveFundiProfile {
       if (value is num) return value.toInt() == 1;
       // Handle any other type by converting to string and checking
       final stringValue = value.toString().toLowerCase().trim();
-      return stringValue == 'true' || stringValue == '1' || stringValue == 'yes';
+      return stringValue == 'true' ||
+          stringValue == '1' ||
+          stringValue == 'yes';
     } catch (e) {
       // If anything goes wrong, return false
       return false;
     }
   }
+
   // Personal Details
   final String id;
   final String fullName;
@@ -271,12 +273,11 @@ class ComprehensiveFundiProfile {
       totalRatings: json['total_ratings'] as int? ?? 0,
       recentReviews: recentReviews,
       ratingSummary: ratingSummary,
-      isAvailable: _parseBooleanSafely(
-        json['is_available'] ||
-        json['isAvailable'] ||
-        json['status']?.toString() == 'active' ||
-        json['status'] == null,
-      ),
+      isAvailable:
+          _parseBooleanSafely(json['is_available']) ||
+          _parseBooleanSafely(json['isAvailable']) ||
+          (json['status']?.toString() == 'active') ||
+          (json['status'] == null),
       availabilityStatus: json['availability_status'] as String?,
       lastActiveAt: json['last_active_at'] != null
           ? DateTime.parse(json['last_active_at'] as String)

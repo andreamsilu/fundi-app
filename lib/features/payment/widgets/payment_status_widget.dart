@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/payment_transaction_model.dart';
 import '../../../core/config/payment_config.dart';
 import '../../../core/utils/payment_logger.dart';
+import '../screens/payment_receipt_screen.dart';
 
 /// Widget for displaying payment status and transaction details
 class PaymentStatusWidget extends StatelessWidget {
@@ -280,7 +281,13 @@ class PaymentStatusWidget extends StatelessWidget {
                   'transaction_id': transaction!.id,
                 },
               );
-              // TODO: Implement receipt view
+              // Navigate to receipt screen
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      PaymentReceiptScreen(transactionId: transaction!.id),
+                ),
+              );
             },
             icon: const Icon(Icons.receipt),
             label: const Text('View Receipt'),

@@ -34,10 +34,18 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
   // Filter parameters
   String _searchQuery = '';
   String? _selectedLocation;
+  String? _selectedCategory;
   List<String> _selectedSkills = [];
   double? _minRating;
   bool? _isAvailable;
   bool? _isVerified;
+  
+  // Advanced filter parameters
+  double? _minHourlyRate;
+  double? _maxHourlyRate;
+  int? _minExperience;
+  String _sortBy = 'created_at';
+  String _sortOrder = 'desc';
 
   // Recent searches for autocomplete
   List<String> _recentSearches = [];
@@ -116,10 +124,16 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
         limit: 15,
         searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
         location: _selectedLocation,
+        category: _selectedCategory,
         skills: _selectedSkills.isNotEmpty ? _selectedSkills : null,
         minRating: _minRating,
         isAvailable: _isAvailable,
         isVerified: _isVerified,
+        minHourlyRate: _minHourlyRate,
+        maxHourlyRate: _maxHourlyRate,
+        minExperience: _minExperience,
+        sortBy: _sortBy,
+        sortOrder: _sortOrder,
         useCache: false, // Temporarily disable cache to test
       );
 
@@ -217,10 +231,18 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
     setState(() {
       _searchQuery = filters['search'] ?? '';
       _selectedLocation = filters['location'];
+      _selectedCategory = filters['category'];
       _selectedSkills = List<String>.from(filters['skills'] ?? []);
       _minRating = filters['min_rating'];
       _isAvailable = filters['is_available'];
       _isVerified = filters['is_verified'];
+      
+      // Advanced filters
+      _minHourlyRate = filters['min_hourly_rate'];
+      _maxHourlyRate = filters['max_hourly_rate'];
+      _minExperience = filters['min_experience'];
+      _sortBy = filters['sort_by'] ?? 'created_at';
+      _sortOrder = filters['sort_order'] ?? 'desc';
     });
 
     // Add to recent searches
@@ -494,10 +516,17 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
         currentFilters: {
           'search': _searchQuery,
           'location': _selectedLocation,
+          'category': _selectedCategory,
           'skills': _selectedSkills,
           'min_rating': _minRating,
           'is_available': _isAvailable,
           'is_verified': _isVerified,
+          'hourly_rate_range': _minHourlyRate != null && _maxHourlyRate != null
+              ? RangeValues(_minHourlyRate!, _maxHourlyRate!)
+              : null,
+          'min_experience': _minExperience,
+          'sort_by': _sortBy,
+          'sort_order': _sortOrder,
         },
         onApplyFilters: _applyFilters,
         recentSearches: _recentSearches,

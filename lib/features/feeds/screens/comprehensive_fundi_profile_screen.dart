@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:fundi/shared/widgets/loading_widget.dart';
 import 'package:fundi/shared/widgets/error_widget.dart';
 import '../models/comprehensive_fundi_profile.dart';
+import '../models/fundi_model.dart';
 import '../services/feeds_service.dart';
 import '../widgets/portfolio_item_card.dart';
 import '../widgets/request_fundi_dialog.dart';
@@ -40,7 +42,16 @@ class _ComprehensiveFundiProfileScreenState
     });
 
     try {
-      final fundiId = widget.fundi?['id']?.toString();
+      // Handle both Map and FundiModel
+      String? fundiId;
+      if (widget.fundi is Map) {
+        fundiId = widget.fundi?['id']?.toString();
+      } else if (widget.fundi is FundiModel) {
+        fundiId = (widget.fundi as FundiModel).id;
+      } else {
+        fundiId = widget.fundi?.id?.toString();
+      }
+
       if (fundiId == null || fundiId.isEmpty) {
         setState(() {
           _error = 'Invalid fundi ID';
@@ -87,6 +98,39 @@ class _ComprehensiveFundiProfileScreenState
     );
   }
 
+  /// Share fundi profile details
+  void _shareFundiProfile() {
+    if (_fundiProfile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile not loaded yet'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Build share message
+    final String shareMessage =
+        '''
+🔨 ${_fundiProfile!.fullName}
+${_fundiProfile!.primaryCategory ?? 'Skilled Fundi'}
+
+⭐ Rating: ${_fundiProfile!.formattedAverageRating}/5.0 (${_fundiProfile!.totalRatings} reviews)
+💼 Completed Jobs: ${_fundiProfile!.totalPortfolioItems}
+📍 Location: ${_fundiProfile!.locationString}
+
+${_fundiProfile!.bio ?? 'Experienced professional ready to help!'}
+
+Find skilled fundis on Fundi App!
+''';
+
+    Share.share(
+      shareMessage,
+      subject: 'Check out ${_fundiProfile!.fullName} on Fundi App',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,12 +138,12 @@ class _ComprehensiveFundiProfileScreenState
         title: const Text('Fundi Profile'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.share),
-            onPressed: () {
-              // TODO: Implement share functionality
-            },
+            onPressed: _shareFundiProfile,
+            tooltip: 'Share Profile',
           ),
         ],
       ),

@@ -46,8 +46,6 @@ class FundiModel {
     required this.updatedAt,
   });
 
-
-
   /// Ultra-safe boolean parsing that handles any type of input
   static bool _parseBooleanSafely(dynamic value) {
     try {
@@ -62,7 +60,9 @@ class FundiModel {
       if (value is num) return value.toInt() == 1;
       // Handle any other type by converting to string and checking
       final stringValue = value.toString().toLowerCase().trim();
-      return stringValue == 'true' || stringValue == '1' || stringValue == 'yes';
+      return stringValue == 'true' ||
+          stringValue == '1' ||
+          stringValue == 'yes';
     } catch (e) {
       // If anything goes wrong, return false
       return false;
@@ -74,7 +74,6 @@ class FundiModel {
     try {
       // Handle nested fundi_profile data
       final fundiProfile = json['fundi_profile'] as Map<String, dynamic>?;
-      
 
       // Parse skills from JSON string or array
       List<String> skills = [];
@@ -180,17 +179,15 @@ class FundiModel {
             fundiProfile?['veta_certificate'] ??
             json['veta_certificate'] ??
             json['vetaCertificate'],
-        isVerified: _parseBooleanSafely(
-          fundiProfile?['verification_status'] == 'approved' ||
-          json['is_verified'] ||
-          json['isVerified'],
-        ),
-        isAvailable: _parseBooleanSafely(
-          json['is_available'] ||
-          json['isAvailable'] ||
-          json['status']?.toString() == 'active' ||
-          json['status'] == null,
-        ),
+        isVerified:
+            (fundiProfile?['verification_status'] == 'approved') ||
+            _parseBooleanSafely(json['is_verified']) ||
+            _parseBooleanSafely(json['isVerified']),
+        isAvailable:
+            _parseBooleanSafely(json['is_available']) ||
+            _parseBooleanSafely(json['isAvailable']) ||
+            (json['status']?.toString() == 'active') ||
+            (json['status'] == null),
         bio: fundiProfile?['bio'] ?? json['bio'],
         hourlyRate: (json['hourly_rate'] ?? json['hourlyRate'] ?? 0.0)
             .toDouble(),

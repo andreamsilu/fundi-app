@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/fundi_model.dart';
 import '../../../shared/widgets/optimized_image.dart';
 
+/// Enhanced Fundi Card with stats, badges, and improved UI
 class FundiCard extends StatelessWidget {
   final dynamic fundi;
   final VoidCallback? onTap;
@@ -25,6 +26,19 @@ class FundiCard extends StatelessWidget {
     final int totalRatings = isModel
         ? 0 // Not available on model by default
         : (fundi['total_ratings'] as int? ?? 0);
+
+    // Extract new data fields
+    final Map<String, dynamic>? stats = isModel ? null : fundi['stats'];
+    final Map<String, dynamic>? badges = isModel ? null : fundi['badges'];
+    final String? location = isModel ? null : fundi['location'];
+    final double? hourlyRate = isModel
+        ? null
+        : fundi['hourly_rate']?.toDouble();
+    final bool isAvailable = isModel ? true : (fundi['is_available'] ?? true);
+    final String? phone = isModel ? null : fundi['phone'];
+    final String? profession = isModel
+        ? null
+        : (fundi['profession'] ?? fundi['primary_category']);
     final List<dynamic> portfolioItems = () {
       if (isModel) {
         final Map<String, dynamic> portfolio = (fundi as FundiModel).portfolio;
@@ -79,7 +93,48 @@ class FundiCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
+                        // Profession/Category - Always show with icon
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.work,
+                              size: 12,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              profession ?? 'Skilled Fundi',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        // Phone number
+                        if (phone != null && phone.isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.phone,
+                                size: 12,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                phone,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
                             Icon(Icons.star, color: Colors.amber, size: 14),
@@ -98,18 +153,113 @@ class FundiCard extends StatelessWidget {
                                 fontSize: 11,
                               ),
                             ),
+                            if (location != null && location.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.location_on,
+                                size: 12,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 2),
+                              Expanded(
+                                child: Text(
+                                  location,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 11,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.grey[400],
-                    size: 16,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Verification badges
+                      if (badges != null && badges['is_verified'] == true)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified,
+                                size: 12,
+                                color: Colors.blue,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Verified',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (hourlyRate != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'TZS ${hourlyRate.toStringAsFixed(0)}/hr',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
+
+              // Quick Stats Section
+              if (stats != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatItem(
+                        Icons.check_circle_outline,
+                        '${stats['completed_jobs'] ?? 0} Jobs',
+                        Colors.green,
+                      ),
+                      Container(width: 1, height: 20, color: Colors.grey[300]),
+                      _buildStatItem(
+                        Icons.work_outline,
+                        '${stats['years_experience'] ?? 0} Yrs',
+                        Colors.orange,
+                      ),
+                      Container(width: 1, height: 20, color: Colors.grey[300]),
+                      _buildStatItem(
+                        Icons.speed,
+                        '${stats['response_rate'] ?? 'N/A'}',
+                        Colors.blue,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 12),
 
@@ -314,6 +464,25 @@ class FundiCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// Build a stat item for the quick stats section
+  Widget _buildStatItem(IconData icon, String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

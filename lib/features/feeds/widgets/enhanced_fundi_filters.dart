@@ -20,10 +20,36 @@ class EnhancedFundiFilters extends StatefulWidget {
 class _EnhancedFundiFiltersState extends State<EnhancedFundiFilters> {
   late TextEditingController _searchController;
   String? _selectedLocation;
+  String? _selectedCategory;
   List<String> _selectedSkills = [];
   double? _minRating;
   bool? _isAvailable;
   bool? _isVerified;
+  
+  // Advanced filters
+  RangeValues? _hourlyRateRange;
+  int? _minExperience;
+  String _sortBy = 'created_at';
+  String _sortOrder = 'desc';
+
+  final List<String> _availableCategories = [
+    'Plumbing',
+    'Electrical',
+    'Carpentry',
+    'Painting',
+    'Masonry',
+    'Roofing',
+    'Flooring',
+    'Tiling',
+    'Welding',
+    'Mechanical',
+    'HVAC',
+    'Landscaping',
+    'Gardening',
+    'Cleaning',
+    'Security',
+    'General',
+  ];
 
   final List<String> _availableSkills = [
     'Plumbing',
@@ -82,10 +108,17 @@ class _EnhancedFundiFiltersState extends State<EnhancedFundiFilters> {
       text: widget.currentFilters['search'] ?? '',
     );
     _selectedLocation = widget.currentFilters['location'];
+    _selectedCategory = widget.currentFilters['category'];
     _selectedSkills = List<String>.from(widget.currentFilters['skills'] ?? []);
     _minRating = widget.currentFilters['min_rating'];
     _isAvailable = widget.currentFilters['is_available'];
     _isVerified = widget.currentFilters['is_verified'];
+    
+    // Initialize advanced filters
+    _hourlyRateRange = widget.currentFilters['hourly_rate_range'];
+    _minExperience = widget.currentFilters['min_experience'];
+    _sortBy = widget.currentFilters['sort_by'] ?? 'created_at';
+    _sortOrder = widget.currentFilters['sort_order'] ?? 'desc';
   }
 
   @override
@@ -98,10 +131,18 @@ class _EnhancedFundiFiltersState extends State<EnhancedFundiFilters> {
     widget.onApplyFilters({
       'search': _searchController.text.trim(),
       'location': _selectedLocation,
+      'category': _selectedCategory,
       'skills': _selectedSkills,
       'min_rating': _minRating,
       'is_available': _isAvailable,
       'is_verified': _isVerified,
+      
+      // Advanced filters
+      'min_hourly_rate': _hourlyRateRange?.start,
+      'max_hourly_rate': _hourlyRateRange?.end,
+      'min_experience': _minExperience,
+      'sort_by': _sortBy,
+      'sort_order': _sortOrder,
     });
     Navigator.pop(context);
   }
@@ -110,10 +151,15 @@ class _EnhancedFundiFiltersState extends State<EnhancedFundiFilters> {
     setState(() {
       _searchController.clear();
       _selectedLocation = null;
+      _selectedCategory = null;
       _selectedSkills.clear();
       _minRating = null;
       _isAvailable = null;
       _isVerified = null;
+      _hourlyRateRange = null;
+      _minExperience = null;
+      _sortBy = 'created_at';
+      _sortOrder = 'desc';
     });
   }
 
@@ -121,10 +167,14 @@ class _EnhancedFundiFiltersState extends State<EnhancedFundiFilters> {
     int count = 0;
     if (_searchController.text.isNotEmpty) count++;
     if (_selectedLocation != null) count++;
+    if (_selectedCategory != null) count++;
     if (_selectedSkills.isNotEmpty) count++;
     if (_minRating != null) count++;
     if (_isAvailable != null) count++;
     if (_isVerified != null) count++;
+    if (_hourlyRateRange != null) count++;
+    if (_minExperience != null) count++;
+    if (_sortBy != 'created_at' || _sortOrder != 'desc') count++;
     return count;
   }
 
@@ -192,6 +242,40 @@ class _EnhancedFundiFiltersState extends State<EnhancedFundiFilters> {
             recentSearches: widget.recentSearches,
             onSuggestionSelected: (suggestion) {
               _searchController.text = suggestion;
+            },
+          ),
+
+          const SizedBox(height: 20),
+
+          // Category/Profession Filter
+          const Text(
+            'Profession/Category',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _selectedCategory,
+            decoration: const InputDecoration(
+              hintText: 'Select profession',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.work),
+            ),
+            items: [
+              const DropdownMenuItem<String>(
+                value: null,
+                child: Text('All Professions'),
+              ),
+              ..._availableCategories.map((category) {
+                return DropdownMenuItem<String>(
+                  value: category,
+                  child: Text(category),
+                );
+              }).toList(),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _selectedCategory = value;
+              });
             },
           ),
 
@@ -343,6 +427,73 @@ class _EnhancedFundiFiltersState extends State<EnhancedFundiFilters> {
 
           const SizedBox(height: 20),
 
+          // Hourly Rate Range Filter
+          const Text(
+            'Hourly Rate (TZS)',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          RangeSlider(
+            values: _hourlyRateRange ?? const RangeValues(0, 100000),
+            min: 0,
+            max: 100000,
+            divisions: 20,
+            labels: RangeLabels(
+              _hourlyRateRange?.start.toStringAsFixed(0) ?? '0',
+              _hourlyRateRange?.end.toStringAsFixed(0) ?? '100000',
+            ),
+            onChanged: (values) {
+              setState(() {
+                _hourlyRateRange = values;
+              });
+            },
+          ),
+          if (_hourlyRateRange != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'TZS ${_hourlyRateRange!.start.toStringAsFixed(0)} - TZS ${_hourlyRateRange!.end.toStringAsFixed(0)}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ),
+
+          const SizedBox(height: 20),
+
+          // Experience Filter
+          const Text(
+            'Minimum Experience (Years)',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: (_minExperience ?? 0).toDouble(),
+                  min: 0,
+                  max: 20,
+                  divisions: 20,
+                  label: _minExperience != null && _minExperience! > 0
+                      ? '${_minExperience}+ years'
+                      : 'Any',
+                  onChanged: (value) {
+                    setState(() {
+                      _minExperience = value > 0 ? value.toInt() : null;
+                    });
+                  },
+                ),
+              ),
+              Text(
+                _minExperience != null && _minExperience! > 0
+                    ? '${_minExperience}+ yrs'
+                    : 'Any',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
           // Status Filters
           const Text(
             'Status',
@@ -377,6 +528,70 @@ class _EnhancedFundiFiltersState extends State<EnhancedFundiFilters> {
                   selectedColor: Colors.blue.withOpacity(0.2),
                   checkmarkColor: Colors.blue,
                 ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Sorting Options
+          const Text(
+            'Sort By',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Most Recent'),
+                selected: _sortBy == 'created_at',
+                onSelected: (selected) {
+                  setState(() {
+                    _sortBy = 'created_at';
+                    _sortOrder = 'desc';
+                  });
+                },
+              ),
+              ChoiceChip(
+                label: const Text('Highest Rated'),
+                selected: _sortBy == 'rating',
+                onSelected: (selected) {
+                  setState(() {
+                    _sortBy = 'rating';
+                    _sortOrder = 'desc';
+                  });
+                },
+              ),
+              ChoiceChip(
+                label: const Text('Most Experienced'),
+                selected: _sortBy == 'experience',
+                onSelected: (selected) {
+                  setState(() {
+                    _sortBy = 'experience';
+                    _sortOrder = 'desc';
+                  });
+                },
+              ),
+              ChoiceChip(
+                label: const Text('Lowest Price'),
+                selected: _sortBy == 'hourly_rate' && _sortOrder == 'asc',
+                onSelected: (selected) {
+                  setState(() {
+                    _sortBy = 'hourly_rate';
+                    _sortOrder = 'asc';
+                  });
+                },
+              ),
+              ChoiceChip(
+                label: const Text('Most Reviews'),
+                selected: _sortBy == 'reviews',
+                onSelected: (selected) {
+                  setState(() {
+                    _sortBy = 'reviews';
+                    _sortOrder = 'desc';
+                  });
+                },
               ),
             ],
           ),

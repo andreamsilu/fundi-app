@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
-import '../providers/payment_provider.dart';
+import '../services/payment_service.dart';
 import '../models/payment_plan_model.dart';
 import '../models/payment_transaction_model.dart';
 import '../models/user_subscription_model.dart';
 import 'payment_checkout_screen.dart';
+import 'payment_receipt_screen.dart';
 
 /// Consolidated Payment Main Screen with Tabs
 /// Combines Plans, History, and Settings in one place
@@ -24,6 +24,13 @@ class PaymentMainScreen extends StatefulWidget {
 class _PaymentMainScreenState extends State<PaymentMainScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final PaymentService _paymentService = PaymentService();
+
+  bool _isLoading = false;
+  String? _error;
+  List<PaymentPlanModel> _plans = [];
+  UserSubscriptionModel? _currentPlan;
+  List<PaymentTransactionModel> _transactions = [];
 
   @override
   void initState() {
@@ -43,12 +50,74 @@ class _PaymentMainScreenState extends State<PaymentMainScreen>
   }
 
   Future<void> _loadData() async {
-    final provider = context.read<PaymentProvider>();
-    await Future.wait([
-      provider.loadAvailablePlans(),
-      provider.loadCurrentPlan(),
-      provider.loadPaymentHistory(),
-    ]);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      print('PaymentMainScreen: Loading payment data...');
+
+      final plansResult = await _paymentService.getAvailablePlans();
+      print(
+        'PaymentMainScreen: Plans result - success: ${plansResult.success}, count: ${plansResult.plans?.length ?? 0}',
+      );
+
+      final currentPlanResult = await _paymentService.getCurrentPlan();
+      print(
+        'PaymentMainScreen: Current plan result - success: ${currentPlanResult.success}, has subscription: ${currentPlanResult.subscription != null}',
+      );
+
+      final historyResult = await _paymentService.getPaymentHistory();
+      print(
+        'PaymentMainScreen: History result - success: ${historyResult.success}, count: ${historyResult.transactions?.length ?? 0}',
+      );
+
+      if (mounted) {
+        setState(() {
+          // Plans
+          if (plansResult.success) {
+            _plans = plansResult.plans ?? [];
+            print('PaymentMainScreen: Loaded ${_plans.length} plans');
+          } else {
+            print('PaymentMainScreen: Plans failed - ${plansResult.message}');
+          }
+
+          // Current plan
+          if (currentPlanResult.success) {
+            _currentPlan = currentPlanResult.subscription;
+            print('PaymentMainScreen: Current plan ID: ${_currentPlan?.id}');
+          } else {
+            print(
+              'PaymentMainScreen: Current plan failed - ${currentPlanResult.message}',
+            );
+          }
+
+          // History
+          if (historyResult.success) {
+            _transactions = historyResult.transactions ?? [];
+            print(
+              'PaymentMainScreen: Loaded ${_transactions.length} transactions',
+            );
+          } else {
+            print(
+              'PaymentMainScreen: History failed - ${historyResult.message}',
+            );
+          }
+
+          _isLoading = false;
+          print('PaymentMainScreen: Loading complete');
+        });
+      }
+    } catch (e) {
+      print('PaymentMainScreen: Error loading data - $e');
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load payment data: $e';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _refreshData() async {
@@ -62,6 +131,7 @@ class _PaymentMainScreenState extends State<PaymentMainScreen>
         title: const Text('Payments'),
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
@@ -84,153 +154,167 @@ class _PaymentMainScreenState extends State<PaymentMainScreen>
 
   /// Tab 1: Payment Plans
   Widget _buildPlansTab() {
-    return Consumer<PaymentProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoading) {
-          return const Center(child: LoadingWidget());
-        }
+    if (_isLoading) {
+      return const Center(child: LoadingWidget());
+    }
 
-        if (provider.error != null) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text(provider.error!, textAlign: TextAlign.center),
-                const SizedBox(height: 24),
-                AppButton(
-                  text: 'Retry',
-                  onPressed: _refreshData,
-                  type: ButtonType.secondary,
-                ),
-              ],
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            AppButton(
+              text: 'Retry',
+              onPressed: _refreshData,
+              type: ButtonType.secondary,
             ),
-          );
-        }
+          ],
+        ),
+      );
+    }
 
-        final plans = provider.availablePlans;
-        final currentPlan = provider.currentPlan;
+    final plans = _plans;
+    final currentPlan = _currentPlan;
 
-        return RefreshIndicator(
-          onRefresh: _refreshData,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Current Plan Badge
-                if (currentPlan != null) _buildCurrentPlanBadge(currentPlan),
-
-                const SizedBox(height: 16),
-
-                // Plans Grid
-                ...plans.map((plan) {
-                  final isActive = currentPlan?.id == plan.id;
-                  return _buildPlanCard(plan, isActive);
-                }).toList(),
-              ],
+    // Show empty state if no plans
+    if (plans.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.payment, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            const Text('No payment plans available'),
+            const SizedBox(height: 8),
+            Text(
+              'Please check back later',
+              style: TextStyle(color: Colors.grey[600]),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 24),
+            AppButton(
+              text: 'Retry',
+              onPressed: _refreshData,
+              type: ButtonType.secondary,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Current Plan Badge (converted to PaymentPlanModel)
+            if (currentPlan != null)
+              _buildCurrentSubscriptionBadge(currentPlan),
+
+            const SizedBox(height: 16),
+
+            // Plans Grid
+            ...plans.map((plan) {
+              final isActive = currentPlan?.id == plan.id;
+              return _buildPlanCard(plan, isActive);
+            }).toList(),
+          ],
+        ),
+      ),
     );
   }
 
   /// Tab 2: Payment History
   Widget _buildHistoryTab() {
-    return Consumer<PaymentProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoading) {
-          return const Center(child: LoadingWidget());
-        }
+    if (_isLoading) {
+      return const Center(child: LoadingWidget());
+    }
 
-        final history = provider.transactions;
+    final history = _transactions;
 
-        if (history.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.receipt_long, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                const Text('No payment history'),
-                const SizedBox(height: 8),
-                Text(
-                  'Your transactions will appear here',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ],
+    if (history.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            const Text('No payment history'),
+            const SizedBox(height: 8),
+            Text(
+              'Your transactions will appear here',
+              style: TextStyle(color: Colors.grey[600]),
             ),
-          );
-        }
+          ],
+        ),
+      );
+    }
 
-        return RefreshIndicator(
-          onRefresh: _refreshData,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: history.length,
-            itemBuilder: (context, index) {
-              return _buildHistoryCard(history[index]);
-            },
-          ),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: history.length,
+        itemBuilder: (context, index) {
+          return _buildHistoryCard(history[index]);
+        },
+      ),
     );
   }
 
   /// Tab 3: Payment Settings
   Widget _buildSettingsTab() {
-    return Consumer<PaymentProvider>(
-      builder: (context, provider, child) {
-        final subscription = provider.currentSubscription;
+    final subscription = _currentPlan;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Subscription Status
-              if (subscription != null) ...[
-                _buildSubscriptionCard(subscription),
-                const SizedBox(height: 24),
-              ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Subscription Status
+          if (subscription != null) ...[
+            _buildSubscriptionCard(subscription),
+            const SizedBox(height: 24),
+          ],
 
-              // Quick Actions
-              _buildQuickAction(
-                'Payment Methods',
-                'Manage your payment methods',
-                Icons.credit_card,
-                () {
-                  // TODO: Navigate to payment methods
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildQuickAction(
-                'Billing Information',
-                'Update your billing details',
-                Icons.receipt,
-                () {
-                  // TODO: Navigate to billing info
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildQuickAction(
-                'Auto-Renewal',
-                'Manage subscription renewal',
-                Icons.autorenew,
-                () {
-                  // TODO: Toggle auto-renewal
-                },
-              ),
-            ],
+          // Quick Actions
+          _buildQuickAction(
+            'Payment Methods',
+            'Manage your payment methods',
+            Icons.credit_card,
+            () {
+              // TODO: Navigate to payment methods
+            },
           ),
-        );
-      },
+          const SizedBox(height: 12),
+          _buildQuickAction(
+            'Billing Information',
+            'Update your billing details',
+            Icons.receipt,
+            () {
+              // TODO: Navigate to billing info
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildQuickAction(
+            'Auto-Renewal',
+            'Manage subscription renewal',
+            Icons.autorenew,
+            () {
+              // TODO: Toggle auto-renewal
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildCurrentPlanBadge(PaymentPlanModel plan) {
+  Widget _buildCurrentSubscriptionBadge(UserSubscriptionModel subscription) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -252,7 +336,7 @@ class _PaymentMainScreenState extends State<PaymentMainScreen>
                   style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
                 Text(
-                  plan.name,
+                  'Plan #${subscription.paymentPlanId}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -263,10 +347,10 @@ class _PaymentMainScreenState extends State<PaymentMainScreen>
             ),
           ),
           Text(
-            '${plan.price} TZS',
+            'Active',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -453,6 +537,16 @@ class _PaymentMainScreenState extends State<PaymentMainScreen>
             ),
           ],
         ),
+        onTap: payment.isCompleted
+            ? () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        PaymentReceiptScreen(transactionId: payment.id),
+                  ),
+                );
+              }
+            : null,
       ),
     );
   }

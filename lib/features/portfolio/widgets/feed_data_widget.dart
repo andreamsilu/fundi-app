@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/portfolio_service.dart';
-import '../../../core/theme/app_theme.dart';
 
 /// Widget to demonstrate the enhanced Future.wait pattern
 /// Shows how to load feed data with error handling and fallbacks

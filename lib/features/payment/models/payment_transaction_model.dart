@@ -51,7 +51,7 @@ class PaymentTransactionModel {
       paymentPlanId: json['payment_plan_id'] as int,
       transactionType: json['transaction_type'] as String,
       referenceId: json['reference_id'] as String?,
-      amount: (json['amount'] as num).toDouble(),
+      amount: _parseDouble(json['amount']),
       currency: json['currency'] as String,
       paymentMethod: json['payment_method'] as String?,
       paymentReference: json['payment_reference'] as String?,
@@ -179,4 +179,13 @@ class PaymentTransactionModel {
 
   /// Get tracking URL if available
   String? get trackingUrl => callbackData?['tracking_url'] as String?;
+
+  /// Helper method to parse double from dynamic value (handles both String and num)
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 }

@@ -30,7 +30,7 @@ class PaymentPlanModel {
       name: json['name'] as String,
       type: json['type'] as String,
       description: json['description'] as String?,
-      price: (json['price'] as num).toDouble(),
+      price: _parseDouble(json['price']),
       billingCycle: json['billing_cycle'] as String?,
       features: List<String>.from(json['features'] ?? []),
       limits: json['limits'] as Map<String, dynamic>?,
@@ -86,5 +86,14 @@ class PaymentPlanModel {
   String get fullPriceDisplay {
     if (isFree) return 'Free';
     return 'TZS ${price.toStringAsFixed(0)}$billingCycleDisplay';
+  }
+
+  /// Helper method to parse double from dynamic value (handles both String and num)
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 }
