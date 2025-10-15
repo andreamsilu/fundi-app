@@ -69,6 +69,30 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
+  /// Format error message from AuthResult, extracting validation details
+  String _formatErrorMessage(dynamic result) {
+    // Check if result has validation errors
+    if (result?.errors != null && result.errors is Map) {
+      final errors = result.errors as Map<String, dynamic>;
+      final errorMessages = <String>[];
+
+      errors.forEach((field, messages) {
+        if (messages is List) {
+          errorMessages.addAll(messages.map((e) => '• $e'));
+        } else {
+          errorMessages.add('• $messages');
+        }
+      });
+
+      if (errorMessages.isNotEmpty) {
+        return errorMessages.join('\n');
+      }
+    }
+
+    // Fallback to generic message
+    return result?.message ?? 'Registration failed. Please try again.';
+  }
+
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -90,7 +114,6 @@ class _RegisterScreenState extends State<RegisterScreen>
       // First, send OTP for verification
       final otpResult = await AuthService().sendOtp(
         phoneNumber: _phoneController.text.trim(),
-        type: OtpVerificationType.registration,
       );
 
       if (otpResult.success) {
@@ -101,7 +124,6 @@ class _RegisterScreenState extends State<RegisterScreen>
             MaterialPageRoute(
               builder: (context) => OtpVerificationScreen(
                 phoneNumber: _phoneController.text.trim(),
-                type: OtpVerificationType.registration,
               ),
             ),
           );
@@ -123,7 +145,8 @@ class _RegisterScreenState extends State<RegisterScreen>
               }
             } else {
               setState(() {
-                _errorMessage = registerResult.message;
+                // Extract detailed error message
+                _errorMessage = _formatErrorMessage(registerResult);
               });
             }
           }

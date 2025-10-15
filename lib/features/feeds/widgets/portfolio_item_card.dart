@@ -74,6 +74,22 @@ class PortfolioItemCard extends StatelessWidget {
                         child: Image.network(
                           mediaItem['url'].toString(),
                           fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: Colors.grey[200],
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
                               color: Colors.grey[300],
@@ -154,10 +170,14 @@ class PortfolioItemCard extends StatelessWidget {
                   const SizedBox(width: 16),
                 ],
                 if (budget != null) ...[
-                  Icon(Icons.attach_money, size: 16, color: Colors.grey[600]),
+                  Icon(
+                    Icons.payments_outlined,
+                    size: 16,
+                    color: Colors.grey[600],
+                  ),
                   const SizedBox(width: 4),
                   Text(
-                    'TZS ${budget.toStringAsFixed(0)}',
+                    '${budget.toStringAsFixed(0)}',
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                 ],

@@ -108,19 +108,28 @@ class PortfolioModel {
       if (json['skills_used'] != null) {
         if (json['skills_used'] is String) {
           // Handle comma-separated string
-          skillsUsed = json['skills_used']
+          skillsUsed = (json['skills_used'] as String)
               .split(',')
-              .map((s) => s.trim())
+              .map<String>((s) => s.trim())
+              .where((s) => s.isNotEmpty)
               .toList();
         } else if (json['skills_used'] is List) {
-          skillsUsed = List<String>.from(json['skills_used']);
+          // Convert List<dynamic> to List<String> safely
+          skillsUsed = (json['skills_used'] as List<dynamic>)
+              .map<String>((e) => e.toString())
+              .where((s) => s.isNotEmpty)
+              .toList();
         }
       }
 
       // Handle images field - can be null or list
       List<String> images = [];
       if (json['images'] != null && json['images'] is List) {
-        images = List<String>.from(json['images']);
+        // Convert List<dynamic> to List<String> safely
+        images = (json['images'] as List<dynamic>)
+            .map<String>((e) => e.toString())
+            .where((s) => s.isNotEmpty)
+            .toList();
       }
 
       // Handle media field if present
@@ -128,8 +137,12 @@ class PortfolioModel {
       if (json['media'] != null && json['media'] is List) {
         final mediaList = json['media'] as List<dynamic>;
         for (final media in mediaList) {
-          if (media is Map<String, dynamic> && media['file_path'] != null) {
-            imageUrls.add(media['file_path'] as String);
+          if (media is Map<String, dynamic>) {
+            // Try file_url first (from API), then file_path (fallback)
+            final fileUrl = media['file_url'] ?? media['file_path'];
+            if (fileUrl != null) {
+              imageUrls.add(fileUrl.toString());
+            }
           }
         }
       }
@@ -159,7 +172,9 @@ class PortfolioModel {
             ? imageUrls
             : null, // Additional field for mobile
         videoUrls: json['video_urls'] != null
-            ? (json['video_urls'] as List).map((e) => e.toString()).toList()
+            ? (json['video_urls'] as List)
+                  .map<String>((e) => e.toString())
+                  .toList()
             : null, // Additional field for mobile
         location: json['location'] as String?, // Additional field for mobile
         clientName:

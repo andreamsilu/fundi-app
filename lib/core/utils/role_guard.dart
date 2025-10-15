@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../features/auth/providers/auth_provider.dart';
+import '../../features/auth/services/auth_service.dart';
 import '../../features/auth/models/user_model.dart';
 
 /// Role-based access control guard
@@ -62,8 +61,9 @@ class RoleGuard {
     BuildContext context,
     String routeName,
   ) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
+    final user = authService.currentUser;
 
     if (user == null) {
       return false;
@@ -92,8 +92,9 @@ class RoleGuard {
 
   /// Get appropriate redirect route with context
   static String getRedirectRouteWithContext(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
+    final user = authService.currentUser;
 
     if (user == null) {
       return '/login';
@@ -104,16 +105,18 @@ class RoleGuard {
 
   /// Check if user has specific role
   static bool hasRole(BuildContext context, UserRole requiredRole) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
+    final user = authService.currentUser;
 
     return user?.roles.contains(requiredRole) ?? false;
   }
 
   /// Check if user has any of the specified roles
   static bool hasAnyRole(BuildContext context, List<UserRole> requiredRoles) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
+    final user = authService.currentUser;
 
     if (user == null) return false;
 

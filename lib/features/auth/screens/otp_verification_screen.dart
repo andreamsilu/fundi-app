@@ -8,17 +8,11 @@ import '../../../core/theme/app_theme.dart';
 
 /// OTP Verification Screen
 /// Handles phone number verification with 6-digit OTP
+/// Simplified - no type differentiation needed
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
-  final OtpVerificationType type;
-  final String? userId; // For password reset verification
 
-  const OtpVerificationScreen({
-    super.key,
-    required this.phoneNumber,
-    required this.type,
-    this.userId,
-  });
+  const OtpVerificationScreen({super.key, required this.phoneNumber});
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
@@ -130,8 +124,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
       final result = await AuthService().verifyOtp(
         phoneNumber: widget.phoneNumber,
         otp: _otpController.text,
-        type: widget.type,
-        userId: widget.userId,
       );
 
       if (result.success) {
@@ -140,7 +132,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           _successMessage = result.message;
         });
 
-        // Navigate based on verification type
+        // OTP verified successfully - return to previous screen
         _handleVerificationSuccess();
       } else {
         setState(() {
@@ -166,26 +158,33 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   }
 
   void _handleVerificationSuccess() {
-    switch (widget.type) {
-      case OtpVerificationType.registration:
-        // Navigate to appropriate dashboard based on user role
-        Navigator.pushReplacementNamed(context, '/dashboard');
-        break;
-      case OtpVerificationType.passwordReset:
-        // Navigate to new password screen
-        Navigator.pushReplacementNamed(
-          context,
-          '/new-password',
-          arguments: {
-            'phoneNumber': widget.phoneNumber,
-            'otp': _otpController.text,
-          },
-        );
-        break;
-      case OtpVerificationType.phoneChange:
-        // Navigate back to profile or show success
-        Navigator.pop(context, true);
-        break;
+    // OTP verified - return true to calling screen
+    if (mounted) {
+      Navigator.pop(context, true);
+    }
+  }
+
+  void _showMaxAttemptsDialog() {
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Maximum Attempts Reached'),
+          content: const Text(
+            'You have reached the maximum number of verification attempts. Please request a new OTP.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -200,8 +199,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     try {
       final result = await AuthService().resendOtp(
         phoneNumber: widget.phoneNumber,
-        type: widget.type,
-        userId: widget.userId,
       );
 
       if (result.success) {
@@ -225,35 +222,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
         });
       }
     }
-  }
-
-  void _showMaxAttemptsDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Maximum Attempts Reached'),
-        content: const Text(
-          'You have exceeded the maximum number of verification attempts. Please request a new OTP.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _handleResendOtp();
-            },
-            child: const Text('Request New OTP'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

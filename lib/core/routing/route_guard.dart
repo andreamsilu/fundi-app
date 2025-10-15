@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../features/auth/providers/auth_provider.dart';
+import '../../features/auth/services/auth_service.dart';
 import 'app_router.dart';
 
 /// Route guard widget that protects routes based on authentication status
@@ -20,34 +19,33 @@ class RouteGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        // Check authentication requirement
-        if (requiresAuth && !authProvider.isAuthenticated) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(
-              context,
-            ).pushReplacementNamed(redirectRoute ?? AppRouter.login);
-          });
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
+    final user = authService.currentUser;
+    final isAuthenticated = authService.isAuthenticated;
 
-        // Check role-based access
-        if (allowedRoles.isNotEmpty && authProvider.user != null) {
-          final userRole = authProvider.user!.primaryRole;
-          if (!allowedRoles.contains(userRole.value)) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).pushReplacementNamed(AppRouter.dashboard);
-            });
-            return const Scaffold(body: Center(child: Text('Access denied')));
-          }
-        }
+    // Check authentication requirement
+    if (requiresAuth && !isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(redirectRoute ?? AppRouter.login);
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-        return child;
-      },
-    );
+    // Check role-based access
+    if (allowedRoles.isNotEmpty && user != null) {
+      final userRole = user.primaryRole;
+      if (!allowedRoles.contains(userRole.value)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).pushReplacementNamed(AppRouter.dashboard);
+        });
+        return const Scaffold(body: Center(child: Text('Access denied')));
+      }
+    }
+
+    return child;
   }
 }
 
@@ -76,21 +74,18 @@ class GuestGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        if (authProvider.isAuthenticated) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(
-              context,
-            ).pushReplacementNamed(redirectRoute ?? AppRouter.dashboard);
-          });
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        return child;
-      },
-    );
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
+
+    if (authService.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(redirectRoute ?? AppRouter.dashboard);
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return child;
   }
 }
 

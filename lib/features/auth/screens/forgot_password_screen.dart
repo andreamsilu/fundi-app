@@ -79,7 +79,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       // Send OTP for password reset verification
       final otpResult = await AuthService().sendOtp(
         phoneNumber: _phoneController.text.trim(),
-        type: OtpVerificationType.passwordReset,
       );
 
       if (otpResult.success) {
@@ -90,7 +89,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             MaterialPageRoute(
               builder: (context) => OtpVerificationScreen(
                 phoneNumber: _phoneController.text.trim(),
-                type: OtpVerificationType.passwordReset,
               ),
             ),
           );

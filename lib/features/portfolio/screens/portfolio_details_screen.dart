@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/portfolio_model.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../auth/services/auth_service.dart';
 
 /// Portfolio details screen showing comprehensive portfolio information
 /// Displays images, videos, and project details
@@ -425,66 +424,66 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
   }
 
   Widget _buildActionButtons() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        if (authProvider.isFundi &&
-            authProvider.user?.id == widget.portfolio.fundiId) {
-          // Portfolio owner actions
-          return Column(
-            children: [
-              AppButton(
-                text: 'Edit Portfolio',
-                onPressed: () {
-                  // TODO: Navigate to edit portfolio screen
-                },
-                type: ButtonType.secondary,
-                isFullWidth: true,
-                icon: Icons.edit,
-              ),
-              const SizedBox(height: 12),
-              AppButton(
-                text: 'Delete Portfolio',
-                onPressed: () {
-                  _showDeleteConfirmation();
-                },
-                type: ButtonType.danger,
-                isFullWidth: true,
-                icon: Icons.delete,
-              ),
-            ],
-          );
-        } else {
-          // Other user actions
-          return Column(
-            children: [
-              AppButton(
-                text: 'Contact Fundi',
-                onPressed: () {
-                  // TODO: Navigate to chat with fundi
-                },
-                isFullWidth: true,
-                icon: Icons.message,
-              ),
-              const SizedBox(height: 12),
-              AppButton(
-                text: 'View More Work',
-                onPressed: () {
-                  // Navigate to fundi's profile (portfolio is part of profile)
-                  Navigator.pushNamed(
-                    context,
-                    '/profile',
-                    arguments: {'userId': widget.portfolio.fundiId},
-                  );
-                },
-                type: ButtonType.secondary,
-                isFullWidth: true,
-                icon: Icons.work_outline,
-              ),
-            ],
-          );
-        }
-      },
-    );
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
+    final user = authService.currentUser;
+    final isFundi = authService.currentUser?.isFundi ?? false;
+
+    if (isFundi && user?.id == widget.portfolio.fundiId) {
+      // Portfolio owner actions
+      return Column(
+        children: [
+          AppButton(
+            text: 'Edit Portfolio',
+            onPressed: () {
+              // TODO: Navigate to edit portfolio screen
+            },
+            type: ButtonType.secondary,
+            isFullWidth: true,
+            icon: Icons.edit,
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            text: 'Delete Portfolio',
+            onPressed: () {
+              _showDeleteConfirmation();
+            },
+            type: ButtonType.danger,
+            isFullWidth: true,
+            icon: Icons.delete,
+          ),
+        ],
+      );
+    } else {
+      // Other user actions
+      return Column(
+        children: [
+          AppButton(
+            text: 'Contact Fundi',
+            onPressed: () {
+              // TODO: Navigate to chat with fundi
+            },
+            isFullWidth: true,
+            icon: Icons.message,
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            text: 'View More Work',
+            onPressed: () {
+              // Navigate to fundi's profile (portfolio is part of profile)
+              Navigator.pushNamed(
+                context,
+                '/profile',
+                arguments: {'userId': widget.portfolio.fundiId},
+              );
+            },
+            type: ButtonType.secondary,
+            isFullWidth: true,
+            icon: Icons.work_outline,
+          ),
+        ],
+      );
+    }
   }
 
   void _showDeleteConfirmation() {
@@ -522,8 +521,7 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
       // final result = await PortfolioService().deletePortfolio(widget.portfolio.id);
 
       // For now, just show success message
-      setState(() {
-      });
+      setState(() {});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

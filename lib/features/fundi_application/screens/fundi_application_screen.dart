@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../services/fundi_application_service.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../auth/services/auth_service.dart';
 import '../../../shared/widgets/input_widget.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../core/theme/app_theme.dart';
@@ -70,7 +69,9 @@ class _FundiApplicationScreenState extends State<FundiApplicationScreen> {
 
   void _loadUserData() {
     try {
-      final user = Provider.of<AuthProvider>(context, listen: false).user;
+      // Use AuthService directly instead of Provider
+      final authService = AuthService();
+      final user = authService.currentUser;
       if (user != null) {
         _fullNameController.text = user.fullName ?? '';
         _phoneController.text = user.phone;

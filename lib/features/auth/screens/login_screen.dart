@@ -64,6 +64,30 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  /// Format error message from AuthResult, extracting validation details
+  String _formatErrorMessage(dynamic result) {
+    // Check if result has validation errors
+    if (result?.errors != null && result.errors is Map) {
+      final errors = result.errors as Map<String, dynamic>;
+      final errorMessages = <String>[];
+
+      errors.forEach((field, messages) {
+        if (messages is List) {
+          errorMessages.addAll(messages.map((e) => '• $e'));
+        } else {
+          errorMessages.add('• $messages');
+        }
+      });
+
+      if (errorMessages.isNotEmpty) {
+        return errorMessages.join('\n');
+      }
+    }
+
+    // Fallback to generic message
+    return result?.message ?? 'Login failed. Please try again.';
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -100,7 +124,8 @@ class _LoginScreenState extends State<LoginScreen>
         }
       } else {
         setState(() {
-          _errorMessage = result.message;
+          // Extract detailed error message
+          _errorMessage = _formatErrorMessage(result);
         });
       }
     } catch (e) {

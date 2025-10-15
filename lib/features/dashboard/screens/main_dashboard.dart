@@ -374,6 +374,9 @@ class _MainDashboardState extends State<MainDashboard>
                   onTap: () => _handleLogout(authService),
                   isDestructive: true,
                 ),
+
+                // Bottom spacing to prevent hiding by navigation buttons
+                const SizedBox(height: 80),
               ],
             ),
           ),

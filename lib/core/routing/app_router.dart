@@ -3,8 +3,6 @@ import 'package:fundi/features/auth/services/auth_service.dart';
 import 'package:fundi/features/job/models/job_model.dart';
 // Removed chat_model import as messaging feature was deleted
 import 'package:fundi/features/portfolio/models/portfolio_model.dart';
-import 'package:provider/provider.dart';
-import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
@@ -84,11 +82,7 @@ class AppRouter {
       case '/otp-verification':
         final args = settings.arguments as Map<String, dynamic>?;
         return _buildRoute(
-          OtpVerificationScreen(
-            phoneNumber: args?['phoneNumber'] ?? '',
-            type: args?['type'] ?? OtpVerificationType.registration,
-            userId: args?['userId'],
-          ),
+          OtpVerificationScreen(phoneNumber: args?['phoneNumber'] ?? ''),
           settings,
         );
 
@@ -320,20 +314,21 @@ class AppRouter {
 
   /// Route guards and authentication checks
   static bool canAccessRoute(BuildContext context, String routeName) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
 
     // Define protected routes
     const protectedRoutes = [dashboard, profile];
 
     if (protectedRoutes.contains(routeName)) {
-      return authProvider.isAuthenticated;
+      return authService.isAuthenticated;
     }
 
     // Define auth-only routes (login, register when already authenticated)
     const authOnlyRoutes = [login, register];
 
     if (authOnlyRoutes.contains(routeName)) {
-      return !authProvider.isAuthenticated;
+      return !authService.isAuthenticated;
     }
 
     return true;
@@ -350,11 +345,10 @@ class AppRouter {
       return pushNamed<T>(context, routeName, arguments: arguments);
     } else {
       // Redirect to appropriate route
+      // Use AuthService directly instead of Provider
+      final authService = AuthService();
       final redirect =
-          redirectRoute ??
-          (Provider.of<AuthProvider>(context, listen: false).isAuthenticated
-              ? dashboard
-              : login);
+          redirectRoute ?? (authService.isAuthenticated ? dashboard : login);
       return pushNamed<T>(context, redirect, arguments: arguments);
     }
   }
@@ -377,17 +371,11 @@ class AppRouter {
 /// Route arguments classes for type safety
 class OtpVerificationArgs {
   final String phoneNumber;
-  final OtpVerificationType type;
-  final String? userId;
 
-  OtpVerificationArgs({
-    required this.phoneNumber,
-    required this.type,
-    this.userId,
-  });
+  OtpVerificationArgs({required this.phoneNumber});
 
   Map<String, dynamic> toMap() {
-    return {'phoneNumber': phoneNumber, 'type': type, 'userId': userId};
+    return {'phoneNumber': phoneNumber};
   }
 }
 

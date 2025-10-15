@@ -4,9 +4,6 @@ import '../../../core/services/session_manager.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/constants/api_endpoints.dart';
 
-/// OTP Verification Types
-enum OtpVerificationType { registration, passwordReset, phoneChange }
-
 /// Authentication service handling all auth-related operations
 /// Provides methods for login, registration, logout, and user management
 class AuthService {
@@ -70,11 +67,25 @@ class AuthService {
         return AuthResult.success(user: user, message: response.message);
       } else {
         Logger.warning('Login failed: ${response.message}');
-        return AuthResult.failure(message: response.message);
+
+        // Extract validation errors if present
+        Map<String, dynamic>? errors;
+        if (response.data != null && response.data!['errors'] != null) {
+          errors = response.data!['errors'] as Map<String, dynamic>?;
+        }
+
+        return AuthResult.failure(message: response.message, errors: errors);
       }
     } on ApiError catch (e) {
       Logger.error('Login API error', error: e);
-      return AuthResult.failure(message: e.message);
+
+      // Extract validation errors from ApiError if available
+      Map<String, dynamic>? errors;
+      if (e.errors != null) {
+        errors = e.errors;
+      }
+
+      return AuthResult.failure(message: e.message, errors: errors);
     } catch (e) {
       Logger.error('Login unexpected error', error: e);
       return AuthResult.failure(message: 'An unexpected error occurred');
@@ -122,11 +133,25 @@ class AuthService {
         return AuthResult.success(user: user, message: response.message);
       } else {
         Logger.warning('Registration failed: ${response.message}');
-        return AuthResult.failure(message: response.message);
+
+        // Extract validation errors if present
+        Map<String, dynamic>? errors;
+        if (response.data != null && response.data!['errors'] != null) {
+          errors = response.data!['errors'] as Map<String, dynamic>?;
+        }
+
+        return AuthResult.failure(message: response.message, errors: errors);
       }
     } on ApiError catch (e) {
       Logger.error('Registration API error', error: e);
-      return AuthResult.failure(message: e.message);
+
+      // Extract validation errors from ApiError if available
+      Map<String, dynamic>? errors;
+      if (e.errors != null) {
+        errors = e.errors;
+      }
+
+      return AuthResult.failure(message: e.message, errors: errors);
     } catch (e) {
       Logger.error('Registration unexpected error', error: e);
       return AuthResult.failure(message: 'An unexpected error occurred');
@@ -315,24 +340,14 @@ class AuthService {
   }
 
   /// Send OTP for phone verification
-  Future<AuthResult> sendOtp({
-    required String phoneNumber,
-    required OtpVerificationType type,
-    String? userId,
-  }) async {
+  /// Simplified - no type field needed
+  Future<AuthResult> sendOtp({required String phoneNumber}) async {
     try {
-      Logger.userAction(
-        'OTP send attempt',
-        data: {'phoneNumber': phoneNumber, 'type': type.name},
-      );
+      Logger.userAction('OTP send attempt', data: {'phoneNumber': phoneNumber});
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.authSendOtp,
-        {
-          'phone_number': phoneNumber,
-          'type': type.name,
-          if (userId != null) 'user_id': userId.toString(),
-        },
+        {'phone': phoneNumber},
         {},
         fromJson: (data) => data as Map<String, dynamic>,
       );
@@ -354,44 +369,27 @@ class AuthService {
   }
 
   /// Verify OTP
+  /// Simplified - no type field needed
   Future<AuthResult> verifyOtp({
     required String phoneNumber,
     required String otp,
-    required OtpVerificationType type,
-    String? userId,
   }) async {
     try {
       Logger.userAction(
         'OTP verification attempt',
-        data: {'phoneNumber': phoneNumber, 'type': type.name},
+        data: {'phoneNumber': phoneNumber},
       );
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         ApiEndpoints.authVerifyOtp,
-        {
-          'phone_number': phoneNumber,
-          'otp': otp,
-          'type': type.name,
-          if (userId != null) 'user_id': userId.toString(),
-        },
+        {'phone': phoneNumber, 'otp': otp},
         {},
         fromJson: (data) => data as Map<String, dynamic>,
       );
 
-      if (response.success && response.data != null) {
-        // For registration, save session
-        if (type == OtpVerificationType.registration) {
-          final token = response.data!['token'] as String;
-          final userData = response.data!['user'] as Map<String, dynamic>;
-          final user = UserModel.fromJson(userData);
-          await _sessionManager.saveSession(token: token, user: user);
-        }
-
+      if (response.success) {
         Logger.userAction('OTP verified successfully');
-        return AuthResult.success(
-          user: _sessionManager.currentUser,
-          message: response.message,
-        );
+        return AuthResult.success(message: response.message);
       } else {
         Logger.warning('OTP verification failed: ${response.message}');
         return AuthResult.failure(message: response.message);
@@ -406,12 +404,8 @@ class AuthService {
   }
 
   /// Resend OTP
-  Future<AuthResult> resendOtp({
-    required String phoneNumber,
-    required OtpVerificationType type,
-    String? userId,
-  }) async {
-    return await sendOtp(phoneNumber: phoneNumber, type: type, userId: userId);
+  Future<AuthResult> resendOtp({required String phoneNumber}) async {
+    return await sendOtp(phoneNumber: phoneNumber);
   }
 
   /// Reset password with OTP verification
@@ -502,14 +496,23 @@ class AuthResult {
   final bool success;
   final String message;
   final UserModel? user;
+  final Map<String, dynamic>? errors; // Validation errors from API
 
-  AuthResult._({required this.success, required this.message, this.user});
+  AuthResult._({
+    required this.success,
+    required this.message,
+    this.user,
+    this.errors,
+  });
 
   factory AuthResult.success({required String message, UserModel? user}) {
     return AuthResult._(success: true, message: message, user: user);
   }
 
-  factory AuthResult.failure({required String message}) {
-    return AuthResult._(success: false, message: message);
+  factory AuthResult.failure({
+    required String message,
+    Map<String, dynamic>? errors,
+  }) {
+    return AuthResult._(success: false, message: message, errors: errors);
   }
 }

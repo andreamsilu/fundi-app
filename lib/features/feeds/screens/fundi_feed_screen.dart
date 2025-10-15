@@ -24,7 +24,8 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
   final FeedsService _feedsService = FeedsService();
   final ScrollController _scrollController = ScrollController();
 
-  List<FundiModel> _fundis = [];
+  List<dynamic> _fundis =
+      []; // Keep as raw Map to preserve all API fields (profession, stats, badges)
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMoreData = true;
@@ -39,7 +40,7 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
   double? _minRating;
   bool? _isAvailable;
   bool? _isVerified;
-  
+
   // Advanced filter parameters
   double? _minHourlyRate;
   double? _maxHourlyRate;
@@ -148,21 +149,9 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
         final fundisData = result['fundis'] as List<dynamic>;
         print('FundiFeedScreen: Received ${fundisData.length} fundis from API');
 
+        // Keep raw Map data to preserve profession, stats, badges from API
         final newFundis = fundisData.map((json) {
-          try {
-            // Parse fundi data safely
-            final jsonMap = json as Map<String, dynamic>;
-            return FundiModel.fromJson(jsonMap);
-          } catch (e) {
-            print('Error parsing fundi: $e');
-            print('Problematic JSON: $json');
-            print('Error type: ${e.runtimeType}');
-            if (e.toString().contains('bool')) {
-              print('Boolean parsing error detected!');
-            }
-            // Return a default fundi model to prevent crashes
-            return FundiModel.empty();
-          }
+          return json as Map<String, dynamic>;
         }).toList();
 
         print(
@@ -236,7 +225,7 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
       _minRating = filters['min_rating'];
       _isAvailable = filters['is_available'];
       _isVerified = filters['is_verified'];
-      
+
       // Advanced filters
       _minHourlyRate = filters['min_hourly_rate'];
       _maxHourlyRate = filters['max_hourly_rate'];

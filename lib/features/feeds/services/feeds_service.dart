@@ -272,9 +272,16 @@ class FeedsService {
       );
 
       if (response.success && response.data != null) {
+        // Extract the nested 'data' field if it exists, otherwise use response.data directly
+        final fundiData =
+            response.data is Map<String, dynamic> &&
+                response.data.containsKey('data')
+            ? response.data['data']
+            : response.data;
+
         return {
           'success': true,
-          'fundi': response.data,
+          'fundi': fundiData,
           'message': 'Fundi profile fetched successfully',
         };
       } else {

@@ -255,16 +255,24 @@ class ApiClient {
           );
         }
 
-        // Try to extract error message from response
+        // Try to extract error message and validation errors from response
         String message = AppConstants.serverErrorMessage;
+        Map<String, dynamic>? errors;
+
         if (responseData is Map<String, dynamic>) {
           message = responseData['message'] ?? responseData['error'] ?? message;
+
+          // Extract validation errors if present (typically from 422 responses)
+          if (responseData['errors'] != null) {
+            errors = responseData['errors'] as Map<String, dynamic>?;
+          }
         }
 
         return ApiError(
           message: message,
           code: 'API_ERROR',
           statusCode: statusCode,
+          errors: errors,
         );
 
       default:
@@ -539,11 +547,13 @@ class ApiError implements Exception {
   final String message;
   final String code;
   final int statusCode;
+  final Map<String, dynamic>? errors; // Validation errors from API
 
   ApiError({
     required this.message,
     required this.code,
     required this.statusCode,
+    this.errors,
   });
 
   @override

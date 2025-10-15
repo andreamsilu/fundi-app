@@ -190,27 +190,42 @@ class ComprehensiveFundiProfile {
     final user = json['user'] as Map<String, dynamic>? ?? {};
     final fundiProfile = json['fundi_profile'] as Map<String, dynamic>? ?? {};
 
-    // Parse skills
+    // Parse skills - check both fundiProfile and root json
     List<String> skills = [];
-    if (fundiProfile['skills'] != null) {
-      if (fundiProfile['skills'] is String) {
+    final skillsSource = fundiProfile['skills'] ?? json['skills'];
+    if (skillsSource != null) {
+      if (skillsSource is String) {
         try {
-          final decoded =
-              jsonDecode(fundiProfile['skills'] as String) as List<dynamic>;
+          final decoded = jsonDecode(skillsSource) as List<dynamic>;
           skills = List<String>.from(decoded);
         } catch (e) {
-          skills = (fundiProfile['skills'] as String)
+          skills = skillsSource
               .split(',')
               .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
               .toList();
         }
-      } else if (fundiProfile['skills'] is List) {
-        skills = List<String>.from(fundiProfile['skills']);
+      } else if (skillsSource is List) {
+        skills = List<String>.from(skillsSource);
       }
     }
 
-    // Parse portfolio items
-    final portfolioItems = json['portfolio_items'] as List<dynamic>? ?? [];
+    // Parse portfolio items - handle both formats
+    List<dynamic> portfolioItems = [];
+
+    // Check for portfolio.items structure (from getFundiProfile API)
+    if (json['portfolio'] != null && json['portfolio']['items'] != null) {
+      portfolioItems = json['portfolio']['items'] as List<dynamic>;
+    }
+    // Check for portfolio_items structure (from other APIs)
+    else if (json['portfolio_items'] != null) {
+      portfolioItems = json['portfolio_items'] as List<dynamic>;
+    }
+    // Check for portfolioItems structure
+    else if (json['portfolioItems'] != null) {
+      portfolioItems = json['portfolioItems'] as List<dynamic>;
+    }
+
     final recentWorks = portfolioItems
         .map((item) => PortfolioModel.fromJson(item as Map<String, dynamic>))
         .toList();
@@ -242,6 +257,25 @@ class ComprehensiveFundiProfile {
     final otherCerts = json['other_certifications'] as List<dynamic>? ?? [];
     final otherCertifications = List<String>.from(otherCerts);
 
+    // Build metadata to include API fields
+    Map<String, dynamic> metadata =
+        json['metadata'] as Map<String, dynamic>? ?? {};
+
+    // Add additional fields from API response to metadata if not already there
+    if (!metadata.containsKey('totalJobs') && json['totalJobs'] != null) {
+      metadata['totalJobs'] = json['totalJobs'];
+    }
+    if (!metadata.containsKey('completedJobs') &&
+        json['completedJobs'] != null) {
+      metadata['completedJobs'] = json['completedJobs'];
+    }
+    if (!metadata.containsKey('hourlyRate') && json['hourlyRate'] != null) {
+      metadata['hourlyRate'] = (json['hourlyRate'] as num).toDouble();
+    }
+    if (!metadata.containsKey('nidaNumber') && json['nidaNumber'] != null) {
+      metadata['nidaNumber'] = json['nidaNumber'];
+    }
+
     return ComprehensiveFundiProfile(
       id: json['id']?.toString() ?? '',
       fullName:
@@ -257,20 +291,35 @@ class ComprehensiveFundiProfile {
       locationLng: fundiProfile['location_lng'] != null
           ? (fundiProfile['location_lng'] as num).toDouble()
           : null,
-      address: fundiProfile['address'] as String?,
-      profileImage: user['profile_image'] ?? json['profile_image'],
+      address: fundiProfile['address'] ?? json['location'] as String?,
+      profileImage:
+          user['profile_image'] ??
+          json['profileImage'] ??
+          json['profile_image'],
       skills: skills,
-      primaryCategory: fundiProfile['primary_category'] as String?,
-      experienceYears: fundiProfile['experience_years'] as int?,
-      bio: fundiProfile['bio'] as String?,
-      vetaCertificate: fundiProfile['veta_certificate'] as String?,
+      primaryCategory:
+          fundiProfile['primary_category'] ??
+          json['primaryCategory'] ??
+          json['profession'] as String?,
+      experienceYears:
+          fundiProfile['experience_years'] ?? json['experienceYears'] as int?,
+      bio: fundiProfile['bio'] ?? json['bio'] as String?,
+      vetaCertificate:
+          fundiProfile['veta_certificate'] ??
+          json['vetaCertificate'] as String?,
       otherCertifications: otherCertifications,
       verificationStatus: fundiProfile['verification_status'] ?? 'pending',
       recentWorks: recentWorks,
       totalPortfolioItems:
-          json['total_portfolio_items'] as int? ?? recentWorks.length,
-      averageRating: (json['average_rating'] as num?)?.toDouble() ?? 0.0,
-      totalRatings: json['total_ratings'] as int? ?? 0,
+          json['total_portfolio_items'] as int? ??
+          json['totalPortfolioItems'] as int? ??
+          recentWorks.length,
+      averageRating:
+          (json['average_rating'] as num?)?.toDouble() ??
+          (json['rating'] as num?)?.toDouble() ??
+          0.0,
+      totalRatings:
+          json['total_ratings'] as int? ?? json['totalRatings'] as int? ?? 0,
       recentReviews: recentReviews,
       ratingSummary: ratingSummary,
       isAvailable:
@@ -282,13 +331,13 @@ class ComprehensiveFundiProfile {
       lastActiveAt: json['last_active_at'] != null
           ? DateTime.parse(json['last_active_at'] as String)
           : null,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+      createdAt: json['created_at'] != null || json['createdAt'] != null
+          ? DateTime.parse((json['created_at'] ?? json['createdAt']) as String)
           : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+      updatedAt: json['updated_at'] != null || json['updatedAt'] != null
+          ? DateTime.parse((json['updated_at'] ?? json['updatedAt']) as String)
           : null,
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      metadata: metadata.isNotEmpty ? metadata : null,
     );
   }
 

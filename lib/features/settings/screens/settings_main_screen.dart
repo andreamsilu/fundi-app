@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../auth/providers/auth_provider.dart';
+import '../../auth/services/auth_service.dart';
 import 'settings_account_screen.dart';
 import 'settings_privacy_screen.dart';
 import 'settings_notifications_screen.dart';
@@ -111,51 +110,50 @@ class SettingsMainScreen extends StatelessWidget {
   }
 
   Widget _buildUserHeader(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        final user = authProvider.user;
-        return Container(
-          padding: const EdgeInsets.all(20),
-          color: AppTheme.primaryGreen.withOpacity(0.1),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: AppTheme.primaryGreen,
-                child: Text(
-                  user?.firstName?.substring(0, 1).toUpperCase() ?? 'U',
+    // Use AuthService directly instead of Provider
+    final authService = AuthService();
+    final user = authService.currentUser;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      color: AppTheme.primaryGreen.withOpacity(0.1),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: AppTheme.primaryGreen,
+            child: Text(
+              user?.firstName?.substring(0, 1).toUpperCase() ?? 'U',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user?.fullName ?? 'User',
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.fullName ?? 'User',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user?.email ?? '',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  user?.email ?? '',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
-              ),
-              Icon(Icons.edit, color: AppTheme.primaryGreen),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+          Icon(Icons.edit, color: AppTheme.primaryGreen),
+        ],
+      ),
     );
   }
 
@@ -285,9 +283,13 @@ class SettingsMainScreen extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Provider.of<AuthProvider>(context, listen: false).logout();
+
+              // Use AuthService directly instead of Provider
+              final authService = AuthService();
+              await authService.logout();
+
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/login',
@@ -301,5 +303,3 @@ class SettingsMainScreen extends StatelessWidget {
     );
   }
 }
-
-
