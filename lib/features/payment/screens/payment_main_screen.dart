@@ -676,13 +676,69 @@ class _PaymentMainScreenState extends State<PaymentMainScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implement subscription cancellation
+              _cancelSubscription();
             },
             child: const Text('Cancel', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _cancelSubscription() async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Cancel subscription via API
+      final paymentService = PaymentService();
+      final result = await paymentService.cancelSubscription();
+
+      // Close loading indicator
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      if (result.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Subscription cancelled successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Refresh the payment data
+          _loadData();
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading indicator if still showing
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Color _getStatusColor(String status) {

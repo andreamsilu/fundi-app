@@ -21,6 +21,7 @@ class OtpVerificationScreen extends StatefulWidget {
 class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _otpWidgetKey = GlobalKey<OtpInputWidgetState>();
   final _otpController = TextEditingController();
 
   late AnimationController _fadeController;
@@ -105,9 +106,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   }
 
   Future<void> _handleVerifyOtp() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    if (_otpController.text.length != 6) {
+    // Validate OTP length before proceeding
+    if (_otpController.text.trim().length != 6) {
       setState(() {
         _errorMessage = 'Please enter a valid 6-digit OTP';
       });
@@ -123,7 +123,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     try {
       final result = await AuthService().verifyOtp(
         phoneNumber: widget.phoneNumber,
-        otp: _otpController.text,
+        otp: _otpController.text.trim(),
       );
 
       if (result.success) {
@@ -418,14 +418,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     return Column(
       children: [
         OtpInputWidget(
+          key: _otpWidgetKey,
           controller: _otpController,
           onChanged: (value) {
+            // Update controller with the OTP value
+            setState(() {
+              _otpController.text = value;
+            });
+
             // Auto-verify when 6 digits are entered
             if (value.length == 6 && !_isLoading) {
               _handleVerifyOtp();
             }
           },
           onCompleted: (value) {
+            // Update controller with the completed OTP
+            setState(() {
+              _otpController.text = value;
+            });
+
             if (!_isLoading) {
               _handleVerifyOtp();
             }
@@ -454,20 +465,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   }
 
   Future<void> _pasteFromClipboard() async {
-    try {
-      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData?.text != null) {
-        final cleanText = clipboardData!.text!.replaceAll(
-          RegExp(r'[^0-9]'),
-          '',
-        );
-        if (cleanText.length >= 6) {
-          _otpController.text = cleanText.substring(0, 6);
-        }
-      }
-    } catch (e) {
-      // Handle clipboard error silently
-    }
+    // Use the OTP widget's paste method directly
+    _otpWidgetKey.currentState?.pasteFromClipboard();
   }
 
   Widget _buildResendSection() {

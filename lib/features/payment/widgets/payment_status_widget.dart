@@ -261,7 +261,7 @@ class PaymentStatusWidget extends StatelessWidget {
                   'transaction_id': transaction!.id,
                 },
               );
-              // TODO: Implement status check
+              _checkPaymentStatus(context);
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Check Status'),
@@ -307,7 +307,7 @@ class PaymentStatusWidget extends StatelessWidget {
                   'transaction_id': transaction!.id,
                 },
               );
-              // TODO: Implement payment retry
+              _retryPayment(context);
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
@@ -323,7 +323,7 @@ class PaymentStatusWidget extends StatelessWidget {
                   'transaction_id': transaction!.id,
                 },
               );
-              // TODO: Implement support contact
+              _contactSupport(context);
             },
             icon: const Icon(Icons.support_agent),
             label: const Text('Contact Support'),
@@ -343,7 +343,7 @@ class PaymentStatusWidget extends StatelessWidget {
                   'previous_transaction_id': transaction!.id,
                 },
               );
-              // TODO: Implement new payment
+              _startNewPayment(context);
             },
             icon: const Icon(Icons.payment),
             label: const Text('Start New Payment'),
@@ -389,5 +389,137 @@ class PaymentStatusWidget extends StatelessWidget {
 
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _retryPayment(BuildContext context) {
+    // Navigate to payment checkout to retry the payment
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Retry Payment'),
+        content: const Text('Would you like to retry this payment?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to payment flow screen with the same payment details
+              Navigator.of(context).pushNamed(
+                '/payment-checkout',
+                arguments: {
+                  'amount': transaction?.amount ?? 0,
+                  'payment_type': transaction?.paymentType ?? 'subscription',
+                  'reference_id': transaction?.referenceId,
+                },
+              );
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _checkPaymentStatus(BuildContext context) async {
+    if (transaction?.id == null) return;
+
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Check status via ZenoPay service
+      final zenoPayService = ZenoPayService();
+      final orderId =
+          transaction!.metadata?['order_id'] ??
+          transaction!.paymentReference ??
+          transaction!.id.toString();
+
+      final result = await zenoPayService.checkPaymentStatus(orderId);
+
+      // Close loading indicator
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+
+      if (context.mounted) {
+        if (result.isCompleted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment completed successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (result.isPending) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment is still pending. Please wait...'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Payment status: ${result.paymentStatus}'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading indicator if still showing
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error checking status: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _contactSupport(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Contact Support'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Need help with your payment?'),
+            const SizedBox(height: 16),
+            const Text('Email: support@fundiapp.com'),
+            const SizedBox(height: 8),
+            const Text('Phone: +255 XXX XXX XXX'),
+            const SizedBox(height: 16),
+            if (transaction != null)
+              Text(
+                'Reference: ${transaction!.paymentReference ?? transaction!.id}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _startNewPayment(BuildContext context) {
+    // Navigate to payment plans screen
+    Navigator.of(context).pushNamed('/payment-plans');
   }
 }

@@ -9,6 +9,7 @@ import '../../auth/services/auth_service.dart';
 import '../../work_approval/services/work_approval_service.dart';
 import '../../work_approval/widgets/work_submission_card.dart';
 import '../../work_approval/models/work_submission_model.dart';
+import '../../../core/utils/payment_gate_helper.dart';
 
 /// Job details screen showing comprehensive job information
 /// Allows fundis to apply for jobs and customers to manage their jobs
@@ -207,6 +208,17 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
   }
 
   Future<void> _applyForJob() async {
+    // Check payment permission first
+    final canApply = await PaymentGateHelper.canApplyToJob(
+      context,
+      widget.job.id.toString(),
+    );
+
+    if (!canApply) {
+      print('JobDetailsScreen: Payment required for job application');
+      return;
+    }
+
     setState(() {
       _isApplying = true;
       _errorMessage = null;
@@ -242,6 +254,172 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
         setState(() {
           _isApplying = false;
         });
+      }
+    }
+  }
+
+  void _showEditJobDialog() {
+    final TextEditingController titleController = TextEditingController(
+      text: widget.job.title,
+    );
+    final TextEditingController descriptionController = TextEditingController(
+      text: widget.job.description,
+    );
+    final TextEditingController budgetController = TextEditingController(
+      text: widget.job.budget?.toString() ?? '',
+    );
+    final TextEditingController locationController = TextEditingController(
+      text: widget.job.location ?? '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Job'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Job Title',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 1,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 4,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: budgetController,
+                decoration: const InputDecoration(
+                  labelText: 'Budget (TZS)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: locationController,
+                decoration: const InputDecoration(
+                  labelText: 'Location',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _updateJob(
+                title: titleController.text,
+                description: descriptionController.text,
+                budget: double.tryParse(budgetController.text),
+                location: locationController.text,
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updateJob({
+    required String title,
+    required String description,
+    double? budget,
+    String? location,
+  }) async {
+    if (title.isEmpty || description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Title and description are required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+    });
+
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Update job via API
+      final jobService = JobService();
+      final result = await jobService.updateJob(
+        jobId: widget.job.id.toString(),
+        title: title,
+        description: description,
+        budget: budget,
+        location: location,
+      );
+
+      // Close loading indicator
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      if (result.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Job updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Navigate back to refresh the list
+          Navigator.pop(context, true);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading indicator if still showing
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      setState(() {
+        _errorMessage = 'Failed to update job. Please try again.';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -709,15 +887,23 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
     final authService = AuthService();
     final bool isCustomer = authService.currentUser?.isCustomer ?? false;
     final bool isFundi = authService.currentUser?.isFundi ?? false;
+    final String? currentUserId = authService.currentUser?.id;
+    final String? jobOwnerId = widget.job.customerId;
 
-    if (isCustomer) {
-      // Customer actions
+    // Check if current user is the job owner (poster)
+    final bool isJobOwner =
+        currentUserId != null &&
+        jobOwnerId != null &&
+        currentUserId == jobOwnerId;
+
+    if (isCustomer && isJobOwner) {
+      // Job owner (poster) actions - can edit and view applications
       return Column(
         children: [
           AppButton(
             text: 'Edit Job',
             onPressed: () {
-              // TODO: Navigate to edit job screen
+              _showEditJobDialog();
             },
             type: ButtonType.secondary,
             isFullWidth: true,
@@ -735,6 +921,35 @@ class _JobDetailsScreenState extends State<JobDetailsScreen>
             },
             isFullWidth: true,
             icon: Icons.people,
+          ),
+        ],
+      );
+    } else if (isCustomer && !isJobOwner) {
+      // Other customers viewing this job - show limited actions
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This job was posted by another customer',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       );

@@ -40,15 +40,10 @@ class FundiNavigationHelper {
   }
 
   /// Navigate to appropriate page after login
+  /// Supports minimal registration - users can complete profile later
   static void navigateAfterLogin(BuildContext context, List<String> userRoles) {
-    // Check if user needs to complete profile
-    final user = AuthService().currentUser;
-    if (user?.nidaNumber == null || user?.firstName == null) {
-      Navigator.pushReplacementNamed(context, '/onboarding');
-      return;
-    }
-
-    // Navigate to appropriate home page (no admin in mobile)
+    // Navigate to appropriate home page based on user role
+    // User can complete profile later from settings
     final homePage = RoleBasedRouteGuard.getHomePage(userRoles);
     Navigator.pushReplacementNamed(context, homePage);
   }

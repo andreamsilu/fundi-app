@@ -12,7 +12,7 @@ class RoleBasedRouteGuard {
     '/payment-management': ['customer', 'fundi'],
     '/job-details': ['customer', 'fundi'],
     '/fundi-details': ['customer', 'fundi'],
-    
+
     // Fundi-specific pages (only fundis)
     '/fundi-home': ['fundi'],
     '/job-applications': ['fundi'],
@@ -21,16 +21,16 @@ class RoleBasedRouteGuard {
     '/application-status': ['fundi'],
     '/portfolio-edit': ['fundi'],
     '/fundi-application': ['fundi'],
-    
+
     // Admin pages removed - mobile app doesn't need admin functionality
-    
+
     // Shared pages (all roles)
     '/profile': ['customer', 'fundi'],
     '/settings': ['customer', 'fundi'],
     '/notifications': ['customer', 'fundi'],
     '/help': ['customer', 'fundi'],
     '/about': ['customer', 'fundi'],
-    
+
     // Auth pages (public)
     '/login': [],
     '/register': [],
@@ -41,54 +41,55 @@ class RoleBasedRouteGuard {
   /// Check if user can access a specific route
   static bool canAccess(String route, List<String> userRoles) {
     final allowedRoles = pageAccess[route] ?? [];
-    
+
     // If no roles specified, it's a public route
     if (allowedRoles.isEmpty) return true;
-    
+
     // Check if user has any of the allowed roles
     return userRoles.any((role) => allowedRoles.contains(role));
   }
 
   /// Get the appropriate home page for a user based on their roles
+  /// All authenticated users (customer, fundi, or both) go to main dashboard
   static String getHomePage(List<String> userRoles) {
-    if (userRoles.contains('fundi')) return '/fundi-home';
-    if (userRoles.contains('customer')) return '/customer-home';
+    // Main dashboard handles both customer and fundi views with bottom navigation
+    if (userRoles.contains('fundi') || userRoles.contains('customer')) {
+      return '/dashboard';
+    }
     return '/login';
   }
 
   /// Get all available pages for a user based on their roles
   static List<String> getAvailablePages(List<String> userRoles) {
     List<String> availablePages = [];
-    
+
+    // All authenticated users can access dashboard
+    availablePages.add('/dashboard');
+
     // Customer pages (accessible by both customers and fundis)
     if (userRoles.contains('customer')) {
       availablePages.addAll([
-        '/customer-home',
-        '/post-job',
-        '/browse-fundis',
-        '/my-jobs',
-        '/rate-fundi',
+        '/create-job',
+        '/fundi-feed',
         '/payment-management',
         '/job-details',
-        '/fundi-details',
+        '/fundi-profile',
       ]);
     }
-    
+
     // Fundi pages (only fundis)
     if (userRoles.contains('fundi')) {
       availablePages.addAll([
-        '/fundi-home',
         '/job-applications',
-        '/my-portfolio',
-        '/fundi-profile',
-        '/application-status',
-        '/portfolio-edit',
+        '/create-portfolio',
+        '/portfolio-details',
+        '/work-approval',
         '/fundi-application',
       ]);
     }
-    
+
     // Admin pages removed - mobile app doesn't need admin functionality
-    
+
     // Always available pages
     availablePages.addAll([
       '/profile',
@@ -97,7 +98,7 @@ class RoleBasedRouteGuard {
       '/help',
       '/about',
     ]);
-    
+
     return availablePages.toSet().toList(); // Remove duplicates
   }
 
@@ -143,11 +144,6 @@ class RoleBasedRouteGuard {
 
   /// Get payment-required actions
   static List<String> getPaymentRequiredActions() {
-    return [
-      'post_job',
-      'apply_job',
-      'message_fundi',
-      'browse_fundis',
-    ];
+    return ['post_job', 'apply_job', 'message_fundi', 'browse_fundis'];
   }
 }

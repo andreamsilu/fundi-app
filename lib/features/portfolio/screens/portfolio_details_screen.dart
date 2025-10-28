@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/portfolio_model.dart';
+import '../services/portfolio_service.dart';
 import '../../../shared/widgets/button_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../core/theme/app_theme.dart';
@@ -436,7 +437,7 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
           AppButton(
             text: 'Edit Portfolio',
             onPressed: () {
-              // TODO: Navigate to edit portfolio screen
+              _showEditDialog();
             },
             type: ButtonType.secondary,
             isFullWidth: true,
@@ -486,6 +487,163 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
     }
   }
 
+  void _showEditDialog() {
+    final TextEditingController titleController = TextEditingController(
+      text: widget.portfolio.title,
+    );
+    final TextEditingController descriptionController = TextEditingController(
+      text: widget.portfolio.description,
+    );
+    final TextEditingController budgetController = TextEditingController(
+      text: widget.portfolio.budget?.toString() ?? '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Portfolio'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 1,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: budgetController,
+                decoration: const InputDecoration(
+                  labelText: 'Budget (TZS)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _updatePortfolio(
+                title: titleController.text,
+                description: descriptionController.text,
+                budget: double.tryParse(budgetController.text),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updatePortfolio({
+    required String title,
+    required String description,
+    double? budget,
+  }) async {
+    if (title.isEmpty || description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Title and description are required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+    });
+
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Update portfolio via API
+      final portfolioService = PortfolioService();
+      final result = await portfolioService.updatePortfolio(
+        portfolioId: widget.portfolio.id.toString(),
+        title: title,
+        description: description,
+        skills: widget.portfolio.skillsUsed,
+        budget: budget,
+        durationHours: widget.portfolio.durationHours,
+      );
+
+      // Close loading indicator
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      if (result.success && result.portfolio != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Portfolio updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Refresh the screen with updated data
+          setState(() {
+            // Update widget.portfolio would require making it mutable
+            // For now, just show success - user can navigate back and refresh
+          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading indicator if still showing
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      setState(() {
+        _errorMessage = 'Failed to update portfolio. Please try again.';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showDeleteConfirmation() {
     showDialog(
       context: context,
@@ -517,25 +675,63 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
     });
 
     try {
-      // TODO: Implement portfolio deletion
-      // final result = await PortfolioService().deletePortfolio(widget.portfolio.id);
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
 
-      // For now, just show success message
-      setState(() {});
+      // Delete portfolio via API
+      final portfolioService = PortfolioService();
+      final result = await portfolioService.deletePortfolio(
+        widget.portfolio.id.toString(),
+      );
 
+      // Close loading indicator
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Portfolio deleted successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
         Navigator.pop(context);
       }
+
+      if (result.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Portfolio deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Navigate back to portfolio list
+          Navigator.pop(context, true); // Return true to indicate deletion
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     } catch (e) {
+      // Close loading indicator if still showing
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
       setState(() {
         _errorMessage = 'Failed to delete portfolio. Please try again.';
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

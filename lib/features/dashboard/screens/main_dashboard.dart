@@ -16,6 +16,7 @@ import '../../feeds/screens/comprehensive_fundi_profile_screen.dart';
 import '../services/dashboard_service.dart';
 import '../models/dashboard_model.dart';
 import '../../../core/utils/role_guard.dart';
+import '../../../core/utils/payment_gate_helper.dart';
 import '../../auth/models/user_model.dart';
 
 /// Main dashboard screen with role-based navigation
@@ -496,9 +497,19 @@ class _MainDashboardState extends State<MainDashboard>
     return null;
   }
 
-  /// Navigate to create job screen
-  void _navigateToCreateJob() {
-    print('MainDashboard: Navigating to create job screen');
+  /// Navigate to create job screen (with payment gate)
+  void _navigateToCreateJob() async {
+    print('MainDashboard: Checking payment permission for job posting');
+    
+    // Check if user can post job (payment gate)
+    final canPost = await PaymentGateHelper.canPostJob(context);
+    
+    if (!canPost) {
+      print('MainDashboard: Payment required for job posting');
+      return;
+    }
+    
+    print('MainDashboard: Payment check passed, navigating to create job screen');
     try {
       Navigator.pushNamed(context, '/create-job');
       print('MainDashboard: Navigation successful');

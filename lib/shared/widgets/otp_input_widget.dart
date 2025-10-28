@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
 
+// SMS Autofill hint for Android
+const smsCodeAutofillHint = AutofillHints.oneTimeCode;
+
 /// OTP Input Widget with 6 boxes and clipboard autofill support
 /// Provides a modern, accessible OTP input experience
 class OtpInputWidget extends StatefulWidget {
@@ -25,10 +28,11 @@ class OtpInputWidget extends StatefulWidget {
   });
 
   @override
-  State<OtpInputWidget> createState() => _OtpInputWidgetState();
+  State<OtpInputWidget> createState() => OtpInputWidgetState();
 }
 
-class _OtpInputWidgetState extends State<OtpInputWidget> {
+// Make state public so parent can access pasteFromClipboard method
+class OtpInputWidgetState extends State<OtpInputWidget> {
   late List<TextEditingController> _controllers;
   late List<FocusNode> _focusNodes;
   late String _otpValue;
@@ -38,6 +42,72 @@ class _OtpInputWidgetState extends State<OtpInputWidget> {
     super.initState();
     _initializeControllers();
     _otpValue = '';
+    _listenToClipboard();
+  }
+
+  /// Listen to clipboard and auto-paste OTP if detected
+  void _listenToClipboard() async {
+    // Check clipboard every 2 seconds
+    Future.delayed(const Duration(seconds: 1), () async {
+      if (!mounted) return;
+
+      try {
+        final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+        final clipboardText = clipboardData?.text ?? '';
+
+        // Check if clipboard contains a 6-digit number (OTP)
+        final otpMatch = RegExp(r'\b\d{6}\b').firstMatch(clipboardText);
+
+        if (otpMatch != null) {
+          final otp = otpMatch.group(0)!;
+
+          // Only auto-fill if boxes are empty
+          if (_otpValue.isEmpty) {
+            _autoFillOtp(otp);
+          }
+        }
+      } catch (e) {
+        // Clipboard access might fail, ignore
+      }
+    });
+  }
+
+  /// Auto-fill OTP from clipboard or SMS
+  void _autoFillOtp(String otp) {
+    if (otp.length != widget.length) return;
+
+    setState(() {
+      for (int i = 0; i < widget.length; i++) {
+        _controllers[i].text = otp[i];
+      }
+    });
+
+    _updateOtpValue();
+
+    // Focus on last box
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted && widget.length > 0) {
+        _focusNodes[widget.length - 1].requestFocus();
+      }
+    });
+  }
+
+  /// Public method to paste OTP from external call (like paste button)
+  Future<void> pasteFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      final clipboardText = clipboardData?.text ?? '';
+
+      // Extract 6-digit OTP
+      final otpMatch = RegExp(r'\d{6}').firstMatch(clipboardText);
+
+      if (otpMatch != null) {
+        final otp = otpMatch.group(0)!;
+        _autoFillOtp(otp);
+      }
+    } catch (e) {
+      // Clipboard access failed
+    }
   }
 
   void _initializeControllers() {
@@ -171,29 +241,51 @@ class _OtpInputWidgetState extends State<OtpInputWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: List.generate(widget.length, (index) => _buildOtpBox(index)),
+    return AutofillGroup(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          widget.length,
+          (index) => Flexible(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              child: _buildOtpBox(index),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildOtpBox(int index) {
+    final hasFocus = _focusNodes[index].hasFocus;
+    final hasValue = _controllers[index].text.isNotEmpty;
+
     return Container(
-      width: 50,
+      constraints: const BoxConstraints(maxWidth: 55, minWidth: 40),
       height: 60,
       decoration: BoxDecoration(
         border: Border.all(
-          color: _focusNodes[index].hasFocus
+          color: hasFocus
               ? context.primaryColor
-              : AppTheme.lightGray,
-          width: _focusNodes[index].hasFocus ? 2 : 1,
+              : (hasValue ? AppTheme.mediumGray : AppTheme.lightGray),
+          width: hasFocus ? 2.5 : 1.5,
         ),
         borderRadius: BorderRadius.circular(12),
         color: widget.enabled
-            ? (_focusNodes[index].hasFocus
-                  ? context.primaryColor.withValues(alpha: 0.05)
+            ? (hasFocus
+                  ? context.primaryColor.withValues(alpha: 0.08)
                   : Colors.white)
             : AppTheme.lightGray.withValues(alpha: 0.3),
+        boxShadow: hasFocus
+            ? [
+                BoxShadow(
+                  color: context.primaryColor.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
       ),
       child: KeyboardListener(
         focusNode: FocusNode(),
@@ -206,16 +298,24 @@ class _OtpInputWidgetState extends State<OtpInputWidget> {
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
           maxLength: 1,
+          // Enable SMS autofill for the first box only
+          autofillHints: index == 0 ? const [smsCodeAutofillHint] : null,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w600,
             color: AppTheme.darkGray,
           ),
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             counterText: '',
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
             contentPadding: EdgeInsets.zero,
+            filled: false,
             hintText: '0',
-            hintStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            hintStyle: TextStyle(
               color: AppTheme.mediumGray,
               fontWeight: FontWeight.w400,
             ),

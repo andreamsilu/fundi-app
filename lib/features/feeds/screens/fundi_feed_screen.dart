@@ -8,6 +8,7 @@ import '../../auth/services/auth_service.dart';
 import 'comprehensive_fundi_profile_screen.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
+import '../../../core/utils/payment_gate_helper.dart';
 
 class FundiFeedScreen extends StatefulWidget {
   final bool showAppBar;
@@ -245,10 +246,18 @@ class _FundiFeedScreenState extends State<FundiFeedScreen> {
     _loadFundis(refresh: true);
   }
 
-  void _navigateToFundiProfile(dynamic fundi) {
+  void _navigateToFundiProfile(dynamic fundi) async {
     try {
       if (fundi == null) {
         throw Exception('Fundi data is null');
+      }
+
+      // Check if user can view fundi profiles (payment gate)
+      final canView = await PaymentGateHelper.canViewFundiProfiles(context);
+      
+      if (!canView) {
+        print('FundiFeedScreen: Payment required for viewing fundi profiles');
+        return;
       }
 
       Navigator.push(
