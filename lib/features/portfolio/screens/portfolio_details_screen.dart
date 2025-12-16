@@ -591,7 +591,9 @@ class _PortfolioDetailsScreenState extends State<PortfolioDetailsScreen>
         description: description,
         skills: widget.portfolio.skillsUsed,
         budget: budget,
-        durationHours: widget.portfolio.durationHours,
+        durationDays: widget.portfolio.durationHours > 0
+            ? (widget.portfolio.durationHours / 24).ceil()
+            : null,
       );
 
       // Close loading indicator
